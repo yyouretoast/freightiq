@@ -2,7 +2,7 @@ import logging
 import os
 from langchain_groq import ChatGroq
 from langgraph.prebuilt import ToolNode
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import SystemMessage, AIMessage
 from agent.state import AgentState
 from agent.tools import tools
 
@@ -32,13 +32,39 @@ llm = ChatGroq(
 )
 
 # Bind tools to the LLM and strictly disable parallel tool calls at the API schema level.
-# This prevents Llama from spawning duplicate/redundant queries in parallel.
 llm_with_tools = llm.bind_tools(tools, parallel_tool_calls=False)
 
 def agent_node(state: AgentState):
     logger.info(f"Agent invoked with {len(state['messages'])} messages in context.")
-    messages_with_system = [SystemMessage(content=SYSTEM_PROMPT)] + state["messages"]
+    messages = state["messages"]
     
+    # Global Loop Guardrail:
+    # Check if the agent is stuck in an execution loop (running the exact same tool with the exact same parameters consecutively)
+    last_tool_calls = []
+    for msg in reversed(messages):
+        if isinstance(msg, AIMessage) and msg.tool_calls:
+            last_tool_calls.extend(msg.tool_calls)
+            break
+            
+    # Detect duplicate back-to-back tool calls
+    if len(messages) >= 2:
+        prev_ai_msgs = [m for m in messages if isinstance(m, AIMessage) and m.tool_calls]
+        if len(prev_ai_msgs) >= 2:
+            last_call = prev_ai_msgs[-1].tool_calls[0]
+            penultimate_call = prev_ai_msgs[-2].tool_calls[0]
+            
+            # If the last two tool calls have identical names and arguments, inject a loop-break message
+            if last_call["name"] == penultimate_call["name"] and last_call["args"] == penultimate_call["args"]:
+                logger.warning(f"Loop detected on tool '{last_call['name']}'. Injecting loop guardrail warning.")
+                loop_break_prompt = (
+                    f"System Warning: You have already executed the tool '{last_call['name']}' with args {last_call['args']}. "
+                    "Do NOT call this tool again. Synthesize your final answer immediately based on the results already retrieved."
+                )
+                messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + messages + [SystemMessage(content=loop_break_prompt)]
+                response = llm_with_tools.invoke(messages_with_warning)
+                return {"messages": [response]}
+                
+    messages_with_system = [SystemMessage(content=SYSTEM_PROMPT)] + messages
     response = llm_with_tools.invoke(messages_with_system)
     return {"messages": [response]}
 
