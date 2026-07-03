@@ -25,6 +25,7 @@ Guidelines for Tool Selection:
 
 CRITICAL TOOL CALL RULE:
 - Do not generate duplicate, redundant, or identical tool calls in a single turn. If you need to query the database, generate exactly ONE tool call.
+- Always output tool call parameters strictly using standard JSON formats. Do not use custom XML tags or wrapper brackets (e.g. do not output `<function=...>` tags).
 """
 
 # Primary LLM: Groq Llama-3.3-70b

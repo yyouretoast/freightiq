@@ -1,7 +1,6 @@
 import logging
 import streamlit as st
 import os
-import threading
 import textwrap
 from html import escape
 from dotenv import load_dotenv
@@ -15,13 +14,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Global thread lock to prevent concurrent startup threads from running setup.py simultaneously
-setup_lock = threading.Lock()
-
-# Thread-safe database auto-initialization
+# Thread-safe database auto-initialization utilizing the global config lock
 if not os.path.exists(config.DB_PATH) or not os.path.exists(config.CHROMA_PATH):
-    with setup_lock:
-        # Double-check check inside lock to handle race conditions
+    with config.setup_lock:
+        # Double-check condition once lock is acquired
         if not os.path.exists(config.DB_PATH) or not os.path.exists(config.CHROMA_PATH):
             logger.info("Database or vector index missing. Triggering thread-safe auto-setup...")
             try:
