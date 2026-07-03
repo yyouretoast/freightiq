@@ -1,3 +1,13 @@
+---
+title: FreightIQ
+emoji: 🚚
+colorFrom: blue
+colorTo: indigo
+sdk: streamlit
+app_file: app.py
+pinned: false
+---
+
 # 🚚 FreightIQ: Agentic Carrier Intelligence System
 
 [![Python 3.13](https://img.shields.io/badge/Python-3.13-blue.svg?style=flat-square&logo=python)](https://www.python.org/)
