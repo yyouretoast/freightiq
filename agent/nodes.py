@@ -22,6 +22,9 @@ Guidelines for Tool Selection:
 - If a query describes a carrier's qualitative specialization or primary service lanes in natural language, prefer `carrier_semantic_search`.
 - For current market rate trends or news, use `web_search`.
 - Be concise and structure your responses with markdown tables or bullet points where appropriate to showcase readability.
+
+CRITICAL TOOL CALL RULE:
+- Do not generate duplicate, redundant, or identical tool calls in a single turn. If you need to query the database, generate exactly ONE tool call.
 """
 
 # Primary LLM: Groq Llama-3.3-70b
