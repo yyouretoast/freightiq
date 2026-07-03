@@ -22,21 +22,18 @@ Guidelines for Tool Selection:
 - If a query describes a carrier's qualitative specialization or primary service lanes in natural language, prefer `carrier_semantic_search`.
 - For current market rate trends or news, use `web_search`.
 - Be concise and structure your responses with markdown tables or bullet points where appropriate to showcase readability.
-
-CRITICAL TOOL CALL RULE:
-- Do not generate duplicate, redundant, or identical tool calls in a single turn. If you need to query the database, generate exactly ONE tool call.
-- Always output tool call parameters strictly using standard JSON formats. Do not use custom XML tags or wrapper brackets (e.g. do not output `<function=...>` tags).
 """
 
-# Primary LLM: Groq Llama-3.3-70b
+# Primary LLM: Groq Llama-3.1-8b (Highly efficient, large token quota to prevent TPD 429 limits)
 llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model="llama-3.1-8b-instant",
     groq_api_key=os.getenv("GROQ_API_KEY"),
     temperature=0.0
 )
 
-# Bind tools to the LLM
-llm_with_tools = llm.bind_tools(tools)
+# Bind tools to the LLM and strictly disable parallel tool calls at the API schema level.
+# This prevents Llama from spawning duplicate/redundant queries in parallel.
+llm_with_tools = llm.bind_tools(tools, parallel_tool_calls=False)
 
 def agent_node(state: AgentState):
     logger.info(f"Agent invoked with {len(state['messages'])} messages in context.")

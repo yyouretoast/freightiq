@@ -250,7 +250,7 @@ TOOLS = [
 with st.sidebar:
     api_key_set = bool(os.getenv("GROQ_API_KEY"))
     status_class = "status-ok" if api_key_set else "status-err"
-    status_text = "Llama 3.3 70B · Connected" if api_key_set else "Groq API Key Missing"
+    status_text = "Llama 3.1 8B · Connected" if api_key_set else "Groq API Key Missing"
 
     tool_items_html = "".join([
         f'<div class="tool-item"><span class="tool-icon">{icon}</span>'
