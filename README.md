@@ -16,7 +16,7 @@ pinned: false
 [![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
-FreightIQ is a high-performance agentic carrier intelligence and logistics research assistant. Powered by a **LangGraph ReAct loop** and **Gemini 2.0 Flash**, it reasons over shipping queries, retrieves documents using a **hybrid search engine (ChromaDB + SQLite)**, re-ranks carrier profiles using a custom **PyTorch MLP**, and leverages live web search to answer real-time market rate questions.
+FreightIQ is a high-performance agentic carrier intelligence and logistics research assistant. Powered by a **LangGraph ReAct loop** and **Groq (Llama 3.3 70B)**, it reasons over shipping queries, retrieves documents using a **hybrid search engine (ChromaDB + SQLite)**, re-ranks carrier profiles using a custom **PyTorch MLP**, and leverages live web search to answer real-time market rate questions.
 
 > 🚀 **Live Demo:** [huggingface.co/spaces/yyouretoast/freightiq](https://huggingface.co/spaces/yyouretoast/freightiq)
 
@@ -31,7 +31,7 @@ Freight brokers and shippers waste hours manually searching fragmented carrier d
 ## 🛠️ Tech Stack & Keywords
 
 *   **Agent Orchestration:** LangGraph, LangChain (ReAct loop, conditional routing)
-*   **LLM:** Gemini 2.0 Flash (Google AI Studio)
+*   **LLM:** Llama 3.3 70B (Groq Cloud API)
 *   **Vector DB & RAG:** ChromaDB (persistent local storage)
 *   **Structured Database:** SQLite (structured carrier queries)
 *   **Deep Learning Reranking:** PyTorch (`torch.nn.Module` custom classifier)
@@ -56,7 +56,7 @@ Freight brokers and shippers waste hours manually searching fragmented carrier d
                                          v
                     +-----------------------------------------+
 +------------------>|               Agent Node                |
-|                   |        (Gemini 2.0 Flash + Tools)       |
+|                   |         (Llama 3.3 70B + Tools)         |
 |                   +-----------------------------------------+
 |                                  /           \
 |                       (Tool Requested?)   (No Tool / Done)
@@ -154,9 +154,9 @@ pip install -r requirements.txt
 ```
 
 ### 2. Configure Environment Variables
-Create a `.env` file in the root directory and add your Google Gemini API key:
+Create a `.env` file in the root directory and add your Groq API key:
 ```env
-GEMINI_API_KEY=your_gemini_api_key_here
+GROQ_API_KEY=your_groq_api_key_here
 ```
 
 ### 3. Run Data Ingestion
@@ -195,7 +195,7 @@ streamlit run app.py
 To transition FreightIQ to a commercial production standard, the following roadmap is proposed:
 *   **Active PyTorch Training:** Migrate the `CarrierReRanker` model from static weight initializations to supervised training using historical broker-carrier match logs or user click-through rates, optimizing weights via Binary Cross-Entropy (BCE) loss.
 *   **Production Database Migration:** Upgrade the local SQLite file storage to a highly concurrent relational database like **PostgreSQL** or **Amazon RDS** to support multi-user locking.
-*   **Authentication & Rate Limiting:** Implement OAuth2 security protocols and API gateway rate-limiting to protect the Gemini API token quota from abuse.
+*   **Authentication & Rate Limiting:** Implement OAuth2 security protocols and API gateway rate-limiting to protect the Groq API token quota from abuse.
 
 ---
 
