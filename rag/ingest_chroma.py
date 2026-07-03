@@ -2,6 +2,7 @@ import json
 import os
 import chromadb
 from sentence_transformers import SentenceTransformer
+import config
 
 def format_carrier_document(c):
     return (
@@ -37,13 +38,13 @@ def ingest_chroma():
         "safety_rating": c["safety_rating"]
     } for c in carriers]
     
-    print("Loading SentenceTransformer model 'all-MiniLM-L6-v2'...")
-    model = SentenceTransformer('all-MiniLM-L6-v2')
+    print(f"Loading SentenceTransformer model '{config.EMBEDDING_MODEL_NAME}'...")
+    model = SentenceTransformer(config.EMBEDDING_MODEL_NAME)
     
     print("Generating vector embeddings...")
     embeddings = model.encode(documents, show_progress_bar=True, convert_to_numpy=True).tolist()
     
-    chroma_client = chromadb.PersistentClient(path="./chroma_db")
+    chroma_client = chromadb.PersistentClient(path=config.CHROMA_PATH)
     collection = chroma_client.get_or_create_collection(name="freight_carriers")
     
     print("Upserting documents to ChromaDB...")

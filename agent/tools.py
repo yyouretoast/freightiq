@@ -1,4 +1,5 @@
 from langchain_core.tools import tool
+from duckduckgo_search import DDGS
 from rag.retriever import retrieve_carriers_semantic, query_carriers_sql
 
 @tool
@@ -44,7 +45,6 @@ def web_search(query: str) -> str:
     Query the web for current freight rates, market trends, external carrier news, 
     and real-time logistics or shipping industry data.
     """
-    from duckduckgo_search import DDGS
     try:
         with DDGS() as ddgs:
             results = list(ddgs.text(query, max_results=3))

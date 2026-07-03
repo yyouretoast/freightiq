@@ -1,29 +1,33 @@
 import logging
 import os
 import sqlite3
+import threading
 import chromadb
 from rag.reranker import rerank_documents, get_embed_model
+import config
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = os.path.join("rag", "data", "carriers.db")
-CHROMA_PATH = "./chroma_db"
-
+# Singletons and Thread Locks
 _CHROMA_CLIENT = None
 _CHROMA_COLLECTION = None
+_chroma_lock = threading.Lock()
 
 def get_chroma_collection():
     global _CHROMA_CLIENT, _CHROMA_COLLECTION
     if _CHROMA_COLLECTION is None:
-        client = chromadb.PersistentClient(path=CHROMA_PATH)
-        collection = client.get_collection(name="freight_carriers")
-        _CHROMA_CLIENT = client
-        _CHROMA_COLLECTION = collection
-        logger.info(f"ChromaDB collection loaded: {collection.count()} documents")
+        with _chroma_lock:
+            if _CHROMA_COLLECTION is None:
+                client = chromadb.PersistentClient(path=config.CHROMA_PATH)
+                collection = client.get_collection(name="freight_carriers")
+                # Commit atomically to prevent partial initialization leaks
+                _CHROMA_CLIENT = client
+                _CHROMA_COLLECTION = collection
+                logger.info(f"ChromaDB collection loaded: {collection.count()} documents")
     return _CHROMA_COLLECTION
 
-def retrieve_carriers_semantic(query, k=5):
-    if not os.path.exists(CHROMA_PATH):
+def retrieve_carriers_semantic(query, k=config.SEMANTIC_RETRIEVAL_K):
+    if not os.path.exists(config.CHROMA_PATH):
         return ["Error: Vector database not initialized. Run setup.py first."]
 
     try:
@@ -31,7 +35,7 @@ def retrieve_carriers_semantic(query, k=5):
         query_vector = embed_model.encode(query, convert_to_numpy=True).tolist()
 
         collection = get_chroma_collection()
-        n_results = min(15, collection.count())
+        n_results = min(config.SEMANTIC_POOL_SIZE, collection.count())
         results = collection.query(
             query_embeddings=[query_vector],
             n_results=n_results,
@@ -58,16 +62,15 @@ def retrieve_carriers_semantic(query, k=5):
         return [f"Error in semantic retrieval: {str(e)}"]
 
 def query_carriers_sql(sql_query):
-    if not os.path.exists(DB_PATH):
+    if not os.path.exists(config.DB_PATH):
         return "Error: SQL database not initialized. Run setup.py first."
 
-    cleaned_query = sql_query.strip().lower()
-    if not (cleaned_query.startswith("select") or cleaned_query.startswith("with")):
-        return "Error: Only read-only queries (SELECT / WITH) are permitted on the carrier database."
+    # SQLite read-only connection limits are enforced at the connection level (?mode=ro).
+    # This renders manual string/keyword matching redundant, as the engine rejects any writes or mutations.
 
     conn = None
     try:
-        conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        conn = sqlite3.connect(f"file:{config.DB_PATH}?mode=ro", uri=True)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         cursor.execute(sql_query)

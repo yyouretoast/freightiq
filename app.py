@@ -1,19 +1,18 @@
 import logging
 import streamlit as st
 import os
+import textwrap
 from html import escape
 from dotenv import load_dotenv
 from agent.graph import graph
 from langchain_core.messages import HumanMessage, AIMessage
+import config
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-MAX_QUERIES_PER_SESSION = 10
-CONVERSATION_WINDOW = 12
 
 def format_message_content(content):
     if isinstance(content, str):
@@ -251,8 +250,8 @@ with st.sidebar:
     if "query_count" not in st.session_state:
         st.session_state.query_count = 0
 
-    remaining = MAX_QUERIES_PER_SESSION - st.session_state.query_count
-    counter_html = f'<div class="query-counter">{remaining}/{MAX_QUERIES_PER_SESSION} queries remaining</div>'
+    remaining = config.MAX_QUERIES_PER_SESSION - st.session_state.query_count
+    counter_html = f'<div class="query-counter">{remaining}/{config.MAX_QUERIES_PER_SESSION} queries remaining</div>'
 
     st.markdown(f"""
     <div class="sidebar-section">
@@ -286,8 +285,8 @@ for message in st.session_state.messages:
             st.write(format_message_content(message.content))
 
 if user_query := st.chat_input("Ask about carriers, rates, or calculate freight class…"):
-    if st.session_state.query_count >= MAX_QUERIES_PER_SESSION:
-        st.error(f"Session query limit reached ({MAX_QUERIES_PER_SESSION} queries). Click **Reset Conversation** to continue.")
+    if st.session_state.query_count >= config.MAX_QUERIES_PER_SESSION:
+        st.error(f"Session query limit reached ({config.MAX_QUERIES_PER_SESSION} queries). Click **Reset Conversation** to continue.")
         st.stop()
 
     with st.chat_message("user"):
@@ -304,7 +303,7 @@ if user_query := st.chat_input("Ask about carriers, rates, or calculate freight 
         final_answer = ""
         try:
             # Sliding window: only send the last N messages to the LLM
-            windowed_messages = st.session_state.messages[-CONVERSATION_WINDOW:]
+            windowed_messages = st.session_state.messages[-config.CONVERSATION_WINDOW:]
 
             with st.spinner("Reasoning…"):
                 for event in graph.stream({"messages": windowed_messages}, stream_mode="updates"):
@@ -312,7 +311,18 @@ if user_query := st.chat_input("Ask about carriers, rates, or calculate freight 
                         if node_name == "tools":
                             for msg in node_output.get("messages", []):
                                 safe_name = escape(str(msg.name))
-                                safe_output = escape(str(msg.content)[:400])
+                                # Clean mid-word truncation using textwrap.shorten
+                                raw_output = str(msg.content)
+                                if len(raw_output) > config.TOOL_TRUNCATION_LIMIT:
+                                    truncated_output = textwrap.shorten(
+                                        raw_output, 
+                                        width=config.TOOL_TRUNCATION_LIMIT, 
+                                        placeholder="..."
+                                    )
+                                else:
+                                    truncated_output = raw_output
+                                
+                                safe_output = escape(truncated_output)
                                 with step_container:
                                     st.markdown(f"""
                                     <div class="tool-card">

@@ -1,16 +1,31 @@
 import sqlite3
 import json
 import os
+import config
 
 def setup_sqlite():
     json_path = os.path.join("rag", "data", "carriers.json")
-    db_path = os.path.join("rag", "data", "carriers.db")
+    db_path = config.DB_PATH
     
     if not os.path.exists(json_path):
         raise FileNotFoundError(f"Source carriers.json not found at {json_path}. Run generate_carriers.py first.")
         
     print("Setting up SQLite database...")
     
+    # Check if table already exists and is populated to implement idempotency
+    if os.path.exists(db_path):
+        try:
+            with sqlite3.connect(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM carriers")
+                count = cursor.fetchone()[0]
+                if count > 0:
+                    print(f"SQLite database table 'carriers' already populated with {count} records. Skipping ingestion.")
+                    return
+        except sqlite3.OperationalError:
+            # Table doesn't exist, proceed with creation
+            pass
+            
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
         cursor.execute("DROP TABLE IF EXISTS carriers")
@@ -30,6 +45,11 @@ def setup_sqlite():
             notes TEXT NOT NULL
         )
         """)
+        
+        # Create database indexes on columns frequently filtered/queried by the agent
+        cursor.execute("CREATE INDEX idx_carriers_hq_state ON carriers (hq_state)")
+        cursor.execute("CREATE INDEX idx_carriers_safety_rating ON carriers (safety_rating)")
+        cursor.execute("CREATE INDEX idx_carriers_dot_number ON carriers (dot_number)")
         
         with open(json_path, "r") as f:
             carriers = json.load(f)
@@ -59,7 +79,7 @@ def setup_sqlite():
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, batch_data)
         
-    print(f"Successfully populated SQLite database with {len(carriers)} carrier profiles at {db_path}.")
+    print(f"Successfully populated SQLite database with {len(carriers)} carrier profiles and indexes at {db_path}.")
 
 if __name__ == "__main__":
     setup_sqlite()

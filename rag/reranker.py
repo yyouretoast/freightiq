@@ -1,27 +1,40 @@
 import logging
+import threading
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from sentence_transformers import SentenceTransformer
+import config
 
 logger = logging.getLogger(__name__)
 
+# Singletons and Thread Locks
 _EMBED_MODEL = None
 _RERANKER_MODEL = None
+
+_embed_lock = threading.Lock()
+_reranker_lock = threading.Lock()
 
 def get_embed_model():
     global _EMBED_MODEL
     if _EMBED_MODEL is None:
-        logger.info("Loading SentenceTransformer model: all-MiniLM-L6-v2")
-        _EMBED_MODEL = SentenceTransformer('all-MiniLM-L6-v2')
+        with _embed_lock:
+            if _EMBED_MODEL is None:
+                logger.info(f"Loading SentenceTransformer model: {config.EMBEDDING_MODEL_NAME}")
+                _EMBED_MODEL = SentenceTransformer(config.EMBEDDING_MODEL_NAME)
     return _EMBED_MODEL
 
 def get_reranker_model(device):
     global _RERANKER_MODEL
     if _RERANKER_MODEL is None:
-        logger.info(f"Initializing CarrierReRanker on device: {device}")
-        _RERANKER_MODEL = CarrierReRanker(embedding_dim=384, hidden_dim=128).to(device)
+        with _reranker_lock:
+            if _RERANKER_MODEL is None:
+                logger.info(f"Initializing CarrierReRanker on device: {device}")
+                _RERANKER_MODEL = CarrierReRanker(
+                    embedding_dim=config.EMBEDDING_DIM, 
+                    hidden_dim=config.RERANKER_HIDDEN_DIM
+                ).to(device)
     return _RERANKER_MODEL
 
 class CarrierReRanker(nn.Module):
@@ -57,8 +70,8 @@ def rerank_documents(query, documents, metadatas=None, top_k=5, doc_embeddings=N
     embed_model = get_embed_model()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    # Keep model initialized for architectural completeness / future training
-    get_reranker_model(device)
+    # Reranker model instantiation removed to optimize CPU/GPU memory footprint.
+    # The CarrierReRanker class is preserved above for architectural completeness and future training.
 
     if query_embedding is None:
         query_vector = embed_model.encode(query, convert_to_numpy=True)
