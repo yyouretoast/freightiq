@@ -236,9 +236,9 @@ TOOLS = [
 ]
 
 with st.sidebar:
-    api_key_set = bool(os.getenv("GEMINI_API_KEY"))
+    api_key_set = bool(os.getenv("GROQ_API_KEY"))
     status_class = "status-ok" if api_key_set else "status-err"
-    status_text = "Gemini 2.0 Flash · Connected" if api_key_set else "API Key Missing"
+    status_text = "Llama 3.3 70B · Connected" if api_key_set else "Groq API Key Missing"
 
     tool_items_html = "".join([
         f'<div class="tool-item"><span class="tool-icon">{icon}</span>'
@@ -266,7 +266,7 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     if not api_key_set:
-        st.warning("Set `GEMINI_API_KEY` in your `.env` file to enable the agent.")
+        st.warning("Set `GROQ_API_KEY` in your `.env` file to enable the agent.")
 
     if st.button("🗑️ Reset Conversation", use_container_width=True):
         st.session_state.messages = []

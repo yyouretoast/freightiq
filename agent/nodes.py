@@ -1,8 +1,7 @@
 import logging
 import os
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from langgraph.prebuilt import ToolNode
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import SystemMessage
 from agent.state import AgentState
 from agent.tools import tools
@@ -14,7 +13,7 @@ SYSTEM_PROMPT = """You are FreightIQ, a senior logistics coordinator and agentic
 
 You have access to the following specialized tools:
 1. `carrier_sql_query`: Best for exact lookups, filter matching (hq_state, safety_rating, dot_number, mc_number, years_operating), or aggregate math (averages, counts). You must query the 'carriers' table.
-2. `carrier_semantic_search`: Best for loose/qualitative queries, regional match searches, or general capability matching (e.g. "haulers specializing in heavy cargo in the Midwest").
+2. `carrier_semantic_search`: Best for qualitative queries, regional match searches, or general capability matching (e.g. "haulers specializing in heavy cargo in the Midwest").
 3. `web_search`: Best for querying real-time market spot rates, logistics industry news, and active shipping rates.
 4. `freight_class_calculator`: Best for calculating shipment density (lbs/cu ft) and mapping it to the appropriate NMFC freight class.
 
@@ -25,17 +24,18 @@ Guidelines for Tool Selection:
 - Be concise and structure your responses with markdown tables or bullet points where appropriate to showcase readability.
 """
 
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.0-flash", 
-    google_api_key=os.getenv("GEMINI_API_KEY"),
+# Primary LLM: Groq Llama-3.3-70b
+llm = ChatGroq(
+    model="llama-3.3-70b-versatile",
+    groq_api_key=os.getenv("GROQ_API_KEY"),
     temperature=0.0
 )
+
+# Bind tools to the LLM
 llm_with_tools = llm.bind_tools(tools)
 
 def agent_node(state: AgentState):
     logger.info(f"Agent invoked with {len(state['messages'])} messages in context.")
-    
-    # Inject system message before the conversation history
     messages_with_system = [SystemMessage(content=SYSTEM_PROMPT)] + state["messages"]
     
     response = llm_with_tools.invoke(messages_with_system)
