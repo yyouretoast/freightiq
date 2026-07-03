@@ -1,0 +1,12 @@
+langgraph
+langchain
+langchain-google-genai
+langchain-community
+chromadb
+sentence-transformers
+streamlit
+duckduckgo-search
+python-dotenv
+torch
+tf-keras
+

@@ -1,0 +1,4227 @@
+[
+    {
+        "carrier_name": "Summit Logistics 24 #100",
+        "dot_number": "5664437",
+        "mc_number": "565985",
+        "hq_state": "WI",
+        "service_regions": [
+            "West Coast",
+            "Southwest",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "dry van",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals",
+            "fresh produce"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 20,
+        "contact_email": "info@summitlogistics24100.com",
+        "notes": "Specializes in pharmaceuticals, fresh produce hauling with primary equipment using reefer, dry van, LTL. Known for reliable shipping routes across West Coast, Southwest, Southeast."
+    },
+    {
+        "carrier_name": "NextGen Haulers 80 #101",
+        "dot_number": "6725944",
+        "mc_number": "631945",
+        "hq_state": "OH",
+        "service_regions": [
+            "Southwest",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "dry van",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "electronics",
+            "building materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 7,
+        "contact_email": "info@nextgenhaulers80101.com",
+        "notes": "Specializes in electronics, building materials hauling with primary equipment using reefer, dry van, flatbed. Known for reliable shipping routes across Southwest, Southeast."
+    },
+    {
+        "carrier_name": "Express Freight 94 #102",
+        "dot_number": "7752694",
+        "mc_number": "610433",
+        "hq_state": "OR",
+        "service_regions": [
+            "West Coast",
+            "Southwest",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "intermodal",
+            "tanker",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "building materials",
+            "retail goods"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 25,
+        "contact_email": "info@expressfreight94102.com",
+        "notes": "Specializes in building materials, retail goods hauling with primary equipment using intermodal, tanker, LTL. Known for reliable shipping routes across West Coast, Southwest, Northeast."
+    },
+    {
+        "carrier_name": "Golden Gate Lines 28 #103",
+        "dot_number": "8302573",
+        "mc_number": "892566",
+        "hq_state": "CA",
+        "service_regions": [
+            "Northeast"
+        ],
+        "equipment_types": [
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 2,
+        "contact_email": "info@goldengatelines28103.com",
+        "notes": "Specializes in pharmaceuticals hauling with primary equipment using LTL. Known for reliable shipping routes across Northeast."
+    },
+    {
+        "carrier_name": "Liberty Solutions #104",
+        "dot_number": "8777324",
+        "mc_number": "350572",
+        "hq_state": "CA",
+        "service_regions": [
+            "West Coast",
+            "Southwest",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "general freight"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 7,
+        "contact_email": "info@libertysolutions104.com",
+        "notes": "Specializes in general freight hauling with primary equipment using reefer, tanker. Known for reliable shipping routes across West Coast, Southwest, Northeast."
+    },
+    {
+        "carrier_name": "Crossroads Trucking #105",
+        "dot_number": "1793595",
+        "mc_number": "681210",
+        "hq_state": "CA",
+        "service_regions": [
+            "Mountain",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "machinery",
+            "retail goods"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 16,
+        "contact_email": "info@crossroadstrucking105.com",
+        "notes": "Specializes in machinery, retail goods hauling with primary equipment using LTL. Known for reliable shipping routes across Mountain, Midwest."
+    },
+    {
+        "carrier_name": "Falcon Carriers #106",
+        "dot_number": "4951807",
+        "mc_number": "748150",
+        "hq_state": "CA",
+        "service_regions": [
+            "Southwest"
+        ],
+        "equipment_types": [
+            "intermodal",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "oversized loads"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 14,
+        "contact_email": "info@falconcarriers106.com",
+        "notes": "Specializes in oversized loads hauling with primary equipment using intermodal, LTL. Known for reliable shipping routes across Southwest."
+    },
+    {
+        "carrier_name": "Summit Haulers #107",
+        "dot_number": "1333495",
+        "mc_number": "820631",
+        "hq_state": "MI",
+        "service_regions": [
+            "Southwest"
+        ],
+        "equipment_types": [
+            "reefer",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "automotive parts"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 19,
+        "contact_email": "info@summithaulers107.com",
+        "notes": "Specializes in automotive parts hauling with primary equipment using reefer, tanker. Known for reliable shipping routes across Southwest."
+    },
+    {
+        "carrier_name": "Canyon Freight 61 #108",
+        "dot_number": "2920108",
+        "mc_number": "135609",
+        "hq_state": "PA",
+        "service_regions": [
+            "West Coast",
+            "Southwest",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "dry van",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "machinery"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 10,
+        "contact_email": "info@canyonfreight61108.com",
+        "notes": "Specializes in machinery hauling with primary equipment using dry van, tanker. Known for reliable shipping routes across West Coast, Southwest, Mountain."
+    },
+    {
+        "carrier_name": "Summit Transport 35 #109",
+        "dot_number": "2382570",
+        "mc_number": "221036",
+        "hq_state": "AL",
+        "service_regions": [
+            "West Coast",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "dry van"
+        ],
+        "cargo_specializations": [
+            "machinery"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 4,
+        "contact_email": "info@summittransport35109.com",
+        "notes": "Specializes in machinery hauling with primary equipment using dry van. Known for reliable shipping routes across West Coast, Midwest."
+    },
+    {
+        "carrier_name": "Express Lines 13 #110",
+        "dot_number": "8564242",
+        "mc_number": "258559",
+        "hq_state": "AZ",
+        "service_regions": [
+            "Southeast"
+        ],
+        "equipment_types": [
+            "dry van",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "retail goods"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 4,
+        "contact_email": "info@expresslines13110.com",
+        "notes": "Specializes in retail goods hauling with primary equipment using dry van, LTL. Known for reliable shipping routes across Southeast."
+    },
+    {
+        "carrier_name": "Crossroads Freight #111",
+        "dot_number": "5853250",
+        "mc_number": "483596",
+        "hq_state": "SC",
+        "service_regions": [
+            "Midwest"
+        ],
+        "equipment_types": [
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "machinery",
+            "general freight"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 22,
+        "contact_email": "info@crossroadsfreight111.com",
+        "notes": "Specializes in machinery, general freight hauling with primary equipment using tanker. Known for reliable shipping routes across Midwest."
+    },
+    {
+        "carrier_name": "Red Line Systems #112",
+        "dot_number": "8406259",
+        "mc_number": "202285",
+        "hq_state": "GA",
+        "service_regions": [
+            "West Coast",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "intermodal",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "automotive parts",
+            "general freight"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 9,
+        "contact_email": "info@redlinesystems112.com",
+        "notes": "Specializes in automotive parts, general freight hauling with primary equipment using intermodal, tanker. Known for reliable shipping routes across West Coast, Mountain."
+    },
+    {
+        "carrier_name": "Pioneer Trucking 46 #113",
+        "dot_number": "8804826",
+        "mc_number": "249135",
+        "hq_state": "MI",
+        "service_regions": [
+            "Mountain"
+        ],
+        "equipment_types": [
+            "tanker",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "oversized loads"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 10,
+        "contact_email": "info@pioneertrucking46113.com",
+        "notes": "Specializes in oversized loads hauling with primary equipment using tanker, flatbed. Known for reliable shipping routes across Mountain."
+    },
+    {
+        "carrier_name": "Titan Systems #114",
+        "dot_number": "9088677",
+        "mc_number": "201204",
+        "hq_state": "FL",
+        "service_regions": [
+            "Pacific Northwest",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "reefer",
+            "dry van"
+        ],
+        "cargo_specializations": [
+            "fresh produce"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 18,
+        "contact_email": "info@titansystems114.com",
+        "notes": "Specializes in fresh produce hauling with primary equipment using reefer, dry van. Known for reliable shipping routes across Pacific Northwest, Mountain."
+    },
+    {
+        "carrier_name": "Blue Ribbon Transport 62 #115",
+        "dot_number": "3278644",
+        "mc_number": "796437",
+        "hq_state": "MO",
+        "service_regions": [
+            "Northeast",
+            "Southwest",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "intermodal",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "automotive parts"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 7,
+        "contact_email": "info@blueribbontransport62115.com",
+        "notes": "Specializes in automotive parts hauling with primary equipment using intermodal, tanker. Known for reliable shipping routes across Northeast, Southwest, Midwest."
+    },
+    {
+        "carrier_name": "Red Line Trucking 69 #116",
+        "dot_number": "7994650",
+        "mc_number": "976314",
+        "hq_state": "TX",
+        "service_regions": [
+            "West Coast",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "dry van",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "oversized loads"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 19,
+        "contact_email": "info@redlinetrucking69116.com",
+        "notes": "Specializes in oversized loads hauling with primary equipment using dry van, tanker. Known for reliable shipping routes across West Coast, Southeast."
+    },
+    {
+        "carrier_name": "Ironclad Lines #117",
+        "dot_number": "3397267",
+        "mc_number": "608226",
+        "hq_state": "TX",
+        "service_regions": [
+            "Pacific Northwest",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "general freight",
+            "hazardous materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 23,
+        "contact_email": "info@ironcladlines117.com",
+        "notes": "Specializes in general freight, hazardous materials hauling with primary equipment using intermodal. Known for reliable shipping routes across Pacific Northwest, Southeast."
+    },
+    {
+        "carrier_name": "Pioneer Carriers #118",
+        "dot_number": "3962883",
+        "mc_number": "474354",
+        "hq_state": "GA",
+        "service_regions": [
+            "West Coast"
+        ],
+        "equipment_types": [
+            "flatbed",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals",
+            "oversized loads"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 10,
+        "contact_email": "info@pioneercarriers118.com",
+        "notes": "Specializes in pharmaceuticals, oversized loads hauling with primary equipment using flatbed, LTL. Known for reliable shipping routes across West Coast."
+    },
+    {
+        "carrier_name": "Pioneer Lines #119",
+        "dot_number": "2136867",
+        "mc_number": "731557",
+        "hq_state": "CO",
+        "service_regions": [
+            "Pacific Northwest",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "hazardous materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 18,
+        "contact_email": "info@pioneerlines119.com",
+        "notes": "Specializes in hazardous materials hauling with primary equipment using flatbed. Known for reliable shipping routes across Pacific Northwest, Southeast."
+    },
+    {
+        "carrier_name": "Swift Carriers #120",
+        "dot_number": "3780770",
+        "mc_number": "379872",
+        "hq_state": "FL",
+        "service_regions": [
+            "Pacific Northwest"
+        ],
+        "equipment_types": [
+            "reefer",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals",
+            "fresh produce"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 17,
+        "contact_email": "info@swiftcarriers120.com",
+        "notes": "Specializes in pharmaceuticals, fresh produce hauling with primary equipment using reefer, flatbed. Known for reliable shipping routes across Pacific Northwest."
+    },
+    {
+        "carrier_name": "Echo Express 96 #121",
+        "dot_number": "3952690",
+        "mc_number": "440754",
+        "hq_state": "NY",
+        "service_regions": [
+            "West Coast",
+            "Mountain",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "dry van",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "automotive parts",
+            "machinery"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 8,
+        "contact_email": "info@echoexpress96121.com",
+        "notes": "Specializes in automotive parts, machinery hauling with primary equipment using dry van, LTL. Known for reliable shipping routes across West Coast, Mountain, Midwest."
+    },
+    {
+        "carrier_name": "Titan Lines #122",
+        "dot_number": "6866554",
+        "mc_number": "119504",
+        "hq_state": "IL",
+        "service_regions": [
+            "Southeast"
+        ],
+        "equipment_types": [
+            "intermodal",
+            "tanker",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "automotive parts",
+            "machinery"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 9,
+        "contact_email": "info@titanlines122.com",
+        "notes": "Specializes in automotive parts, machinery hauling with primary equipment using intermodal, tanker, LTL. Known for reliable shipping routes across Southeast."
+    },
+    {
+        "carrier_name": "Golden Gate Lines 24 #123",
+        "dot_number": "8123334",
+        "mc_number": "163170",
+        "hq_state": "NY",
+        "service_regions": [
+            "Southwest"
+        ],
+        "equipment_types": [
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "oversized loads"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 11,
+        "contact_email": "info@goldengatelines24123.com",
+        "notes": "Specializes in oversized loads hauling with primary equipment using intermodal. Known for reliable shipping routes across Southwest."
+    },
+    {
+        "carrier_name": "Falcon Haulers #124",
+        "dot_number": "3086769",
+        "mc_number": "582020",
+        "hq_state": "NY",
+        "service_regions": [
+            "Southwest"
+        ],
+        "equipment_types": [
+            "dry van",
+            "intermodal",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "retail goods"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 4,
+        "contact_email": "info@falconhaulers124.com",
+        "notes": "Specializes in retail goods hauling with primary equipment using dry van, intermodal, LTL. Known for reliable shipping routes across Southwest."
+    },
+    {
+        "carrier_name": "Interstate Lines #125",
+        "dot_number": "8146428",
+        "mc_number": "327681",
+        "hq_state": "SC",
+        "service_regions": [
+            "Midwest",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "hazardous materials",
+            "building materials"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 9,
+        "contact_email": "info@interstatelines125.com",
+        "notes": "Specializes in hazardous materials, building materials hauling with primary equipment using intermodal. Known for reliable shipping routes across Midwest, Northeast."
+    },
+    {
+        "carrier_name": "Canyon Haulers #126",
+        "dot_number": "7076311",
+        "mc_number": "446207",
+        "hq_state": "WI",
+        "service_regions": [
+            "West Coast",
+            "Pacific Northwest",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals",
+            "building materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 16,
+        "contact_email": "info@canyonhaulers126.com",
+        "notes": "Specializes in pharmaceuticals, building materials hauling with primary equipment using tanker. Known for reliable shipping routes across West Coast, Pacific Northwest, Southeast."
+    },
+    {
+        "carrier_name": "Pioneer Haulers 74 #127",
+        "dot_number": "7084239",
+        "mc_number": "389693",
+        "hq_state": "MO",
+        "service_regions": [
+            "Southwest",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "oversized loads",
+            "hazardous materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 20,
+        "contact_email": "info@pioneerhaulers74127.com",
+        "notes": "Specializes in oversized loads, hazardous materials hauling with primary equipment using intermodal. Known for reliable shipping routes across Southwest, Mountain."
+    },
+    {
+        "carrier_name": "Express Express #128",
+        "dot_number": "2736714",
+        "mc_number": "339731",
+        "hq_state": "IL",
+        "service_regions": [
+            "Southwest",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "dry van"
+        ],
+        "cargo_specializations": [
+            "retail goods"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 11,
+        "contact_email": "info@expressexpress128.com",
+        "notes": "Specializes in retail goods hauling with primary equipment using dry van. Known for reliable shipping routes across Southwest, Northeast."
+    },
+    {
+        "carrier_name": "Liberty Trucking #129",
+        "dot_number": "2534430",
+        "mc_number": "838785",
+        "hq_state": "IN",
+        "service_regions": [
+            "Southeast",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "electronics",
+            "general freight"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 19,
+        "contact_email": "info@libertytrucking129.com",
+        "notes": "Specializes in electronics, general freight hauling with primary equipment using tanker. Known for reliable shipping routes across Southeast, Midwest."
+    },
+    {
+        "carrier_name": "Summit Logistics #130",
+        "dot_number": "5445674",
+        "mc_number": "191926",
+        "hq_state": "AL",
+        "service_regions": [
+            "Midwest"
+        ],
+        "equipment_types": [
+            "LTL",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "oversized loads",
+            "machinery"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 12,
+        "contact_email": "info@summitlogistics130.com",
+        "notes": "Specializes in oversized loads, machinery hauling with primary equipment using LTL, flatbed. Known for reliable shipping routes across Midwest."
+    },
+    {
+        "carrier_name": "Express Trucking 60 #131",
+        "dot_number": "5619539",
+        "mc_number": "882184",
+        "hq_state": "AL",
+        "service_regions": [
+            "West Coast",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 23,
+        "contact_email": "info@expresstrucking60131.com",
+        "notes": "Specializes in pharmaceuticals hauling with primary equipment using intermodal. Known for reliable shipping routes across West Coast, Southeast."
+    },
+    {
+        "carrier_name": "Golden Gate Haulers #132",
+        "dot_number": "7516467",
+        "mc_number": "575920",
+        "hq_state": "CA",
+        "service_regions": [
+            "Southwest",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 24,
+        "contact_email": "info@goldengatehaulers132.com",
+        "notes": "Specializes in pharmaceuticals hauling with primary equipment using flatbed. Known for reliable shipping routes across Southwest, Mountain."
+    },
+    {
+        "carrier_name": "Canyon Solutions 65 #133",
+        "dot_number": "1352262",
+        "mc_number": "469397",
+        "hq_state": "TX",
+        "service_regions": [
+            "Southeast"
+        ],
+        "equipment_types": [
+            "intermodal",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "automotive parts",
+            "fresh produce"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 6,
+        "contact_email": "info@canyonsolutions65133.com",
+        "notes": "Specializes in automotive parts, fresh produce hauling with primary equipment using intermodal, tanker. Known for reliable shipping routes across Southeast."
+    },
+    {
+        "carrier_name": "Titan Lines #134",
+        "dot_number": "2509596",
+        "mc_number": "581743",
+        "hq_state": "NY",
+        "service_regions": [
+            "Mountain"
+        ],
+        "equipment_types": [
+            "tanker",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "machinery",
+            "general freight"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 10,
+        "contact_email": "info@titanlines134.com",
+        "notes": "Specializes in machinery, general freight hauling with primary equipment using tanker, LTL. Known for reliable shipping routes across Mountain."
+    },
+    {
+        "carrier_name": "Pioneer Carriers #135",
+        "dot_number": "2404512",
+        "mc_number": "510801",
+        "hq_state": "NC",
+        "service_regions": [
+            "Southwest",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "dry van",
+            "tanker",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "fresh produce"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 20,
+        "contact_email": "info@pioneercarriers135.com",
+        "notes": "Specializes in fresh produce hauling with primary equipment using dry van, tanker, LTL. Known for reliable shipping routes across Southwest, Midwest."
+    },
+    {
+        "carrier_name": "Swift Haulers #136",
+        "dot_number": "6831238",
+        "mc_number": "522172",
+        "hq_state": "IL",
+        "service_regions": [
+            "Midwest"
+        ],
+        "equipment_types": [
+            "reefer",
+            "dry van",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "oversized loads"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 22,
+        "contact_email": "info@swifthaulers136.com",
+        "notes": "Specializes in oversized loads hauling with primary equipment using reefer, dry van, flatbed. Known for reliable shipping routes across Midwest."
+    },
+    {
+        "carrier_name": "Titan Solutions #137",
+        "dot_number": "7682707",
+        "mc_number": "977418",
+        "hq_state": "CA",
+        "service_regions": [
+            "Mountain",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "flatbed",
+            "intermodal",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "automotive parts",
+            "general freight"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 7,
+        "contact_email": "info@titansolutions137.com",
+        "notes": "Specializes in automotive parts, general freight hauling with primary equipment using flatbed, intermodal, LTL. Known for reliable shipping routes across Mountain, Northeast."
+    },
+    {
+        "carrier_name": "Interstate Haulers #138",
+        "dot_number": "2868653",
+        "mc_number": "971607",
+        "hq_state": "AZ",
+        "service_regions": [
+            "Southwest",
+            "Pacific Northwest",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "LTL",
+            "intermodal",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "general freight"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 13,
+        "contact_email": "info@interstatehaulers138.com",
+        "notes": "Specializes in general freight hauling with primary equipment using LTL, intermodal, flatbed. Known for reliable shipping routes across Southwest, Pacific Northwest, Mountain."
+    },
+    {
+        "carrier_name": "Canyon Lines #139",
+        "dot_number": "2455975",
+        "mc_number": "461737",
+        "hq_state": "PA",
+        "service_regions": [
+            "West Coast",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "general freight",
+            "building materials"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 21,
+        "contact_email": "info@canyonlines139.com",
+        "notes": "Specializes in general freight, building materials hauling with primary equipment using reefer, intermodal. Known for reliable shipping routes across West Coast, Southeast."
+    },
+    {
+        "carrier_name": "Crossroads Trucking #140",
+        "dot_number": "9408373",
+        "mc_number": "125931",
+        "hq_state": "CO",
+        "service_regions": [
+            "Southeast",
+            "Mountain",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "reefer"
+        ],
+        "cargo_specializations": [
+            "building materials",
+            "hazardous materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 18,
+        "contact_email": "info@crossroadstrucking140.com",
+        "notes": "Specializes in building materials, hazardous materials hauling with primary equipment using reefer. Known for reliable shipping routes across Southeast, Mountain, Northeast."
+    },
+    {
+        "carrier_name": "NextGen Trucking #141",
+        "dot_number": "6643978",
+        "mc_number": "971973",
+        "hq_state": "OR",
+        "service_regions": [
+            "Midwest"
+        ],
+        "equipment_types": [
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "fresh produce"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 22,
+        "contact_email": "info@nextgentrucking141.com",
+        "notes": "Specializes in fresh produce hauling with primary equipment using tanker. Known for reliable shipping routes across Midwest."
+    },
+    {
+        "carrier_name": "Voyager Freight #142",
+        "dot_number": "2403557",
+        "mc_number": "234039",
+        "hq_state": "FL",
+        "service_regions": [
+            "Southwest",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "dry van"
+        ],
+        "cargo_specializations": [
+            "retail goods"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 7,
+        "contact_email": "info@voyagerfreight142.com",
+        "notes": "Specializes in retail goods hauling with primary equipment using dry van. Known for reliable shipping routes across Southwest, Southeast."
+    },
+    {
+        "carrier_name": "Swift Freight 80 #143",
+        "dot_number": "5942938",
+        "mc_number": "379703",
+        "hq_state": "OH",
+        "service_regions": [
+            "Pacific Northwest",
+            "Midwest",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "oversized loads",
+            "hazardous materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 4,
+        "contact_email": "info@swiftfreight80143.com",
+        "notes": "Specializes in oversized loads, hazardous materials hauling with primary equipment using LTL. Known for reliable shipping routes across Pacific Northwest, Midwest, Northeast."
+    },
+    {
+        "carrier_name": "Voyager Haulers 82 #144",
+        "dot_number": "9458284",
+        "mc_number": "595050",
+        "hq_state": "GA",
+        "service_regions": [
+            "West Coast",
+            "Southwest",
+            "Pacific Northwest"
+        ],
+        "equipment_types": [
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "machinery",
+            "hazardous materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 9,
+        "contact_email": "info@voyagerhaulers82144.com",
+        "notes": "Specializes in machinery, hazardous materials hauling with primary equipment using flatbed. Known for reliable shipping routes across West Coast, Southwest, Pacific Northwest."
+    },
+    {
+        "carrier_name": "Falcon Logistics 56 #145",
+        "dot_number": "6025259",
+        "mc_number": "695268",
+        "hq_state": "SC",
+        "service_regions": [
+            "Southeast"
+        ],
+        "equipment_types": [
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "electronics"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 15,
+        "contact_email": "info@falconlogistics56145.com",
+        "notes": "Specializes in electronics hauling with primary equipment using tanker. Known for reliable shipping routes across Southeast."
+    },
+    {
+        "carrier_name": "Canyon Logistics 44 #146",
+        "dot_number": "4031746",
+        "mc_number": "577359",
+        "hq_state": "GA",
+        "service_regions": [
+            "West Coast",
+            "Southwest",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "reefer",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals",
+            "oversized loads"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 22,
+        "contact_email": "info@canyonlogistics44146.com",
+        "notes": "Specializes in pharmaceuticals, oversized loads hauling with primary equipment using reefer, LTL. Known for reliable shipping routes across West Coast, Southwest, Mountain."
+    },
+    {
+        "carrier_name": "Voyager Lines 38 #147",
+        "dot_number": "4236344",
+        "mc_number": "135291",
+        "hq_state": "TX",
+        "service_regions": [
+            "Midwest"
+        ],
+        "equipment_types": [
+            "reefer",
+            "dry van",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "hazardous materials"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 22,
+        "contact_email": "info@voyagerlines38147.com",
+        "notes": "Specializes in hazardous materials hauling with primary equipment using reefer, dry van, tanker. Known for reliable shipping routes across Midwest."
+    },
+    {
+        "carrier_name": "Golden Gate Transport 74 #148",
+        "dot_number": "1165310",
+        "mc_number": "172856",
+        "hq_state": "TN",
+        "service_regions": [
+            "West Coast",
+            "Southwest"
+        ],
+        "equipment_types": [
+            "tanker",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "retail goods"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 7,
+        "contact_email": "info@goldengatetransport74148.com",
+        "notes": "Specializes in retail goods hauling with primary equipment using tanker, LTL. Known for reliable shipping routes across West Coast, Southwest."
+    },
+    {
+        "carrier_name": "Voyager Logistics #149",
+        "dot_number": "7575702",
+        "mc_number": "800634",
+        "hq_state": "KY",
+        "service_regions": [
+            "West Coast",
+            "Southwest",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "automotive parts"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 9,
+        "contact_email": "info@voyagerlogistics149.com",
+        "notes": "Specializes in automotive parts hauling with primary equipment using intermodal. Known for reliable shipping routes across West Coast, Southwest, Midwest."
+    },
+    {
+        "carrier_name": "Liberty Trucking 45 #150",
+        "dot_number": "4900713",
+        "mc_number": "634908",
+        "hq_state": "NY",
+        "service_regions": [
+            "West Coast",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "flatbed",
+            "dry van",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "machinery",
+            "oversized loads"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 16,
+        "contact_email": "info@libertytrucking45150.com",
+        "notes": "Specializes in machinery, oversized loads hauling with primary equipment using flatbed, dry van, LTL. Known for reliable shipping routes across West Coast, Mountain."
+    },
+    {
+        "carrier_name": "Crossroads Freight 77 #151",
+        "dot_number": "4814036",
+        "mc_number": "206267",
+        "hq_state": "MO",
+        "service_regions": [
+            "Mountain"
+        ],
+        "equipment_types": [
+            "dry van",
+            "tanker",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals",
+            "fresh produce"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 24,
+        "contact_email": "info@crossroadsfreight77151.com",
+        "notes": "Specializes in pharmaceuticals, fresh produce hauling with primary equipment using dry van, tanker, flatbed. Known for reliable shipping routes across Mountain."
+    },
+    {
+        "carrier_name": "FreightRunner Express #152",
+        "dot_number": "9025071",
+        "mc_number": "873310",
+        "hq_state": "WI",
+        "service_regions": [
+            "West Coast",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "tanker",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "retail goods"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 12,
+        "contact_email": "info@freightrunnerexpress152.com",
+        "notes": "Specializes in retail goods hauling with primary equipment using reefer, tanker, LTL. Known for reliable shipping routes across West Coast, Northeast."
+    },
+    {
+        "carrier_name": "Express Solutions 59 #153",
+        "dot_number": "5349185",
+        "mc_number": "737122",
+        "hq_state": "AL",
+        "service_regions": [
+            "Southwest",
+            "Southeast",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "electronics"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 8,
+        "contact_email": "info@expresssolutions59153.com",
+        "notes": "Specializes in electronics hauling with primary equipment using intermodal. Known for reliable shipping routes across Southwest, Southeast, Midwest."
+    },
+    {
+        "carrier_name": "Red Line Express #154",
+        "dot_number": "9584930",
+        "mc_number": "217341",
+        "hq_state": "SC",
+        "service_regions": [
+            "Pacific Northwest",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "dry van",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "building materials"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 18,
+        "contact_email": "info@redlineexpress154.com",
+        "notes": "Specializes in building materials hauling with primary equipment using dry van, LTL. Known for reliable shipping routes across Pacific Northwest, Mountain."
+    },
+    {
+        "carrier_name": "Ironclad Transport 97 #155",
+        "dot_number": "5355981",
+        "mc_number": "912136",
+        "hq_state": "FL",
+        "service_regions": [
+            "Southeast"
+        ],
+        "equipment_types": [
+            "dry van",
+            "intermodal",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "fresh produce"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 12,
+        "contact_email": "info@ironcladtransport97155.com",
+        "notes": "Specializes in fresh produce hauling with primary equipment using dry van, intermodal, flatbed. Known for reliable shipping routes across Southeast."
+    },
+    {
+        "carrier_name": "FreightRunner Lines #156",
+        "dot_number": "3648305",
+        "mc_number": "923376",
+        "hq_state": "AL",
+        "service_regions": [
+            "Pacific Northwest",
+            "Mountain",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "dry van"
+        ],
+        "cargo_specializations": [
+            "electronics"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 6,
+        "contact_email": "info@freightrunnerlines156.com",
+        "notes": "Specializes in electronics hauling with primary equipment using dry van. Known for reliable shipping routes across Pacific Northwest, Mountain, Midwest."
+    },
+    {
+        "carrier_name": "NextGen Lines #157",
+        "dot_number": "9380663",
+        "mc_number": "163959",
+        "hq_state": "SC",
+        "service_regions": [
+            "Southeast",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "general freight"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 19,
+        "contact_email": "info@nextgenlines157.com",
+        "notes": "Specializes in general freight hauling with primary equipment using intermodal. Known for reliable shipping routes across Southeast, Midwest."
+    },
+    {
+        "carrier_name": "Crossroads Express #158",
+        "dot_number": "9671957",
+        "mc_number": "396580",
+        "hq_state": "PA",
+        "service_regions": [
+            "West Coast"
+        ],
+        "equipment_types": [
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "retail goods"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 22,
+        "contact_email": "info@crossroadsexpress158.com",
+        "notes": "Specializes in retail goods hauling with primary equipment using tanker. Known for reliable shipping routes across West Coast."
+    },
+    {
+        "carrier_name": "Summit Lines #159",
+        "dot_number": "8456701",
+        "mc_number": "431323",
+        "hq_state": "MO",
+        "service_regions": [
+            "Pacific Northwest"
+        ],
+        "equipment_types": [
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "hazardous materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 6,
+        "contact_email": "info@summitlines159.com",
+        "notes": "Specializes in hazardous materials hauling with primary equipment using flatbed. Known for reliable shipping routes across Pacific Northwest."
+    },
+    {
+        "carrier_name": "Golden Gate Transport 13 #160",
+        "dot_number": "3497405",
+        "mc_number": "357333",
+        "hq_state": "KY",
+        "service_regions": [
+            "West Coast",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "dry van",
+            "intermodal",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "automotive parts"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 15,
+        "contact_email": "info@goldengatetransport13160.com",
+        "notes": "Specializes in automotive parts hauling with primary equipment using dry van, intermodal, LTL. Known for reliable shipping routes across West Coast, Northeast."
+    },
+    {
+        "carrier_name": "Blue Ribbon Lines 45 #161",
+        "dot_number": "5148012",
+        "mc_number": "729322",
+        "hq_state": "NY",
+        "service_regions": [
+            "West Coast",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "intermodal",
+            "tanker",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "electronics"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 13,
+        "contact_email": "info@blueribbonlines45161.com",
+        "notes": "Specializes in electronics hauling with primary equipment using intermodal, tanker, LTL. Known for reliable shipping routes across West Coast, Midwest."
+    },
+    {
+        "carrier_name": "Titan Trucking 45 #162",
+        "dot_number": "3079512",
+        "mc_number": "166695",
+        "hq_state": "MO",
+        "service_regions": [
+            "West Coast",
+            "Pacific Northwest"
+        ],
+        "equipment_types": [
+            "reefer"
+        ],
+        "cargo_specializations": [
+            "oversized loads",
+            "retail goods"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 20,
+        "contact_email": "info@titantrucking45162.com",
+        "notes": "Specializes in oversized loads, retail goods hauling with primary equipment using reefer. Known for reliable shipping routes across West Coast, Pacific Northwest."
+    },
+    {
+        "carrier_name": "FreightRunner Solutions #163",
+        "dot_number": "9364038",
+        "mc_number": "530706",
+        "hq_state": "FL",
+        "service_regions": [
+            "Pacific Northwest",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "tanker",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "hazardous materials"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 22,
+        "contact_email": "info@freightrunnersolutions163.com",
+        "notes": "Specializes in hazardous materials hauling with primary equipment using tanker, LTL. Known for reliable shipping routes across Pacific Northwest, Mountain."
+    },
+    {
+        "carrier_name": "Blue Ribbon Transport 23 #164",
+        "dot_number": "4626238",
+        "mc_number": "582736",
+        "hq_state": "SC",
+        "service_regions": [
+            "West Coast",
+            "Southeast",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "reefer",
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "general freight",
+            "retail goods"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 10,
+        "contact_email": "info@blueribbontransport23164.com",
+        "notes": "Specializes in general freight, retail goods hauling with primary equipment using reefer, intermodal. Known for reliable shipping routes across West Coast, Southeast, Midwest."
+    },
+    {
+        "carrier_name": "Pioneer Systems #165",
+        "dot_number": "1239310",
+        "mc_number": "229835",
+        "hq_state": "OH",
+        "service_regions": [
+            "Southeast",
+            "Mountain",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "dry van",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "hazardous materials"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 19,
+        "contact_email": "info@pioneersystems165.com",
+        "notes": "Specializes in hazardous materials hauling with primary equipment using reefer, dry van, LTL. Known for reliable shipping routes across Southeast, Mountain, Northeast."
+    },
+    {
+        "carrier_name": "Blue Ribbon Systems #166",
+        "dot_number": "6510095",
+        "mc_number": "140079",
+        "hq_state": "SC",
+        "service_regions": [
+            "Southwest"
+        ],
+        "equipment_types": [
+            "dry van",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "hazardous materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 25,
+        "contact_email": "info@blueribbonsystems166.com",
+        "notes": "Specializes in hazardous materials hauling with primary equipment using dry van, tanker. Known for reliable shipping routes across Southwest."
+    },
+    {
+        "carrier_name": "Crossroads Trucking 78 #167",
+        "dot_number": "6415655",
+        "mc_number": "271456",
+        "hq_state": "OR",
+        "service_regions": [
+            "Southeast"
+        ],
+        "equipment_types": [
+            "dry van"
+        ],
+        "cargo_specializations": [
+            "general freight"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 4,
+        "contact_email": "info@crossroadstrucking78167.com",
+        "notes": "Specializes in general freight hauling with primary equipment using dry van. Known for reliable shipping routes across Southeast."
+    },
+    {
+        "carrier_name": "Apex Express 35 #168",
+        "dot_number": "7820072",
+        "mc_number": "516715",
+        "hq_state": "GA",
+        "service_regions": [
+            "Southwest"
+        ],
+        "equipment_types": [
+            "dry van",
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "oversized loads"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 17,
+        "contact_email": "info@apexexpress35168.com",
+        "notes": "Specializes in oversized loads hauling with primary equipment using dry van, intermodal. Known for reliable shipping routes across Southwest."
+    },
+    {
+        "carrier_name": "Blue Ribbon Solutions 82 #169",
+        "dot_number": "2218462",
+        "mc_number": "385612",
+        "hq_state": "CO",
+        "service_regions": [
+            "Mountain"
+        ],
+        "equipment_types": [
+            "reefer",
+            "dry van",
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "electronics",
+            "fresh produce"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 19,
+        "contact_email": "info@blueribbonsolutions82169.com",
+        "notes": "Specializes in electronics, fresh produce hauling with primary equipment using reefer, dry van, intermodal. Known for reliable shipping routes across Mountain."
+    },
+    {
+        "carrier_name": "Liberty Haulers #170",
+        "dot_number": "3464047",
+        "mc_number": "712044",
+        "hq_state": "NC",
+        "service_regions": [
+            "West Coast"
+        ],
+        "equipment_types": [
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "general freight",
+            "fresh produce"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 2,
+        "contact_email": "info@libertyhaulers170.com",
+        "notes": "Specializes in general freight, fresh produce hauling with primary equipment using tanker. Known for reliable shipping routes across West Coast."
+    },
+    {
+        "carrier_name": "Titan Express 26 #171",
+        "dot_number": "4229049",
+        "mc_number": "481371",
+        "hq_state": "NC",
+        "service_regions": [
+            "Southwest",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "electronics",
+            "fresh produce"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 18,
+        "contact_email": "info@titanexpress26171.com",
+        "notes": "Specializes in electronics, fresh produce hauling with primary equipment using reefer, LTL. Known for reliable shipping routes across Southwest, Northeast."
+    },
+    {
+        "carrier_name": "Golden Gate Freight 27 #172",
+        "dot_number": "3604972",
+        "mc_number": "797499",
+        "hq_state": "IN",
+        "service_regions": [
+            "Southwest",
+            "Pacific Northwest",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "oversized loads",
+            "machinery"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 24,
+        "contact_email": "info@goldengatefreight27172.com",
+        "notes": "Specializes in oversized loads, machinery hauling with primary equipment using tanker. Known for reliable shipping routes across Southwest, Pacific Northwest, Midwest."
+    },
+    {
+        "carrier_name": "Blue Ribbon Systems 40 #173",
+        "dot_number": "6685313",
+        "mc_number": "378842",
+        "hq_state": "OH",
+        "service_regions": [
+            "Southwest",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "dry van",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "general freight"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 20,
+        "contact_email": "info@blueribbonsystems40173.com",
+        "notes": "Specializes in general freight hauling with primary equipment using reefer, dry van, flatbed. Known for reliable shipping routes across Southwest, Southeast."
+    },
+    {
+        "carrier_name": "Swift Express #174",
+        "dot_number": "8763493",
+        "mc_number": "196173",
+        "hq_state": "NY",
+        "service_regions": [
+            "Southwest",
+            "Pacific Northwest",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "tanker",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 6,
+        "contact_email": "info@swiftexpress174.com",
+        "notes": "Specializes in pharmaceuticals hauling with primary equipment using tanker, flatbed. Known for reliable shipping routes across Southwest, Pacific Northwest, Mountain."
+    },
+    {
+        "carrier_name": "Red Line Transport #175",
+        "dot_number": "9556647",
+        "mc_number": "498459",
+        "hq_state": "WI",
+        "service_regions": [
+            "Southwest",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "reefer"
+        ],
+        "cargo_specializations": [
+            "oversized loads",
+            "building materials"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 14,
+        "contact_email": "info@redlinetransport175.com",
+        "notes": "Specializes in oversized loads, building materials hauling with primary equipment using reefer. Known for reliable shipping routes across Southwest, Southeast."
+    },
+    {
+        "carrier_name": "Ironclad Transport 29 #176",
+        "dot_number": "7359156",
+        "mc_number": "190676",
+        "hq_state": "IN",
+        "service_regions": [
+            "Southeast"
+        ],
+        "equipment_types": [
+            "flatbed",
+            "reefer",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "retail goods"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 3,
+        "contact_email": "info@ironcladtransport29176.com",
+        "notes": "Specializes in retail goods hauling with primary equipment using flatbed, reefer, LTL. Known for reliable shipping routes across Southeast."
+    },
+    {
+        "carrier_name": "Crossroads Logistics #177",
+        "dot_number": "2027331",
+        "mc_number": "397918",
+        "hq_state": "NC",
+        "service_regions": [
+            "Southwest",
+            "Mountain",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "reefer",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "machinery"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 6,
+        "contact_email": "info@crossroadslogistics177.com",
+        "notes": "Specializes in machinery hauling with primary equipment using reefer, tanker. Known for reliable shipping routes across Southwest, Mountain, Midwest."
+    },
+    {
+        "carrier_name": "Golden Gate Trucking #178",
+        "dot_number": "5318163",
+        "mc_number": "572679",
+        "hq_state": "WI",
+        "service_regions": [
+            "Northeast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "electronics"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 16,
+        "contact_email": "info@goldengatetrucking178.com",
+        "notes": "Specializes in electronics hauling with primary equipment using reefer, intermodal. Known for reliable shipping routes across Northeast."
+    },
+    {
+        "carrier_name": "Interstate Trucking 39 #179",
+        "dot_number": "2258546",
+        "mc_number": "274600",
+        "hq_state": "TX",
+        "service_regions": [
+            "Southwest",
+            "Pacific Northwest"
+        ],
+        "equipment_types": [
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "fresh produce",
+            "retail goods"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 4,
+        "contact_email": "info@interstatetrucking39179.com",
+        "notes": "Specializes in fresh produce, retail goods hauling with primary equipment using flatbed. Known for reliable shipping routes across Southwest, Pacific Northwest."
+    },
+    {
+        "carrier_name": "Canyon Carriers #180",
+        "dot_number": "1069526",
+        "mc_number": "375334",
+        "hq_state": "AZ",
+        "service_regions": [
+            "Pacific Northwest",
+            "Southeast",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "fresh produce"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 18,
+        "contact_email": "info@canyoncarriers180.com",
+        "notes": "Specializes in fresh produce hauling with primary equipment using LTL. Known for reliable shipping routes across Pacific Northwest, Southeast, Mountain."
+    },
+    {
+        "carrier_name": "Canyon Lines 15 #181",
+        "dot_number": "3150934",
+        "mc_number": "759247",
+        "hq_state": "SC",
+        "service_regions": [
+            "Pacific Northwest",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "dry van",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "automotive parts"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 14,
+        "contact_email": "info@canyonlines15181.com",
+        "notes": "Specializes in automotive parts hauling with primary equipment using dry van, LTL. Known for reliable shipping routes across Pacific Northwest, Midwest."
+    },
+    {
+        "carrier_name": "Red Line Express #182",
+        "dot_number": "8878024",
+        "mc_number": "124081",
+        "hq_state": "CA",
+        "service_regions": [
+            "Mountain"
+        ],
+        "equipment_types": [
+            "tanker",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "retail goods"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 25,
+        "contact_email": "info@redlineexpress182.com",
+        "notes": "Specializes in retail goods hauling with primary equipment using tanker, flatbed. Known for reliable shipping routes across Mountain."
+    },
+    {
+        "carrier_name": "Canyon Express #183",
+        "dot_number": "4718113",
+        "mc_number": "804654",
+        "hq_state": "CO",
+        "service_regions": [
+            "Southeast"
+        ],
+        "equipment_types": [
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "machinery",
+            "building materials"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 8,
+        "contact_email": "info@canyonexpress183.com",
+        "notes": "Specializes in machinery, building materials hauling with primary equipment using intermodal. Known for reliable shipping routes across Southeast."
+    },
+    {
+        "carrier_name": "Interstate Logistics #184",
+        "dot_number": "9334491",
+        "mc_number": "431708",
+        "hq_state": "IN",
+        "service_regions": [
+            "Mountain"
+        ],
+        "equipment_types": [
+            "reefer",
+            "dry van"
+        ],
+        "cargo_specializations": [
+            "electronics",
+            "automotive parts"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 4,
+        "contact_email": "info@interstatelogistics184.com",
+        "notes": "Specializes in electronics, automotive parts hauling with primary equipment using reefer, dry van. Known for reliable shipping routes across Mountain."
+    },
+    {
+        "carrier_name": "FreightRunner Lines 29 #185",
+        "dot_number": "9628857",
+        "mc_number": "259392",
+        "hq_state": "GA",
+        "service_regions": [
+            "Southeast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "electronics"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 12,
+        "contact_email": "info@freightrunnerlines29185.com",
+        "notes": "Specializes in electronics hauling with primary equipment using reefer, LTL. Known for reliable shipping routes across Southeast."
+    },
+    {
+        "carrier_name": "Canyon Transport #186",
+        "dot_number": "8789205",
+        "mc_number": "907379",
+        "hq_state": "TX",
+        "service_regions": [
+            "Pacific Northwest",
+            "Southeast",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "oversized loads",
+            "fresh produce"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 17,
+        "contact_email": "info@canyontransport186.com",
+        "notes": "Specializes in oversized loads, fresh produce hauling with primary equipment using reefer, flatbed. Known for reliable shipping routes across Pacific Northwest, Southeast, Northeast."
+    },
+    {
+        "carrier_name": "Apex Freight 26 #187",
+        "dot_number": "9400855",
+        "mc_number": "209753",
+        "hq_state": "NC",
+        "service_regions": [
+            "Mountain",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "reefer"
+        ],
+        "cargo_specializations": [
+            "automotive parts",
+            "oversized loads"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 13,
+        "contact_email": "info@apexfreight26187.com",
+        "notes": "Specializes in automotive parts, oversized loads hauling with primary equipment using reefer. Known for reliable shipping routes across Mountain, Midwest."
+    },
+    {
+        "carrier_name": "Canyon Lines 21 #188",
+        "dot_number": "5158292",
+        "mc_number": "847535",
+        "hq_state": "OR",
+        "service_regions": [
+            "Northeast"
+        ],
+        "equipment_types": [
+            "dry van",
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "electronics",
+            "hazardous materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 17,
+        "contact_email": "info@canyonlines21188.com",
+        "notes": "Specializes in electronics, hazardous materials hauling with primary equipment using dry van, intermodal. Known for reliable shipping routes across Northeast."
+    },
+    {
+        "carrier_name": "Canyon Logistics 14 #189",
+        "dot_number": "8410702",
+        "mc_number": "413160",
+        "hq_state": "AL",
+        "service_regions": [
+            "Pacific Northwest",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "dry van",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "electronics",
+            "retail goods"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 16,
+        "contact_email": "info@canyonlogistics14189.com",
+        "notes": "Specializes in electronics, retail goods hauling with primary equipment using dry van, LTL. Known for reliable shipping routes across Pacific Northwest, Midwest."
+    },
+    {
+        "carrier_name": "Pioneer Logistics 42 #190",
+        "dot_number": "2464657",
+        "mc_number": "299670",
+        "hq_state": "CO",
+        "service_regions": [
+            "West Coast",
+            "Mountain",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "dry van",
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "building materials"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 8,
+        "contact_email": "info@pioneerlogistics42190.com",
+        "notes": "Specializes in building materials hauling with primary equipment using dry van, intermodal. Known for reliable shipping routes across West Coast, Mountain, Northeast."
+    },
+    {
+        "carrier_name": "Atlas Freight 85 #191",
+        "dot_number": "8292516",
+        "mc_number": "839165",
+        "hq_state": "SC",
+        "service_regions": [
+            "Midwest"
+        ],
+        "equipment_types": [
+            "dry van",
+            "tanker",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 8,
+        "contact_email": "info@atlasfreight85191.com",
+        "notes": "Specializes in pharmaceuticals hauling with primary equipment using dry van, tanker, LTL. Known for reliable shipping routes across Midwest."
+    },
+    {
+        "carrier_name": "Atlas Solutions 39 #192",
+        "dot_number": "4350119",
+        "mc_number": "137735",
+        "hq_state": "IN",
+        "service_regions": [
+            "Southwest",
+            "Southeast",
+            "Pacific Northwest"
+        ],
+        "equipment_types": [
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "building materials",
+            "retail goods"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 19,
+        "contact_email": "info@atlassolutions39192.com",
+        "notes": "Specializes in building materials, retail goods hauling with primary equipment using intermodal. Known for reliable shipping routes across Southwest, Southeast, Pacific Northwest."
+    },
+    {
+        "carrier_name": "Red Line Carriers 94 #193",
+        "dot_number": "2455729",
+        "mc_number": "558459",
+        "hq_state": "MO",
+        "service_regions": [
+            "Pacific Northwest",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "hazardous materials",
+            "building materials"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 17,
+        "contact_email": "info@redlinecarriers94193.com",
+        "notes": "Specializes in hazardous materials, building materials hauling with primary equipment using intermodal. Known for reliable shipping routes across Pacific Northwest, Southeast."
+    },
+    {
+        "carrier_name": "Golden Gate Trucking #194",
+        "dot_number": "6494800",
+        "mc_number": "997494",
+        "hq_state": "OH",
+        "service_regions": [
+            "Southeast",
+            "Mountain",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "oversized loads",
+            "hazardous materials"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 2,
+        "contact_email": "info@goldengatetrucking194.com",
+        "notes": "Specializes in oversized loads, hazardous materials hauling with primary equipment using LTL. Known for reliable shipping routes across Southeast, Mountain, Northeast."
+    },
+    {
+        "carrier_name": "Red Line Lines 45 #195",
+        "dot_number": "6917869",
+        "mc_number": "679167",
+        "hq_state": "MO",
+        "service_regions": [
+            "Midwest",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "dry van"
+        ],
+        "cargo_specializations": [
+            "general freight",
+            "building materials"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 6,
+        "contact_email": "info@redlinelines45195.com",
+        "notes": "Specializes in general freight, building materials hauling with primary equipment using dry van. Known for reliable shipping routes across Midwest, Northeast."
+    },
+    {
+        "carrier_name": "Canyon Solutions 91 #196",
+        "dot_number": "9853035",
+        "mc_number": "501028",
+        "hq_state": "MO",
+        "service_regions": [
+            "Southeast",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "general freight",
+            "building materials"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 8,
+        "contact_email": "info@canyonsolutions91196.com",
+        "notes": "Specializes in general freight, building materials hauling with primary equipment using flatbed. Known for reliable shipping routes across Southeast, Mountain."
+    },
+    {
+        "carrier_name": "Express Systems #197",
+        "dot_number": "9740704",
+        "mc_number": "915631",
+        "hq_state": "AZ",
+        "service_regions": [
+            "West Coast",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "intermodal",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "electronics",
+            "oversized loads"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 3,
+        "contact_email": "info@expresssystems197.com",
+        "notes": "Specializes in electronics, oversized loads hauling with primary equipment using intermodal, tanker. Known for reliable shipping routes across West Coast, Northeast."
+    },
+    {
+        "carrier_name": "Express Haulers #198",
+        "dot_number": "8693414",
+        "mc_number": "471509",
+        "hq_state": "NY",
+        "service_regions": [
+            "West Coast"
+        ],
+        "equipment_types": [
+            "flatbed",
+            "tanker",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "general freight",
+            "fresh produce"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 3,
+        "contact_email": "info@expresshaulers198.com",
+        "notes": "Specializes in general freight, fresh produce hauling with primary equipment using flatbed, tanker, LTL. Known for reliable shipping routes across West Coast."
+    },
+    {
+        "carrier_name": "Ironclad Haulers #199",
+        "dot_number": "6336235",
+        "mc_number": "280807",
+        "hq_state": "SC",
+        "service_regions": [
+            "West Coast",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "retail goods"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 9,
+        "contact_email": "info@ironcladhaulers199.com",
+        "notes": "Specializes in retail goods hauling with primary equipment using flatbed. Known for reliable shipping routes across West Coast, Mountain."
+    },
+    {
+        "carrier_name": "Atlas Freight 14 #200",
+        "dot_number": "7833279",
+        "mc_number": "363278",
+        "hq_state": "OR",
+        "service_regions": [
+            "Pacific Northwest"
+        ],
+        "equipment_types": [
+            "dry van",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "building materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 10,
+        "contact_email": "info@atlasfreight14200.com",
+        "notes": "Specializes in building materials hauling with primary equipment using dry van, LTL. Known for reliable shipping routes across Pacific Northwest."
+    },
+    {
+        "carrier_name": "Express Carriers 30 #201",
+        "dot_number": "2906898",
+        "mc_number": "178669",
+        "hq_state": "IN",
+        "service_regions": [
+            "Midwest"
+        ],
+        "equipment_types": [
+            "reefer"
+        ],
+        "cargo_specializations": [
+            "general freight",
+            "fresh produce"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 12,
+        "contact_email": "info@expresscarriers30201.com",
+        "notes": "Specializes in general freight, fresh produce hauling with primary equipment using reefer. Known for reliable shipping routes across Midwest."
+    },
+    {
+        "carrier_name": "Falcon Trucking #202",
+        "dot_number": "6589774",
+        "mc_number": "622513",
+        "hq_state": "GA",
+        "service_regions": [
+            "Northeast"
+        ],
+        "equipment_types": [
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "electronics",
+            "hazardous materials"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 11,
+        "contact_email": "info@falcontrucking202.com",
+        "notes": "Specializes in electronics, hazardous materials hauling with primary equipment using flatbed. Known for reliable shipping routes across Northeast."
+    },
+    {
+        "carrier_name": "Crossroads Carriers 89 #203",
+        "dot_number": "2529453",
+        "mc_number": "163298",
+        "hq_state": "NC",
+        "service_regions": [
+            "Southwest",
+            "Pacific Northwest"
+        ],
+        "equipment_types": [
+            "intermodal",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "automotive parts",
+            "hazardous materials"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 8,
+        "contact_email": "info@crossroadscarriers89203.com",
+        "notes": "Specializes in automotive parts, hazardous materials hauling with primary equipment using intermodal, LTL. Known for reliable shipping routes across Southwest, Pacific Northwest."
+    },
+    {
+        "carrier_name": "Golden Gate Lines 50 #204",
+        "dot_number": "1233460",
+        "mc_number": "268247",
+        "hq_state": "TN",
+        "service_regions": [
+            "West Coast",
+            "Northeast",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "intermodal",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "building materials"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 11,
+        "contact_email": "info@goldengatelines50204.com",
+        "notes": "Specializes in building materials hauling with primary equipment using intermodal, tanker. Known for reliable shipping routes across West Coast, Northeast, Midwest."
+    },
+    {
+        "carrier_name": "Interstate Trucking 12 #205",
+        "dot_number": "4514567",
+        "mc_number": "100679",
+        "hq_state": "CA",
+        "service_regions": [
+            "Southwest"
+        ],
+        "equipment_types": [
+            "dry van",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "hazardous materials",
+            "retail goods"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 7,
+        "contact_email": "info@interstatetrucking12205.com",
+        "notes": "Specializes in hazardous materials, retail goods hauling with primary equipment using dry van, flatbed. Known for reliable shipping routes across Southwest."
+    },
+    {
+        "carrier_name": "Voyager Systems 50 #206",
+        "dot_number": "2789290",
+        "mc_number": "268358",
+        "hq_state": "PA",
+        "service_regions": [
+            "Southwest",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "reefer"
+        ],
+        "cargo_specializations": [
+            "oversized loads"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 14,
+        "contact_email": "info@voyagersystems50206.com",
+        "notes": "Specializes in oversized loads hauling with primary equipment using reefer. Known for reliable shipping routes across Southwest, Midwest."
+    },
+    {
+        "carrier_name": "Red Line Carriers #207",
+        "dot_number": "4415950",
+        "mc_number": "120338",
+        "hq_state": "FL",
+        "service_regions": [
+            "Southeast"
+        ],
+        "equipment_types": [
+            "dry van",
+            "intermodal",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "building materials"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 5,
+        "contact_email": "info@redlinecarriers207.com",
+        "notes": "Specializes in building materials hauling with primary equipment using dry van, intermodal, tanker. Known for reliable shipping routes across Southeast."
+    },
+    {
+        "carrier_name": "Interstate Systems #208",
+        "dot_number": "4446479",
+        "mc_number": "176417",
+        "hq_state": "AL",
+        "service_regions": [
+            "Pacific Northwest",
+            "Southwest"
+        ],
+        "equipment_types": [
+            "dry van"
+        ],
+        "cargo_specializations": [
+            "machinery"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 7,
+        "contact_email": "info@interstatesystems208.com",
+        "notes": "Specializes in machinery hauling with primary equipment using dry van. Known for reliable shipping routes across Pacific Northwest, Southwest."
+    },
+    {
+        "carrier_name": "Golden Gate Haulers #209",
+        "dot_number": "1827531",
+        "mc_number": "242543",
+        "hq_state": "AZ",
+        "service_regions": [
+            "West Coast"
+        ],
+        "equipment_types": [
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "building materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 6,
+        "contact_email": "info@goldengatehaulers209.com",
+        "notes": "Specializes in building materials hauling with primary equipment using flatbed. Known for reliable shipping routes across West Coast."
+    },
+    {
+        "carrier_name": "Liberty Transport 87 #210",
+        "dot_number": "1230432",
+        "mc_number": "695405",
+        "hq_state": "TN",
+        "service_regions": [
+            "Pacific Northwest",
+            "Southwest",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "dry van",
+            "intermodal",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "automotive parts"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 12,
+        "contact_email": "info@libertytransport87210.com",
+        "notes": "Specializes in automotive parts hauling with primary equipment using dry van, intermodal, LTL. Known for reliable shipping routes across Pacific Northwest, Southwest, Southeast."
+    },
+    {
+        "carrier_name": "FreightRunner Lines #211",
+        "dot_number": "9877790",
+        "mc_number": "462629",
+        "hq_state": "NY",
+        "service_regions": [
+            "Pacific Northwest",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals",
+            "retail goods"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 8,
+        "contact_email": "info@freightrunnerlines211.com",
+        "notes": "Specializes in pharmaceuticals, retail goods hauling with primary equipment using intermodal. Known for reliable shipping routes across Pacific Northwest, Northeast."
+    },
+    {
+        "carrier_name": "Ironclad Lines 48 #212",
+        "dot_number": "1809864",
+        "mc_number": "455455",
+        "hq_state": "GA",
+        "service_regions": [
+            "Northeast",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "reefer",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "automotive parts",
+            "oversized loads"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 16,
+        "contact_email": "info@ironcladlines48212.com",
+        "notes": "Specializes in automotive parts, oversized loads hauling with primary equipment using reefer, flatbed. Known for reliable shipping routes across Northeast, Midwest."
+    },
+    {
+        "carrier_name": "Echo Haulers #213",
+        "dot_number": "2667327",
+        "mc_number": "393337",
+        "hq_state": "CA",
+        "service_regions": [
+            "West Coast",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "tanker",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "retail goods"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 9,
+        "contact_email": "info@echohaulers213.com",
+        "notes": "Specializes in retail goods hauling with primary equipment using tanker, LTL. Known for reliable shipping routes across West Coast, Northeast."
+    },
+    {
+        "carrier_name": "Crossroads Lines #214",
+        "dot_number": "9619395",
+        "mc_number": "373689",
+        "hq_state": "FL",
+        "service_regions": [
+            "Midwest",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "intermodal",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "general freight",
+            "retail goods"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 15,
+        "contact_email": "info@crossroadslines214.com",
+        "notes": "Specializes in general freight, retail goods hauling with primary equipment using intermodal, flatbed. Known for reliable shipping routes across Midwest, Northeast."
+    },
+    {
+        "carrier_name": "Red Line Freight 25 #215",
+        "dot_number": "9705303",
+        "mc_number": "286446",
+        "hq_state": "OR",
+        "service_regions": [
+            "Southwest",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "electronics"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 16,
+        "contact_email": "info@redlinefreight25215.com",
+        "notes": "Specializes in electronics hauling with primary equipment using tanker. Known for reliable shipping routes across Southwest, Mountain."
+    },
+    {
+        "carrier_name": "Interstate Systems #216",
+        "dot_number": "4841852",
+        "mc_number": "581674",
+        "hq_state": "SC",
+        "service_regions": [
+            "West Coast",
+            "Southeast",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "tanker",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "machinery"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 7,
+        "contact_email": "info@interstatesystems216.com",
+        "notes": "Specializes in machinery hauling with primary equipment using tanker, LTL. Known for reliable shipping routes across West Coast, Southeast, Northeast."
+    },
+    {
+        "carrier_name": "Liberty Trucking 95 #217",
+        "dot_number": "8520539",
+        "mc_number": "376428",
+        "hq_state": "FL",
+        "service_regions": [
+            "Southwest"
+        ],
+        "equipment_types": [
+            "tanker",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "hazardous materials",
+            "building materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 9,
+        "contact_email": "info@libertytrucking95217.com",
+        "notes": "Specializes in hazardous materials, building materials hauling with primary equipment using tanker, LTL. Known for reliable shipping routes across Southwest."
+    },
+    {
+        "carrier_name": "Crossroads Solutions #218",
+        "dot_number": "7471910",
+        "mc_number": "745936",
+        "hq_state": "GA",
+        "service_regions": [
+            "Pacific Northwest",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "dry van",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "hazardous materials",
+            "retail goods"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 23,
+        "contact_email": "info@crossroadssolutions218.com",
+        "notes": "Specializes in hazardous materials, retail goods hauling with primary equipment using dry van, tanker. Known for reliable shipping routes across Pacific Northwest, Midwest."
+    },
+    {
+        "carrier_name": "Voyager Haulers 71 #219",
+        "dot_number": "7554715",
+        "mc_number": "774446",
+        "hq_state": "GA",
+        "service_regions": [
+            "Southeast",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "reefer"
+        ],
+        "cargo_specializations": [
+            "building materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 7,
+        "contact_email": "info@voyagerhaulers71219.com",
+        "notes": "Specializes in building materials hauling with primary equipment using reefer. Known for reliable shipping routes across Southeast, Northeast."
+    },
+    {
+        "carrier_name": "Liberty Trucking #220",
+        "dot_number": "1985376",
+        "mc_number": "592227",
+        "hq_state": "KY",
+        "service_regions": [
+            "Southwest",
+            "Pacific Northwest"
+        ],
+        "equipment_types": [
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "oversized loads"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 7,
+        "contact_email": "info@libertytrucking220.com",
+        "notes": "Specializes in oversized loads hauling with primary equipment using LTL. Known for reliable shipping routes across Southwest, Pacific Northwest."
+    },
+    {
+        "carrier_name": "Titan Trucking 48 #221",
+        "dot_number": "1306125",
+        "mc_number": "501291",
+        "hq_state": "OH",
+        "service_regions": [
+            "Midwest"
+        ],
+        "equipment_types": [
+            "intermodal",
+            "tanker",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "general freight"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 10,
+        "contact_email": "info@titantrucking48221.com",
+        "notes": "Specializes in general freight hauling with primary equipment using intermodal, tanker, flatbed. Known for reliable shipping routes across Midwest."
+    },
+    {
+        "carrier_name": "Atlas Express #222",
+        "dot_number": "7844254",
+        "mc_number": "103321",
+        "hq_state": "NC",
+        "service_regions": [
+            "Northeast",
+            "Pacific Northwest",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "machinery",
+            "hazardous materials"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 23,
+        "contact_email": "info@atlasexpress222.com",
+        "notes": "Specializes in machinery, hazardous materials hauling with primary equipment using LTL. Known for reliable shipping routes across Northeast, Pacific Northwest, Midwest."
+    },
+    {
+        "carrier_name": "FreightRunner Haulers #223",
+        "dot_number": "2234758",
+        "mc_number": "837758",
+        "hq_state": "IL",
+        "service_regions": [
+            "West Coast",
+            "Southwest"
+        ],
+        "equipment_types": [
+            "dry van",
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "general freight",
+            "hazardous materials"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 17,
+        "contact_email": "info@freightrunnerhaulers223.com",
+        "notes": "Specializes in general freight, hazardous materials hauling with primary equipment using dry van, intermodal. Known for reliable shipping routes across West Coast, Southwest."
+    },
+    {
+        "carrier_name": "Titan Carriers 97 #224",
+        "dot_number": "6335762",
+        "mc_number": "898474",
+        "hq_state": "OR",
+        "service_regions": [
+            "Pacific Northwest",
+            "Southwest",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "reefer",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 2,
+        "contact_email": "info@titancarriers97224.com",
+        "notes": "Specializes in pharmaceuticals hauling with primary equipment using reefer, flatbed. Known for reliable shipping routes across Pacific Northwest, Southwest, Mountain."
+    },
+    {
+        "carrier_name": "Express Freight 97 #225",
+        "dot_number": "8690455",
+        "mc_number": "552263",
+        "hq_state": "TN",
+        "service_regions": [
+            "Northeast"
+        ],
+        "equipment_types": [
+            "intermodal",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "retail goods"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 6,
+        "contact_email": "info@expressfreight97225.com",
+        "notes": "Specializes in retail goods hauling with primary equipment using intermodal, flatbed. Known for reliable shipping routes across Northeast."
+    },
+    {
+        "carrier_name": "Pioneer Trucking #226",
+        "dot_number": "6454089",
+        "mc_number": "722690",
+        "hq_state": "MO",
+        "service_regions": [
+            "West Coast"
+        ],
+        "equipment_types": [
+            "dry van"
+        ],
+        "cargo_specializations": [
+            "fresh produce",
+            "retail goods"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 20,
+        "contact_email": "info@pioneertrucking226.com",
+        "notes": "Specializes in fresh produce, retail goods hauling with primary equipment using dry van. Known for reliable shipping routes across West Coast."
+    },
+    {
+        "carrier_name": "Liberty Logistics 18 #227",
+        "dot_number": "1340868",
+        "mc_number": "381147",
+        "hq_state": "PA",
+        "service_regions": [
+            "Southwest"
+        ],
+        "equipment_types": [
+            "dry van"
+        ],
+        "cargo_specializations": [
+            "machinery"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 8,
+        "contact_email": "info@libertylogistics18227.com",
+        "notes": "Specializes in machinery hauling with primary equipment using dry van. Known for reliable shipping routes across Southwest."
+    },
+    {
+        "carrier_name": "Pioneer Solutions 74 #228",
+        "dot_number": "3432615",
+        "mc_number": "753267",
+        "hq_state": "AZ",
+        "service_regions": [
+            "West Coast",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "reefer"
+        ],
+        "cargo_specializations": [
+            "general freight"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 13,
+        "contact_email": "info@pioneersolutions74228.com",
+        "notes": "Specializes in general freight hauling with primary equipment using reefer. Known for reliable shipping routes across West Coast, Midwest."
+    },
+    {
+        "carrier_name": "Apex Transport 45 #229",
+        "dot_number": "6706588",
+        "mc_number": "388081",
+        "hq_state": "TX",
+        "service_regions": [
+            "Southwest",
+            "Pacific Northwest"
+        ],
+        "equipment_types": [
+            "reefer",
+            "dry van"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 13,
+        "contact_email": "info@apextransport45229.com",
+        "notes": "Specializes in pharmaceuticals hauling with primary equipment using reefer, dry van. Known for reliable shipping routes across Southwest, Pacific Northwest."
+    },
+    {
+        "carrier_name": "Golden Gate Haulers #230",
+        "dot_number": "9805172",
+        "mc_number": "785904",
+        "hq_state": "FL",
+        "service_regions": [
+            "West Coast",
+            "Midwest",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "tanker",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "electronics",
+            "pharmaceuticals"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 5,
+        "contact_email": "info@goldengatehaulers230.com",
+        "notes": "Specializes in electronics, pharmaceuticals hauling with primary equipment using reefer, tanker, flatbed. Known for reliable shipping routes across West Coast, Midwest, Northeast."
+    },
+    {
+        "carrier_name": "Red Line Carriers #231",
+        "dot_number": "9762268",
+        "mc_number": "421661",
+        "hq_state": "AL",
+        "service_regions": [
+            "West Coast",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "hazardous materials"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 18,
+        "contact_email": "info@redlinecarriers231.com",
+        "notes": "Specializes in hazardous materials hauling with primary equipment using tanker. Known for reliable shipping routes across West Coast, Midwest."
+    },
+    {
+        "carrier_name": "NextGen Freight #232",
+        "dot_number": "1977227",
+        "mc_number": "958797",
+        "hq_state": "AL",
+        "service_regions": [
+            "Southwest",
+            "Southeast",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "reefer",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "automotive parts"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 11,
+        "contact_email": "info@nextgenfreight232.com",
+        "notes": "Specializes in automotive parts hauling with primary equipment using reefer, flatbed. Known for reliable shipping routes across Southwest, Southeast, Mountain."
+    },
+    {
+        "carrier_name": "Atlas Haulers #233",
+        "dot_number": "2012524",
+        "mc_number": "212428",
+        "hq_state": "CA",
+        "service_regions": [
+            "Southeast",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "tanker",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "fresh produce"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 3,
+        "contact_email": "info@atlashaulers233.com",
+        "notes": "Specializes in fresh produce hauling with primary equipment using tanker, LTL. Known for reliable shipping routes across Southeast, Midwest."
+    },
+    {
+        "carrier_name": "Summit Trucking #234",
+        "dot_number": "8806455",
+        "mc_number": "174931",
+        "hq_state": "OH",
+        "service_regions": [
+            "Midwest"
+        ],
+        "equipment_types": [
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "automotive parts"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 21,
+        "contact_email": "info@summittrucking234.com",
+        "notes": "Specializes in automotive parts hauling with primary equipment using intermodal. Known for reliable shipping routes across Midwest."
+    },
+    {
+        "carrier_name": "Red Line Transport 81 #235",
+        "dot_number": "1174395",
+        "mc_number": "566603",
+        "hq_state": "AL",
+        "service_regions": [
+            "West Coast",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "reefer",
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "electronics"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 11,
+        "contact_email": "info@redlinetransport81235.com",
+        "notes": "Specializes in electronics hauling with primary equipment using reefer, intermodal. Known for reliable shipping routes across West Coast, Mountain."
+    },
+    {
+        "carrier_name": "Pioneer Haulers #236",
+        "dot_number": "3481709",
+        "mc_number": "300792",
+        "hq_state": "CA",
+        "service_regions": [
+            "West Coast",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "automotive parts",
+            "machinery"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 19,
+        "contact_email": "info@pioneerhaulers236.com",
+        "notes": "Specializes in automotive parts, machinery hauling with primary equipment using flatbed. Known for reliable shipping routes across West Coast, Mountain."
+    },
+    {
+        "carrier_name": "Liberty Freight 75 #237",
+        "dot_number": "8342423",
+        "mc_number": "220525",
+        "hq_state": "GA",
+        "service_regions": [
+            "Midwest",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "electronics"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 16,
+        "contact_email": "info@libertyfreight75237.com",
+        "notes": "Specializes in electronics hauling with primary equipment using tanker. Known for reliable shipping routes across Midwest, Northeast."
+    },
+    {
+        "carrier_name": "Swift Trucking #238",
+        "dot_number": "9758141",
+        "mc_number": "985673",
+        "hq_state": "OR",
+        "service_regions": [
+            "Northeast",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals",
+            "hazardous materials"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 6,
+        "contact_email": "info@swifttrucking238.com",
+        "notes": "Specializes in pharmaceuticals, hazardous materials hauling with primary equipment using intermodal. Known for reliable shipping routes across Northeast, Midwest."
+    },
+    {
+        "carrier_name": "Echo Express #239",
+        "dot_number": "2918079",
+        "mc_number": "608833",
+        "hq_state": "FL",
+        "service_regions": [
+            "Pacific Northwest",
+            "Southeast",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "reefer",
+            "intermodal",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "fresh produce"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 9,
+        "contact_email": "info@echoexpress239.com",
+        "notes": "Specializes in fresh produce hauling with primary equipment using reefer, intermodal, LTL. Known for reliable shipping routes across Pacific Northwest, Southeast, Mountain."
+    },
+    {
+        "carrier_name": "Summit Logistics #240",
+        "dot_number": "4158760",
+        "mc_number": "407527",
+        "hq_state": "NY",
+        "service_regions": [
+            "Northeast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "dry van",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "general freight"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 18,
+        "contact_email": "info@summitlogistics240.com",
+        "notes": "Specializes in general freight hauling with primary equipment using reefer, dry van, tanker. Known for reliable shipping routes across Northeast."
+    },
+    {
+        "carrier_name": "Canyon Lines 68 #241",
+        "dot_number": "6442165",
+        "mc_number": "895236",
+        "hq_state": "AZ",
+        "service_regions": [
+            "Southeast",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "reefer",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "automotive parts",
+            "general freight"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 21,
+        "contact_email": "info@canyonlines68241.com",
+        "notes": "Specializes in automotive parts, general freight hauling with primary equipment using reefer, LTL. Known for reliable shipping routes across Southeast, Mountain."
+    },
+    {
+        "carrier_name": "Atlas Freight #242",
+        "dot_number": "3070506",
+        "mc_number": "313432",
+        "hq_state": "NC",
+        "service_regions": [
+            "West Coast",
+            "Southwest"
+        ],
+        "equipment_types": [
+            "reefer",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "fresh produce"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 13,
+        "contact_email": "info@atlasfreight242.com",
+        "notes": "Specializes in fresh produce hauling with primary equipment using reefer, flatbed. Known for reliable shipping routes across West Coast, Southwest."
+    },
+    {
+        "carrier_name": "Interstate Transport 18 #243",
+        "dot_number": "4667604",
+        "mc_number": "866850",
+        "hq_state": "AL",
+        "service_regions": [
+            "Southwest"
+        ],
+        "equipment_types": [
+            "dry van",
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "oversized loads",
+            "machinery"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 9,
+        "contact_email": "info@interstatetransport18243.com",
+        "notes": "Specializes in oversized loads, machinery hauling with primary equipment using dry van, intermodal. Known for reliable shipping routes across Southwest."
+    },
+    {
+        "carrier_name": "Voyager Logistics #244",
+        "dot_number": "8346107",
+        "mc_number": "597979",
+        "hq_state": "IN",
+        "service_regions": [
+            "West Coast",
+            "Pacific Northwest"
+        ],
+        "equipment_types": [
+            "dry van",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "oversized loads"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 14,
+        "contact_email": "info@voyagerlogistics244.com",
+        "notes": "Specializes in oversized loads hauling with primary equipment using dry van, tanker. Known for reliable shipping routes across West Coast, Pacific Northwest."
+    },
+    {
+        "carrier_name": "Swift Logistics 91 #245",
+        "dot_number": "5524844",
+        "mc_number": "964120",
+        "hq_state": "OR",
+        "service_regions": [
+            "Pacific Northwest",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "automotive parts",
+            "machinery"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 12,
+        "contact_email": "info@swiftlogistics91245.com",
+        "notes": "Specializes in automotive parts, machinery hauling with primary equipment using intermodal. Known for reliable shipping routes across Pacific Northwest, Northeast."
+    },
+    {
+        "carrier_name": "Liberty Trucking #246",
+        "dot_number": "1679634",
+        "mc_number": "556755",
+        "hq_state": "SC",
+        "service_regions": [
+            "Mountain"
+        ],
+        "equipment_types": [
+            "dry van",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 20,
+        "contact_email": "info@libertytrucking246.com",
+        "notes": "Specializes in pharmaceuticals hauling with primary equipment using dry van, LTL. Known for reliable shipping routes across Mountain."
+    },
+    {
+        "carrier_name": "Ironclad Transport #247",
+        "dot_number": "8533832",
+        "mc_number": "249991",
+        "hq_state": "MO",
+        "service_regions": [
+            "Pacific Northwest",
+            "Southeast",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "dry van"
+        ],
+        "cargo_specializations": [
+            "general freight"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 12,
+        "contact_email": "info@ironcladtransport247.com",
+        "notes": "Specializes in general freight hauling with primary equipment using dry van. Known for reliable shipping routes across Pacific Northwest, Southeast, Midwest."
+    },
+    {
+        "carrier_name": "Express Haulers #248",
+        "dot_number": "4596233",
+        "mc_number": "439675",
+        "hq_state": "TN",
+        "service_regions": [
+            "Northeast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "general freight"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 12,
+        "contact_email": "info@expresshaulers248.com",
+        "notes": "Specializes in general freight hauling with primary equipment using reefer, tanker. Known for reliable shipping routes across Northeast."
+    },
+    {
+        "carrier_name": "Blue Ribbon Solutions 88 #249",
+        "dot_number": "2541052",
+        "mc_number": "249100",
+        "hq_state": "AZ",
+        "service_regions": [
+            "Pacific Northwest",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "reefer",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "oversized loads",
+            "fresh produce"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 13,
+        "contact_email": "info@blueribbonsolutions88249.com",
+        "notes": "Specializes in oversized loads, fresh produce hauling with primary equipment using reefer, LTL. Known for reliable shipping routes across Pacific Northwest, Mountain."
+    },
+    {
+        "carrier_name": "Swift Carriers #250",
+        "dot_number": "2695653",
+        "mc_number": "762091",
+        "hq_state": "AL",
+        "service_regions": [
+            "Southwest",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "dry van"
+        ],
+        "cargo_specializations": [
+            "oversized loads"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 7,
+        "contact_email": "info@swiftcarriers250.com",
+        "notes": "Specializes in oversized loads hauling with primary equipment using dry van. Known for reliable shipping routes across Southwest, Mountain."
+    },
+    {
+        "carrier_name": "Summit Carriers 72 #251",
+        "dot_number": "3300106",
+        "mc_number": "754599",
+        "hq_state": "TN",
+        "service_regions": [
+            "Southwest",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "dry van"
+        ],
+        "cargo_specializations": [
+            "general freight"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 23,
+        "contact_email": "info@summitcarriers72251.com",
+        "notes": "Specializes in general freight hauling with primary equipment using dry van. Known for reliable shipping routes across Southwest, Mountain."
+    },
+    {
+        "carrier_name": "Falcon Systems #252",
+        "dot_number": "9858078",
+        "mc_number": "503479",
+        "hq_state": "CA",
+        "service_regions": [
+            "West Coast",
+            "Southeast",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "hazardous materials"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 9,
+        "contact_email": "info@falconsystems252.com",
+        "notes": "Specializes in hazardous materials hauling with primary equipment using flatbed. Known for reliable shipping routes across West Coast, Southeast, Midwest."
+    },
+    {
+        "carrier_name": "Red Line Freight 51 #253",
+        "dot_number": "7971243",
+        "mc_number": "833591",
+        "hq_state": "OH",
+        "service_regions": [
+            "West Coast",
+            "Pacific Northwest",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "dry van"
+        ],
+        "cargo_specializations": [
+            "oversized loads"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 2,
+        "contact_email": "info@redlinefreight51253.com",
+        "notes": "Specializes in oversized loads hauling with primary equipment using dry van. Known for reliable shipping routes across West Coast, Pacific Northwest, Northeast."
+    },
+    {
+        "carrier_name": "Liberty Solutions 67 #254",
+        "dot_number": "3386635",
+        "mc_number": "306705",
+        "hq_state": "NC",
+        "service_regions": [
+            "Midwest"
+        ],
+        "equipment_types": [
+            "dry van",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "automotive parts",
+            "hazardous materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 4,
+        "contact_email": "info@libertysolutions67254.com",
+        "notes": "Specializes in automotive parts, hazardous materials hauling with primary equipment using dry van, tanker. Known for reliable shipping routes across Midwest."
+    },
+    {
+        "carrier_name": "Titan Express #255",
+        "dot_number": "4277044",
+        "mc_number": "829404",
+        "hq_state": "TN",
+        "service_regions": [
+            "Pacific Northwest",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "machinery",
+            "fresh produce"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 8,
+        "contact_email": "info@titanexpress255.com",
+        "notes": "Specializes in machinery, fresh produce hauling with primary equipment using flatbed. Known for reliable shipping routes across Pacific Northwest, Northeast."
+    },
+    {
+        "carrier_name": "Golden Gate Solutions 44 #256",
+        "dot_number": "4368122",
+        "mc_number": "662580",
+        "hq_state": "FL",
+        "service_regions": [
+            "Southeast"
+        ],
+        "equipment_types": [
+            "flatbed",
+            "reefer",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "general freight",
+            "machinery"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 4,
+        "contact_email": "info@goldengatesolutions44256.com",
+        "notes": "Specializes in general freight, machinery hauling with primary equipment using flatbed, reefer, LTL. Known for reliable shipping routes across Southeast."
+    },
+    {
+        "carrier_name": "Summit Carriers #257",
+        "dot_number": "4263468",
+        "mc_number": "307181",
+        "hq_state": "MO",
+        "service_regions": [
+            "West Coast"
+        ],
+        "equipment_types": [
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "fresh produce"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 19,
+        "contact_email": "info@summitcarriers257.com",
+        "notes": "Specializes in fresh produce hauling with primary equipment using flatbed. Known for reliable shipping routes across West Coast."
+    },
+    {
+        "carrier_name": "Golden Gate Transport #258",
+        "dot_number": "3058075",
+        "mc_number": "395640",
+        "hq_state": "TX",
+        "service_regions": [
+            "West Coast"
+        ],
+        "equipment_types": [
+            "dry van"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals",
+            "machinery"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 13,
+        "contact_email": "info@goldengatetransport258.com",
+        "notes": "Specializes in pharmaceuticals, machinery hauling with primary equipment using dry van. Known for reliable shipping routes across West Coast."
+    },
+    {
+        "carrier_name": "Pioneer Freight #259",
+        "dot_number": "6164349",
+        "mc_number": "167438",
+        "hq_state": "AZ",
+        "service_regions": [
+            "West Coast",
+            "Mountain",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "reefer"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals",
+            "retail goods"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 11,
+        "contact_email": "info@pioneerfreight259.com",
+        "notes": "Specializes in pharmaceuticals, retail goods hauling with primary equipment using reefer. Known for reliable shipping routes across West Coast, Mountain, Midwest."
+    },
+    {
+        "carrier_name": "Echo Systems #260",
+        "dot_number": "5051912",
+        "mc_number": "695440",
+        "hq_state": "SC",
+        "service_regions": [
+            "Southwest",
+            "Southeast",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "general freight",
+            "building materials"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 25,
+        "contact_email": "info@echosystems260.com",
+        "notes": "Specializes in general freight, building materials hauling with primary equipment using flatbed. Known for reliable shipping routes across Southwest, Southeast, Mountain."
+    },
+    {
+        "carrier_name": "NextGen Trucking #261",
+        "dot_number": "7577289",
+        "mc_number": "243324",
+        "hq_state": "WI",
+        "service_regions": [
+            "Southeast"
+        ],
+        "equipment_types": [
+            "reefer"
+        ],
+        "cargo_specializations": [
+            "electronics"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 2,
+        "contact_email": "info@nextgentrucking261.com",
+        "notes": "Specializes in electronics hauling with primary equipment using reefer. Known for reliable shipping routes across Southeast."
+    },
+    {
+        "carrier_name": "Interstate Trucking #262",
+        "dot_number": "8069111",
+        "mc_number": "615713",
+        "hq_state": "TX",
+        "service_regions": [
+            "Pacific Northwest",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "intermodal",
+            "tanker",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "electronics",
+            "pharmaceuticals"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 5,
+        "contact_email": "info@interstatetrucking262.com",
+        "notes": "Specializes in electronics, pharmaceuticals hauling with primary equipment using intermodal, tanker, flatbed. Known for reliable shipping routes across Pacific Northwest, Southeast."
+    },
+    {
+        "carrier_name": "Blue Ribbon Haulers #263",
+        "dot_number": "9413351",
+        "mc_number": "106753",
+        "hq_state": "FL",
+        "service_regions": [
+            "West Coast",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "dry van",
+            "intermodal",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals",
+            "automotive parts"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 9,
+        "contact_email": "info@blueribbonhaulers263.com",
+        "notes": "Specializes in pharmaceuticals, automotive parts hauling with primary equipment using dry van, intermodal, tanker. Known for reliable shipping routes across West Coast, Mountain."
+    },
+    {
+        "carrier_name": "Ironclad Lines 40 #264",
+        "dot_number": "9161705",
+        "mc_number": "415874",
+        "hq_state": "PA",
+        "service_regions": [
+            "Pacific Northwest",
+            "Southeast",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "intermodal",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "retail goods"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 15,
+        "contact_email": "info@ironcladlines40264.com",
+        "notes": "Specializes in retail goods hauling with primary equipment using intermodal, LTL. Known for reliable shipping routes across Pacific Northwest, Southeast, Northeast."
+    },
+    {
+        "carrier_name": "NextGen Lines #265",
+        "dot_number": "8049728",
+        "mc_number": "246899",
+        "hq_state": "TN",
+        "service_regions": [
+            "Pacific Northwest",
+            "Mountain",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "oversized loads",
+            "fresh produce"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 25,
+        "contact_email": "info@nextgenlines265.com",
+        "notes": "Specializes in oversized loads, fresh produce hauling with primary equipment using intermodal. Known for reliable shipping routes across Pacific Northwest, Mountain, Northeast."
+    },
+    {
+        "carrier_name": "Echo Solutions 55 #266",
+        "dot_number": "1597324",
+        "mc_number": "398360",
+        "hq_state": "OH",
+        "service_regions": [
+            "Southeast",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "oversized loads"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 6,
+        "contact_email": "info@echosolutions55266.com",
+        "notes": "Specializes in oversized loads hauling with primary equipment using tanker. Known for reliable shipping routes across Southeast, Northeast."
+    },
+    {
+        "carrier_name": "FreightRunner Trucking #267",
+        "dot_number": "4510156",
+        "mc_number": "358898",
+        "hq_state": "MO",
+        "service_regions": [
+            "Pacific Northwest"
+        ],
+        "equipment_types": [
+            "dry van",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "fresh produce"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 7,
+        "contact_email": "info@freightrunnertrucking267.com",
+        "notes": "Specializes in fresh produce hauling with primary equipment using dry van, tanker. Known for reliable shipping routes across Pacific Northwest."
+    },
+    {
+        "carrier_name": "Echo Trucking #268",
+        "dot_number": "1832308",
+        "mc_number": "199028",
+        "hq_state": "KY",
+        "service_regions": [
+            "Southwest",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "tanker",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "general freight",
+            "building materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 21,
+        "contact_email": "info@echotrucking268.com",
+        "notes": "Specializes in general freight, building materials hauling with primary equipment using tanker, LTL. Known for reliable shipping routes across Southwest, Southeast."
+    },
+    {
+        "carrier_name": "Echo Express #269",
+        "dot_number": "1457595",
+        "mc_number": "861109",
+        "hq_state": "CA",
+        "service_regions": [
+            "West Coast",
+            "Southeast",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "electronics",
+            "fresh produce"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 21,
+        "contact_email": "info@echoexpress269.com",
+        "notes": "Specializes in electronics, fresh produce hauling with primary equipment using tanker. Known for reliable shipping routes across West Coast, Southeast, Midwest."
+    },
+    {
+        "carrier_name": "Atlas Carriers 69 #270",
+        "dot_number": "5278707",
+        "mc_number": "533567",
+        "hq_state": "SC",
+        "service_regions": [
+            "Southwest",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "dry van",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "electronics",
+            "hazardous materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 2,
+        "contact_email": "info@atlascarriers69270.com",
+        "notes": "Specializes in electronics, hazardous materials hauling with primary equipment using dry van, tanker. Known for reliable shipping routes across Southwest, Mountain."
+    },
+    {
+        "carrier_name": "Canyon Carriers 25 #271",
+        "dot_number": "3253764",
+        "mc_number": "213909",
+        "hq_state": "CO",
+        "service_regions": [
+            "Pacific Northwest"
+        ],
+        "equipment_types": [
+            "dry van",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "building materials",
+            "fresh produce"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 25,
+        "contact_email": "info@canyoncarriers25271.com",
+        "notes": "Specializes in building materials, fresh produce hauling with primary equipment using dry van, tanker. Known for reliable shipping routes across Pacific Northwest."
+    },
+    {
+        "carrier_name": "Falcon Logistics #272",
+        "dot_number": "5122869",
+        "mc_number": "125788",
+        "hq_state": "IN",
+        "service_regions": [
+            "West Coast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "intermodal",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals",
+            "hazardous materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 3,
+        "contact_email": "info@falconlogistics272.com",
+        "notes": "Specializes in pharmaceuticals, hazardous materials hauling with primary equipment using reefer, intermodal, flatbed. Known for reliable shipping routes across West Coast."
+    },
+    {
+        "carrier_name": "Blue Ribbon Systems 50 #273",
+        "dot_number": "6934317",
+        "mc_number": "877803",
+        "hq_state": "KY",
+        "service_regions": [
+            "Northeast"
+        ],
+        "equipment_types": [
+            "dry van",
+            "intermodal",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "electronics",
+            "automotive parts"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 9,
+        "contact_email": "info@blueribbonsystems50273.com",
+        "notes": "Specializes in electronics, automotive parts hauling with primary equipment using dry van, intermodal, flatbed. Known for reliable shipping routes across Northeast."
+    },
+    {
+        "carrier_name": "Echo Logistics 80 #274",
+        "dot_number": "6986878",
+        "mc_number": "451726",
+        "hq_state": "GA",
+        "service_regions": [
+            "Southeast",
+            "Mountain",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "hazardous materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 10,
+        "contact_email": "info@echologistics80274.com",
+        "notes": "Specializes in hazardous materials hauling with primary equipment using intermodal. Known for reliable shipping routes across Southeast, Mountain, Northeast."
+    },
+    {
+        "carrier_name": "Atlas Express 68 #275",
+        "dot_number": "6937867",
+        "mc_number": "612696",
+        "hq_state": "PA",
+        "service_regions": [
+            "Midwest"
+        ],
+        "equipment_types": [
+            "intermodal",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "building materials"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 4,
+        "contact_email": "info@atlasexpress68275.com",
+        "notes": "Specializes in building materials hauling with primary equipment using intermodal, LTL. Known for reliable shipping routes across Midwest."
+    },
+    {
+        "carrier_name": "Red Line Trucking 25 #276",
+        "dot_number": "3376539",
+        "mc_number": "493862",
+        "hq_state": "TN",
+        "service_regions": [
+            "Pacific Northwest",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "tanker",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "machinery"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 15,
+        "contact_email": "info@redlinetrucking25276.com",
+        "notes": "Specializes in machinery hauling with primary equipment using reefer, tanker, flatbed. Known for reliable shipping routes across Pacific Northwest, Southeast."
+    },
+    {
+        "carrier_name": "Express Lines #277",
+        "dot_number": "4875479",
+        "mc_number": "541585",
+        "hq_state": "SC",
+        "service_regions": [
+            "Southwest",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "dry van"
+        ],
+        "cargo_specializations": [
+            "oversized loads",
+            "fresh produce"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 23,
+        "contact_email": "info@expresslines277.com",
+        "notes": "Specializes in oversized loads, fresh produce hauling with primary equipment using reefer, dry van. Known for reliable shipping routes across Southwest, Southeast."
+    },
+    {
+        "carrier_name": "Apex Systems 90 #278",
+        "dot_number": "9184021",
+        "mc_number": "598936",
+        "hq_state": "IN",
+        "service_regions": [
+            "Mountain",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "automotive parts",
+            "retail goods"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 11,
+        "contact_email": "info@apexsystems90278.com",
+        "notes": "Specializes in automotive parts, retail goods hauling with primary equipment using reefer, flatbed. Known for reliable shipping routes across Mountain, Northeast."
+    },
+    {
+        "carrier_name": "Golden Gate Transport #279",
+        "dot_number": "9383887",
+        "mc_number": "353040",
+        "hq_state": "MI",
+        "service_regions": [
+            "Midwest"
+        ],
+        "equipment_types": [
+            "reefer",
+            "intermodal",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "oversized loads",
+            "building materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 3,
+        "contact_email": "info@goldengatetransport279.com",
+        "notes": "Specializes in oversized loads, building materials hauling with primary equipment using reefer, intermodal, flatbed. Known for reliable shipping routes across Midwest."
+    },
+    {
+        "carrier_name": "Ironclad Transport 69 #280",
+        "dot_number": "7110228",
+        "mc_number": "783322",
+        "hq_state": "IN",
+        "service_regions": [
+            "Pacific Northwest",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "tanker",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "retail goods"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 21,
+        "contact_email": "info@ironcladtransport69280.com",
+        "notes": "Specializes in retail goods hauling with primary equipment using tanker, LTL. Known for reliable shipping routes across Pacific Northwest, Northeast."
+    },
+    {
+        "carrier_name": "Red Line Haulers 93 #281",
+        "dot_number": "2170095",
+        "mc_number": "866383",
+        "hq_state": "IL",
+        "service_regions": [
+            "West Coast",
+            "Mountain",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "reefer",
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "retail goods"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 24,
+        "contact_email": "info@redlinehaulers93281.com",
+        "notes": "Specializes in retail goods hauling with primary equipment using reefer, intermodal. Known for reliable shipping routes across West Coast, Mountain, Midwest."
+    },
+    {
+        "carrier_name": "Summit Express #282",
+        "dot_number": "9312477",
+        "mc_number": "812742",
+        "hq_state": "GA",
+        "service_regions": [
+            "Southwest",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "reefer",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 5,
+        "contact_email": "info@summitexpress282.com",
+        "notes": "Specializes in pharmaceuticals hauling with primary equipment using reefer, tanker. Known for reliable shipping routes across Southwest, Midwest."
+    },
+    {
+        "carrier_name": "Interstate Solutions #283",
+        "dot_number": "9764735",
+        "mc_number": "762287",
+        "hq_state": "AZ",
+        "service_regions": [
+            "West Coast",
+            "Southwest"
+        ],
+        "equipment_types": [
+            "dry van",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "hazardous materials",
+            "fresh produce"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 5,
+        "contact_email": "info@interstatesolutions283.com",
+        "notes": "Specializes in hazardous materials, fresh produce hauling with primary equipment using dry van, flatbed. Known for reliable shipping routes across West Coast, Southwest."
+    },
+    {
+        "carrier_name": "Summit Express 31 #284",
+        "dot_number": "9758897",
+        "mc_number": "192176",
+        "hq_state": "AL",
+        "service_regions": [
+            "West Coast",
+            "Midwest"
+        ],
+        "equipment_types": [
+            "intermodal"
+        ],
+        "cargo_specializations": [
+            "oversized loads",
+            "hazardous materials"
+        ],
+        "safety_rating": "conditional",
+        "years_operating": 5,
+        "contact_email": "info@summitexpress31284.com",
+        "notes": "Specializes in oversized loads, hazardous materials hauling with primary equipment using intermodal. Known for reliable shipping routes across West Coast, Midwest."
+    },
+    {
+        "carrier_name": "Express Trucking #285",
+        "dot_number": "4976404",
+        "mc_number": "273787",
+        "hq_state": "FL",
+        "service_regions": [
+            "Northeast"
+        ],
+        "equipment_types": [
+            "dry van",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "machinery"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 15,
+        "contact_email": "info@expresstrucking285.com",
+        "notes": "Specializes in machinery hauling with primary equipment using dry van, LTL. Known for reliable shipping routes across Northeast."
+    },
+    {
+        "carrier_name": "Swift Carriers #286",
+        "dot_number": "8480773",
+        "mc_number": "235899",
+        "hq_state": "PA",
+        "service_regions": [
+            "Pacific Northwest",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "hazardous materials"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 9,
+        "contact_email": "info@swiftcarriers286.com",
+        "notes": "Specializes in hazardous materials hauling with primary equipment using tanker. Known for reliable shipping routes across Pacific Northwest, Southeast."
+    },
+    {
+        "carrier_name": "Crossroads Haulers 80 #287",
+        "dot_number": "3022688",
+        "mc_number": "777570",
+        "hq_state": "IL",
+        "service_regions": [
+            "West Coast",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "tanker",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "automotive parts",
+            "machinery"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 21,
+        "contact_email": "info@crossroadshaulers80287.com",
+        "notes": "Specializes in automotive parts, machinery hauling with primary equipment using tanker, LTL. Known for reliable shipping routes across West Coast, Southeast."
+    },
+    {
+        "carrier_name": "Blue Ribbon Express 78 #288",
+        "dot_number": "7274488",
+        "mc_number": "494672",
+        "hq_state": "SC",
+        "service_regions": [
+            "West Coast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "building materials",
+            "retail goods"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 2,
+        "contact_email": "info@blueribbonexpress78288.com",
+        "notes": "Specializes in building materials, retail goods hauling with primary equipment using reefer, tanker. Known for reliable shipping routes across West Coast."
+    },
+    {
+        "carrier_name": "Apex Systems 81 #289",
+        "dot_number": "1479031",
+        "mc_number": "476721",
+        "hq_state": "NY",
+        "service_regions": [
+            "Southeast"
+        ],
+        "equipment_types": [
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "retail goods"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 8,
+        "contact_email": "info@apexsystems81289.com",
+        "notes": "Specializes in retail goods hauling with primary equipment using tanker. Known for reliable shipping routes across Southeast."
+    },
+    {
+        "carrier_name": "Atlas Logistics #290",
+        "dot_number": "8733524",
+        "mc_number": "420202",
+        "hq_state": "TN",
+        "service_regions": [
+            "Southeast",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "intermodal",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "automotive parts",
+            "fresh produce"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 18,
+        "contact_email": "info@atlaslogistics290.com",
+        "notes": "Specializes in automotive parts, fresh produce hauling with primary equipment using intermodal, flatbed. Known for reliable shipping routes across Southeast, Northeast."
+    },
+    {
+        "carrier_name": "Canyon Freight 10 #291",
+        "dot_number": "2551428",
+        "mc_number": "438853",
+        "hq_state": "KY",
+        "service_regions": [
+            "Southwest",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "reefer",
+            "flatbed"
+        ],
+        "cargo_specializations": [
+            "general freight",
+            "retail goods"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 17,
+        "contact_email": "info@canyonfreight10291.com",
+        "notes": "Specializes in general freight, retail goods hauling with primary equipment using reefer, flatbed. Known for reliable shipping routes across Southwest, Northeast."
+    },
+    {
+        "carrier_name": "Swift Haulers 85 #292",
+        "dot_number": "5202910",
+        "mc_number": "602237",
+        "hq_state": "IN",
+        "service_regions": [
+            "Southwest",
+            "Southeast"
+        ],
+        "equipment_types": [
+            "intermodal",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "pharmaceuticals",
+            "fresh produce"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 7,
+        "contact_email": "info@swifthaulers85292.com",
+        "notes": "Specializes in pharmaceuticals, fresh produce hauling with primary equipment using intermodal, LTL. Known for reliable shipping routes across Southwest, Southeast."
+    },
+    {
+        "carrier_name": "Voyager Lines 21 #293",
+        "dot_number": "9488062",
+        "mc_number": "296718",
+        "hq_state": "TX",
+        "service_regions": [
+            "Southwest",
+            "Southeast",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "oversized loads",
+            "hazardous materials"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 16,
+        "contact_email": "info@voyagerlines21293.com",
+        "notes": "Specializes in oversized loads, hazardous materials hauling with primary equipment using tanker. Known for reliable shipping routes across Southwest, Southeast, Mountain."
+    },
+    {
+        "carrier_name": "Pioneer Transport #294",
+        "dot_number": "6937476",
+        "mc_number": "817893",
+        "hq_state": "MI",
+        "service_regions": [
+            "Northeast"
+        ],
+        "equipment_types": [
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "oversized loads"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 9,
+        "contact_email": "info@pioneertransport294.com",
+        "notes": "Specializes in oversized loads hauling with primary equipment using tanker. Known for reliable shipping routes across Northeast."
+    },
+    {
+        "carrier_name": "Pioneer Solutions #295",
+        "dot_number": "8112434",
+        "mc_number": "452951",
+        "hq_state": "AZ",
+        "service_regions": [
+            "West Coast",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "retail goods"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 18,
+        "contact_email": "info@pioneersolutions295.com",
+        "notes": "Specializes in retail goods hauling with primary equipment using tanker. Known for reliable shipping routes across West Coast, Mountain."
+    },
+    {
+        "carrier_name": "Apex Logistics #296",
+        "dot_number": "2453859",
+        "mc_number": "212846",
+        "hq_state": "CO",
+        "service_regions": [
+            "Pacific Northwest"
+        ],
+        "equipment_types": [
+            "flatbed",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "fresh produce"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 10,
+        "contact_email": "info@apexlogistics296.com",
+        "notes": "Specializes in fresh produce hauling with primary equipment using flatbed, LTL. Known for reliable shipping routes across Pacific Northwest."
+    },
+    {
+        "carrier_name": "FreightRunner Solutions 59 #297",
+        "dot_number": "2745596",
+        "mc_number": "320113",
+        "hq_state": "MO",
+        "service_regions": [
+            "Southwest",
+            "Mountain"
+        ],
+        "equipment_types": [
+            "reefer",
+            "tanker",
+            "LTL"
+        ],
+        "cargo_specializations": [
+            "hazardous materials",
+            "fresh produce"
+        ],
+        "safety_rating": "satisfactory",
+        "years_operating": 19,
+        "contact_email": "info@freightrunnersolutions59297.com",
+        "notes": "Specializes in hazardous materials, fresh produce hauling with primary equipment using reefer, tanker, LTL. Known for reliable shipping routes across Southwest, Mountain."
+    },
+    {
+        "carrier_name": "Atlas Express #298",
+        "dot_number": "1496510",
+        "mc_number": "542752",
+        "hq_state": "PA",
+        "service_regions": [
+            "Mountain",
+            "Midwest",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "reefer"
+        ],
+        "cargo_specializations": [
+            "fresh produce"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 5,
+        "contact_email": "info@atlasexpress298.com",
+        "notes": "Specializes in fresh produce hauling with primary equipment using reefer. Known for reliable shipping routes across Mountain, Midwest, Northeast."
+    },
+    {
+        "carrier_name": "FreightRunner Carriers #299",
+        "dot_number": "3379100",
+        "mc_number": "409300",
+        "hq_state": "AZ",
+        "service_regions": [
+            "Southwest",
+            "Northeast"
+        ],
+        "equipment_types": [
+            "dry van",
+            "tanker"
+        ],
+        "cargo_specializations": [
+            "automotive parts",
+            "hazardous materials"
+        ],
+        "safety_rating": "unsatisfactory",
+        "years_operating": 11,
+        "contact_email": "info@freightrunnercarriers299.com",
+        "notes": "Specializes in automotive parts, hazardous materials hauling with primary equipment using dry van, tanker. Known for reliable shipping routes across Southwest, Northeast."
+    }
+]
