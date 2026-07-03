@@ -18,6 +18,14 @@ pinned: false
 
 FreightIQ is a high-performance agentic carrier intelligence and logistics research assistant. Powered by a **LangGraph ReAct loop** and **Gemini 2.0 Flash**, it reasons over shipping queries, retrieves documents using a **hybrid search engine (ChromaDB + SQLite)**, re-ranks carrier profiles using a custom **PyTorch MLP**, and leverages live web search to answer real-time market rate questions.
 
+> 🚀 **Live Demo:** [huggingface.co/spaces/yyouretoast/freightiq](https://huggingface.co/spaces/yyouretoast/freightiq)
+
+---
+
+## 🎯 Why FreightIQ?
+
+Freight brokers and shippers waste hours manually searching fragmented carrier directories, filtering by state, safety rating, and equipment type across disconnected spreadsheets and DOT lookup tools. FreightIQ collapses this workflow into a single natural-language interface: ask a question in plain English, and the agent autonomously selects the right tool (SQL for exact filters, vector search for qualitative matches, web search for live rates), executes it, and synthesizes a clean answer — no forms, no manual filtering.
+
 ---
 
 ## 🛠️ Tech Stack & Keywords
@@ -174,7 +182,7 @@ streamlit run app.py
     *   *Flow:* Triggers `carrier_semantic_search` -> ChromaDB extracts vectors -> PyTorch re-ranks profiles -> returns top candidates.
 3.  **Freight Class Density Calculation:**
     *   *Prompt:* `"What is the NMFC freight class for a 1200 lbs pallet measuring 48x48x48 inches?"`
-    *   *Flow:* Triggers `freight_class_calculator` -> computes volume/density ($18.75\text{ lb/ft}^3$) -> maps class 70.
+    *   *Flow:* Triggers `freight_class_calculator` -> computes volume/density (18.75 lb/ft³) -> maps class 70.
 4.  **Web Search Integration:**
     *   *Prompt:* `"What is the current average national dry van spot rate per mile?"`
     *   *Flow:* Triggers `web_search` -> queries DuckDuckGo API -> summarizes latest logistics indices.
