@@ -171,6 +171,15 @@ streamlit run app.py
 
 ---
 
+## 🔮 Future Work & Scaling
+
+To transition FreightIQ to a commercial production standard, the following roadmap is proposed:
+*   **Active PyTorch Training:** Migrate the `CarrierReRanker` model from static weight initializations to supervised training using historical broker-carrier match logs or user click-through rates, optimizing weights via Binary Cross-Entropy (BCE) loss.
+*   **Production Database Migration:** Upgrade the local SQLite file storage to a highly concurrent relational database like **PostgreSQL** or **Amazon RDS** to support multi-user locking.
+*   **Authentication & Rate Limiting:** Implement OAuth2 security protocols and API gateway rate-limiting to protect the Gemini API token quota from abuse.
+
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
