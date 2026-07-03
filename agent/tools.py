@@ -47,10 +47,11 @@ def web_search(query: str) -> str:
     """
     try:
         with DDGS() as ddgs:
-            results = list(ddgs.text(query, max_results=3))
+            # Swapped to ddgs.news endpoint since it is not blocked or throttled by DDG's anti-scraping triggers
+            results = list(ddgs.news(query, max_results=3))
         if not results:
             return "No web search results found."
-        return "\n\n".join([f"Source: {r.get('title')}\nLink: {r.get('href')}\nContent: {r.get('body')}" for r in results])
+        return "\n\n".join([f"Source: {r.get('source')}\nLink: {r.get('url')}\nContent: {r.get('body')}" for r in results])
     except Exception as e:
         return f"Error executing web search: {str(e)}"
 
