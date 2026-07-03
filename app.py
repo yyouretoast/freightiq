@@ -14,6 +14,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Auto-initialize databases if missing (critical for Hugging Face Spaces cold starts)
+if not os.path.exists(config.DB_PATH) or not os.path.exists(config.CHROMA_PATH):
+    logger.info("Database or vector index missing. Triggering auto-setup...")
+    try:
+        from setup import main as run_setup
+        run_setup()
+    except Exception as e:
+        logger.error(f"Failed to auto-initialize data environment: {e}")
+
 def format_message_content(content):
     if isinstance(content, str):
         return content
