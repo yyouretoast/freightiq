@@ -1,9 +1,19 @@
+import logging
 import streamlit as st
 import os
 from html import escape
 from dotenv import load_dotenv
 from agent.graph import graph
 from langchain_core.messages import HumanMessage, AIMessage
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+MAX_QUERIES_PER_SESSION = 10
+CONVERSATION_WINDOW = 12
 
 def format_message_content(content):
     if isinstance(content, str):
@@ -40,7 +50,6 @@ html, body, [class*="css"] {
     background: radial-gradient(ellipse at top left, #0d1b2a 0%, #0a0f1e 50%, #070b14 100%);
 }
 
-/* ── Header ── */
 .fiq-header {
     display: flex;
     align-items: center;
@@ -72,7 +81,6 @@ html, body, [class*="css"] {
     letter-spacing: 0.3px;
 }
 
-/* ── Chat messages ── */
 [data-testid="stChatMessage"] {
     background: rgba(255,255,255,0.03) !important;
     border: 1px solid rgba(255,255,255,0.07) !important;
@@ -86,7 +94,6 @@ html, body, [class*="css"] {
     background: rgba(0, 212, 255, 0.04) !important;
 }
 
-/* ── Tool execution card ── */
 .tool-card {
     background: linear-gradient(135deg, rgba(0,212,255,0.05) 0%, rgba(123,97,255,0.05) 100%);
     border: 1px solid rgba(0, 212, 255, 0.2);
@@ -135,7 +142,6 @@ html, body, [class*="css"] {
     font-family: 'Space Mono', monospace;
 }
 
-/* ── Sidebar ── */
 [data-testid="stSidebar"] {
     background: rgba(10, 15, 30, 0.95) !important;
     border-right: 1px solid rgba(0, 212, 255, 0.1) !important;
@@ -187,8 +193,13 @@ html, body, [class*="css"] {
 .tool-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
 .tool-item-name { font-weight: 600; color: rgba(255,255,255,0.9); font-size: 0.78rem; }
 .tool-item-desc { color: rgba(255,255,255,0.4); font-size: 0.72rem; }
+.query-counter {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.35);
+    text-align: right;
+    padding: 4px 0 0 0;
+}
 
-/* ── Chat input ── */
 [data-testid="stChatInput"] {
     border: 1px solid rgba(0, 212, 255, 0.25) !important;
     border-radius: 12px !important;
@@ -199,10 +210,8 @@ html, body, [class*="css"] {
     box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.1) !important;
 }
 
-/* ── Spinner ── */
 [data-testid="stSpinner"] { color: #00d4ff !important; }
 
-/* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(0, 212, 255, 0.2); border-radius: 4px; }
@@ -210,7 +219,6 @@ html, body, [class*="css"] {
 </style>
 """, unsafe_allow_html=True)
 
-# Header
 st.markdown("""
 <div class="fiq-header">
     <span class="fiq-logo">🚚</span>
@@ -221,9 +229,8 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Sidebar
 TOOLS = [
-    ("🔍", "Semantic Search", "Vector DB + PyTorch MLP re-ranker"),
+    ("🔍", "Semantic Search", "Vector DB + PyTorch cosine reranker"),
     ("🗄️", "SQL Database", "Structured carrier lookups via SQLite"),
     ("🌐", "Web Search", "Live DuckDuckGo market research"),
     ("🔢", "Freight Class", "NMFC density calculator"),
@@ -232,7 +239,6 @@ TOOLS = [
 with st.sidebar:
     api_key_set = bool(os.getenv("GEMINI_API_KEY"))
     status_class = "status-ok" if api_key_set else "status-err"
-    status_dot = "●" if api_key_set else "●"
     status_text = "Gemini 2.0 Flash · Connected" if api_key_set else "API Key Missing"
 
     tool_items_html = "".join([
@@ -242,10 +248,17 @@ with st.sidebar:
         for icon, name, desc in TOOLS
     ])
 
+    if "query_count" not in st.session_state:
+        st.session_state.query_count = 0
+
+    remaining = MAX_QUERIES_PER_SESSION - st.session_state.query_count
+    counter_html = f'<div class="query-counter">{remaining}/{MAX_QUERIES_PER_SESSION} queries remaining</div>'
+
     st.markdown(f"""
     <div class="sidebar-section">
         <div class="sidebar-title">Agent Status</div>
-        <span class="status-badge {status_class}">{status_dot} {status_text}</span>
+        <span class="status-badge {status_class}">● {status_text}</span>
+        {counter_html}
     </div>
     <div class="sidebar-section">
         <div class="sidebar-title">Available Tools</div>
@@ -258,9 +271,9 @@ with st.sidebar:
 
     if st.button("🗑️ Reset Conversation", use_container_width=True):
         st.session_state.messages = []
+        st.session_state.query_count = 0
         st.rerun()
 
-# Message history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -272,12 +285,17 @@ for message in st.session_state.messages:
         with st.chat_message("assistant"):
             st.write(format_message_content(message.content))
 
-# Chat input
 if user_query := st.chat_input("Ask about carriers, rates, or calculate freight class…"):
+    if st.session_state.query_count >= MAX_QUERIES_PER_SESSION:
+        st.error(f"Session query limit reached ({MAX_QUERIES_PER_SESSION} queries). Click **Reset Conversation** to continue.")
+        st.stop()
+
     with st.chat_message("user"):
         st.write(user_query)
 
     st.session_state.messages.append(HumanMessage(content=user_query))
+    st.session_state.query_count += 1
+    logger.info(f"User query #{st.session_state.query_count}: '{user_query[:80]}'")
 
     with st.chat_message("assistant"):
         step_container = st.container()
@@ -285,8 +303,11 @@ if user_query := st.chat_input("Ask about carriers, rates, or calculate freight 
 
         final_answer = ""
         try:
+            # Sliding window: only send the last N messages to the LLM
+            windowed_messages = st.session_state.messages[-CONVERSATION_WINDOW:]
+
             with st.spinner("Reasoning…"):
-                for event in graph.stream({"messages": st.session_state.messages}, stream_mode="updates"):
+                for event in graph.stream({"messages": windowed_messages}, stream_mode="updates"):
                     for node_name, node_output in event.items():
                         if node_name == "tools":
                             for msg in node_output.get("messages", []):
@@ -310,6 +331,8 @@ if user_query := st.chat_input("Ask about carriers, rates, or calculate freight 
 
             if final_answer:
                 st.session_state.messages.append(AIMessage(content=final_answer))
+                logger.info(f"Agent response complete. Session total: {st.session_state.query_count} queries.")
 
         except Exception as e:
+            logger.error(f"Agent execution error: {e}")
             st.error(f"Agent error: {str(e)}")
