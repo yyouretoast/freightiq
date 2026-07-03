@@ -11,9 +11,12 @@ _CHROMA_COLLECTION = None
 
 def get_chroma_collection():
     global _CHROMA_CLIENT, _CHROMA_COLLECTION
-    if _CHROMA_CLIENT is None:
-        _CHROMA_CLIENT = chromadb.PersistentClient(path=CHROMA_PATH)
-        _CHROMA_COLLECTION = _CHROMA_CLIENT.get_collection(name="freight_carriers")
+    if _CHROMA_COLLECTION is None:
+        client = chromadb.PersistentClient(path=CHROMA_PATH)
+        collection = client.get_collection(name="freight_carriers")
+        # Only commit to globals after both succeed
+        _CHROMA_CLIENT = client
+        _CHROMA_COLLECTION = collection
     return _CHROMA_COLLECTION
 
 def retrieve_carriers_semantic(query, k=5):
@@ -21,7 +24,6 @@ def retrieve_carriers_semantic(query, k=5):
         return ["Error: Vector database not initialized. Run setup.py first."]
         
     try:
-        # Pre-compute query embedding using the cached model to prevent Chroma from loading its own
         embed_model = get_embed_model()
         query_vector = embed_model.encode(query, convert_to_numpy=True).tolist()
         
@@ -39,9 +41,8 @@ def retrieve_carriers_semantic(query, k=5):
         metadatas = results["metadatas"][0]
         embeddings = results["embeddings"][0]
         
-        # Pass pre-computed embeddings to avoid re-encoding in the reranker
         ranked_results = rerank_documents(
-            query, docs, metadatas, top_k=k, 
+            query, docs, metadatas, top_k=k,
             doc_embeddings=embeddings, query_embedding=query_vector
         )
         
@@ -54,13 +55,11 @@ def query_carriers_sql(sql_query):
         return "Error: SQL database not initialized. Run setup.py first."
         
     cleaned_query = sql_query.strip().lower()
-    # Safely allow both SELECT and CTE queries
     if not (cleaned_query.startswith("select") or cleaned_query.startswith("with")):
         return "Error: Only read-only queries (SELECT / WITH) are permitted on the carrier database."
         
     conn = None
     try:
-        # Connect strictly in read-only mode to prevent write attacks
         conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()

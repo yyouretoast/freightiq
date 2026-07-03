@@ -1,5 +1,6 @@
-import streamlit as tf_streamlit
+import streamlit as st
 import os
+from html import escape
 from dotenv import load_dotenv
 from agent.graph import graph
 from langchain_core.messages import HumanMessage, AIMessage
@@ -20,14 +21,14 @@ def format_message_content(content):
 
 load_dotenv()
 
-tf_streamlit.set_page_config(
+st.set_page_config(
     page_title="FreightIQ | Carrier Intelligence Agent",
     page_icon="🚚",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-tf_streamlit.markdown(
+st.markdown(
     """
     <style>
     .main {
@@ -63,24 +64,23 @@ tf_streamlit.markdown(
     unsafe_allow_html=True
 )
 
-tf_streamlit.title("🚚 FreightIQ: Carrier Intelligence Agent")
-tf_streamlit.markdown(
+st.title("🚚 FreightIQ: Carrier Intelligence Agent")
+st.markdown(
     "A multi-agent logistics assistant built using **LangGraph**, **LangChain**, and **ChromaDB**, "
     "powered by **Gemini 2.0 Flash** and custom **PyTorch** and **SQL** retrieval engines."
 )
 
-with tf_streamlit.sidebar:
-    tf_streamlit.header("⚙️ Agent Status")
+with st.sidebar:
+    st.header("⚙️ Agent Status")
     
-    api_key_set = bool(os.getenv("GEMINI_API_KEY"))
-    if api_key_set:
-        tf_streamlit.success("Gemini API Key: Configured")
+    if os.getenv("GEMINI_API_KEY"):
+        st.success("Gemini API Key: Configured")
     else:
-        tf_streamlit.error("Gemini API Key: Missing")
-        tf_streamlit.info("Please set GEMINI_API_KEY in your .env file to enable the agent.")
+        st.error("Gemini API Key: Missing")
+        st.info("Please set GEMINI_API_KEY in your .env file to enable the agent.")
         
-    tf_streamlit.markdown("---")
-    tf_streamlit.markdown(
+    st.markdown("---")
+    st.markdown(
         "### Available Tools:\n"
         "- 🔍 **Carrier Semantic Search**: Vector DB semantic search + custom PyTorch MLP re-ranker.\n"
         "- 🗄️ **Carrier SQL Database**: Direct SQLite queries for structured lookups.\n"
@@ -88,64 +88,56 @@ with tf_streamlit.sidebar:
         "- 🔢 **NMFC Freight Class Calculator**: Precise shipment density calculator."
     )
     
-    if tf_streamlit.button("Reset Conversation", use_container_width=True):
-        tf_streamlit.session_state.messages = []
-        tf_streamlit.rerun()
+    if st.button("Reset Conversation", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
 
-if "messages" not in tf_streamlit.session_state:
-    tf_streamlit.session_state.messages = []
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-for message in tf_streamlit.session_state.messages:
+for message in st.session_state.messages:
     if isinstance(message, HumanMessage):
-        with tf_streamlit.chat_message("user"):
-            tf_streamlit.write(format_message_content(message.content))
+        with st.chat_message("user"):
+            st.write(format_message_content(message.content))
     elif isinstance(message, AIMessage):
         if message.content:
-            with tf_streamlit.chat_message("assistant"):
-                tf_streamlit.write(format_message_content(message.content))
+            with st.chat_message("assistant"):
+                st.write(format_message_content(message.content))
 
-if user_query := tf_streamlit.chat_input("Ask about carrier search, rates, or calculate freight class..."):
-    with tf_streamlit.chat_message("user"):
-        tf_streamlit.write(user_query)
+if user_query := st.chat_input("Ask about carrier search, rates, or calculate freight class..."):
+    with st.chat_message("user"):
+        st.write(user_query)
         
-    human_msg = HumanMessage(content=user_query)
-    tf_streamlit.session_state.messages.append(human_msg)
+    st.session_state.messages.append(HumanMessage(content=user_query))
     
-    with tf_streamlit.chat_message("assistant"):
-        step_container = tf_streamlit.container()
-        response_container = tf_streamlit.empty()
+    with st.chat_message("assistant"):
+        step_container = st.container()
+        response_container = st.empty()
         
         final_answer = ""
         try:
-            with tf_streamlit.spinner("Agent is reasoning and querying database..."):
-                for event in graph.stream({"messages": tf_streamlit.session_state.messages}, stream_mode="updates"):
+            with st.spinner("Agent is reasoning and querying database..."):
+                for event in graph.stream({"messages": st.session_state.messages}, stream_mode="updates"):
                     for node_name, node_output in event.items():
                         if node_name == "tools":
-                            messages = node_output.get("messages", [])
-                            for msg in messages:
-                                tool_name = msg.name
-                                tool_result = msg.content
-                                
+                            for msg in node_output.get("messages", []):
+                                safe_result = escape(str(msg.content)[:300])
                                 with step_container:
-                                    tf_streamlit.markdown(
-                                        f"""<div class="tool-box">
-                                        <strong>🔧 Tool Executed:</strong> {tool_name}<br/>
-                                        <strong>Output Sample:</strong><br/>
-                                        {tool_result[:300]}...
-                                        </div>""", 
+                                    st.markdown(
+                                        f'<div class="tool-box">'
+                                        f'<strong>🔧 Tool Executed:</strong> {escape(msg.name)}<br/>'
+                                        f'<strong>Output Sample:</strong><br/>{safe_result}...'
+                                        f'</div>',
                                         unsafe_allow_html=True
                                     )
-                                    
                         elif node_name == "agent":
                             messages = node_output.get("messages", [])
-                            if messages:
-                                last_msg = messages[-1]
-                                if last_msg.content:
-                                    final_answer = format_message_content(last_msg.content)
-                                    response_container.write(final_answer)
+                            if messages and messages[-1].content:
+                                final_answer = format_message_content(messages[-1].content)
+                                response_container.write(final_answer)
                                 
             if final_answer:
-                tf_streamlit.session_state.messages.append(AIMessage(content=final_answer))
+                st.session_state.messages.append(AIMessage(content=final_answer))
                 
         except Exception as e:
-            tf_streamlit.error(f"Error during agent execution: {str(e)}")
+            st.error(f"Error during agent execution: {str(e)}")
