@@ -171,6 +171,12 @@ Run the Streamlit frontend locally:
 streamlit run app.py
 ```
 
+### 5. Run Programmatic Verification Tests
+Validate all modules (calculators, SQL, vector search, PyTorch reranking, live APIs, and LangGraph routing) in 5 seconds via the CLI test suite:
+```bash
+python tests/verify_system.py
+```
+
 ---
 
 ## 📝 Example Queries to Test
@@ -186,7 +192,7 @@ streamlit run app.py
     *   *Flow:* Triggers `freight_class_calculator` -> computes volume/density (18.75 lb/ft³) -> maps class 70.
 4.  **Web Search Integration:**
     *   *Prompt:* `"What is the current average national dry van spot rate per mile?"`
-    *   *Flow:* Triggers `web_search` -> queries DuckDuckGo API -> summarizes latest logistics indices.
+    *   *Flow:* Triggers `web_search` -> queries DuckDuckGo News API (structured index) -> summarizes latest logistics news.
 
 ---
 
