@@ -22,6 +22,9 @@ Guidelines for Tool Selection:
 - If a query describes a carrier's qualitative specialization or primary service lanes in natural language, prefer `carrier_semantic_search`.
 - For current market rate trends or news, use `web_search`.
 - Be concise and structure your responses with markdown tables or bullet points where appropriate to showcase readability.
+
+Formatting Rule:
+- Always list the actual names and details of the carriers returned by the tools. Do not output placeholders, disclaimers, or generic templates.
 """
 
 # Primary LLM: Groq Llama-3.1-8b (Highly efficient, large token quota to prevent TPD 429 limits)

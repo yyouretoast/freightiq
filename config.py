@@ -17,10 +17,9 @@ SEMANTIC_RETRIEVAL_K = 5
 
 # UI & Agent Session Configuration
 MAX_QUERIES_PER_SESSION = 10
-CONVERSATION_WINDOW = 12
+# Reduced from 12 to 5 to prevent Groq TPM rate limits and stop history leakage/context-contamination
+CONVERSATION_WINDOW = 5
 TOOL_TRUNCATION_LIMIT = 400
 
 # Global Thread Lock
-# Defined here because config.py is imported normally, meaning this lock is cached
-# in sys.modules and shared globally across all Streamlit exec namespaces.
 setup_lock = threading.Lock()
