@@ -1,10 +1,14 @@
+from dotenv import load_dotenv
+# 1. Load environment variables first before importing any project packages that instantiate LLMs
+load_dotenv()
+
 import logging
 import streamlit as st
 import os
 import textwrap
 from html import escape
-from dotenv import load_dotenv
-from agent.graph import graph
+from agent.graph import build_graph
+from agent.locks import setup_lock
 from langchain_core.messages import HumanMessage, AIMessage
 import config
 
@@ -14,9 +18,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Thread-safe database auto-initialization utilizing the global config lock
+# 2. Cache graph compilation inside Streamlit to prevent hot-reload compilation loops
+@st.cache_resource
+def get_graph():
+    logger.info("Compiling agent LangGraph workflow...")
+    return build_graph()
+
+# 3. Thread-safe database auto-initialization utilizing the global locks module
 if not os.path.exists(config.DB_PATH) or not os.path.exists(config.CHROMA_PATH):
-    with config.setup_lock:
+    with setup_lock:
         # Double-check condition once lock is acquired
         if not os.path.exists(config.DB_PATH) or not os.path.exists(config.CHROMA_PATH):
             logger.info("Database or vector index missing. Triggering thread-safe auto-setup...")
@@ -25,6 +35,13 @@ if not os.path.exists(config.DB_PATH) or not os.path.exists(config.CHROMA_PATH):
                 run_setup()
             except Exception as e:
                 logger.error(f"Failed to auto-initialize data environment: {e}")
+
+# 4. Initialize session state variables safely at the module level
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+if "query_count" not in st.session_state:
+    st.session_state.query_count = 0
 
 def format_message_content(content):
     if isinstance(content, str):
@@ -39,8 +56,6 @@ def format_message_content(content):
                 text_parts.append(block)
         return "".join(text_parts)
     return str(content)
-
-load_dotenv()
 
 st.set_page_config(
     page_title="FreightIQ | Carrier Intelligence",
@@ -259,9 +274,6 @@ with st.sidebar:
         for icon, name, desc in TOOLS
     ])
 
-    if "query_count" not in st.session_state:
-        st.session_state.query_count = 0
-
     remaining = config.MAX_QUERIES_PER_SESSION - st.session_state.query_count
     counter_html = f'<div class="query-counter">{remaining}/{config.MAX_QUERIES_PER_SESSION} queries remaining</div>'
 
@@ -284,9 +296,6 @@ with st.sidebar:
         st.session_state.messages = []
         st.session_state.query_count = 0
         st.rerun()
-
-if "messages" not in st.session_state:
-    st.session_state.messages = []
 
 for message in st.session_state.messages:
     if isinstance(message, HumanMessage):
@@ -316,6 +325,9 @@ if user_query := st.chat_input("Ask about carriers, rates, or calculate freight 
         try:
             # Sliding window: only send the last N messages to the LLM
             windowed_messages = st.session_state.messages[-config.CONVERSATION_WINDOW:]
+
+            # Retrieve compiled cached graph resource
+            graph = get_graph()
 
             with st.spinner("Reasoning…"):
                 for event in graph.stream({"messages": windowed_messages}, stream_mode="updates"):

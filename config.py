@@ -1,5 +1,4 @@
 import os
-import threading
 
 # Database & Storage Paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -17,9 +16,6 @@ SEMANTIC_RETRIEVAL_K = 5
 
 # UI & Agent Session Configuration
 MAX_QUERIES_PER_SESSION = 10
-# Reduced from 12 to 5 to prevent Groq TPM rate limits and stop history leakage/context-contamination
-CONVERSATION_WINDOW = 5
+# Increased from 5 to 8 to restore context memory without hitting Groq TPM limits
+CONVERSATION_WINDOW = 8
 TOOL_TRUNCATION_LIMIT = 400
-
-# Global Thread Lock
-setup_lock = threading.Lock()

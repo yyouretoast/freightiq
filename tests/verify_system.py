@@ -1,5 +1,4 @@
 import os
-import sys
 import logging
 from dotenv import load_dotenv
 
@@ -9,11 +8,8 @@ load_dotenv()
 # Set logging to warning to keep output clean
 logging.basicConfig(level=logging.WARNING)
 
-# Force path resolution to project root
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from agent.tools import carrier_semantic_search, carrier_sql_query, freight_class_calculator, web_search
-from agent.graph import graph
+from agent.graph import build_graph
 from langchain_core.messages import HumanMessage
 
 def test_calculators():
@@ -64,6 +60,7 @@ def test_agent_graph():
     prompt = "Give me the MC numbers of all carriers located in California (CA) that have a satisfactory safety rating. limit to 1."
     print(f"User Prompt: {prompt}")
     
+    graph = build_graph()
     events = graph.stream({"messages": [HumanMessage(content=prompt)]}, stream_mode="updates")
     
     tool_executed = False

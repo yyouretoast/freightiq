@@ -42,13 +42,6 @@ def agent_node(state: AgentState):
     messages = state["messages"]
     
     # Global Loop Guardrail:
-    # Check if the agent is stuck in an execution loop (running the exact same tool with the exact same parameters consecutively)
-    last_tool_calls = []
-    for msg in reversed(messages):
-        if isinstance(msg, AIMessage) and msg.tool_calls:
-            last_tool_calls.extend(msg.tool_calls)
-            break
-            
     # Detect duplicate back-to-back tool calls
     if len(messages) >= 2:
         prev_ai_msgs = [m for m in messages if isinstance(m, AIMessage) and m.tool_calls]

@@ -47,9 +47,9 @@ def setup_sqlite():
         """)
         
         # Create database indexes on columns frequently filtered/queried by the agent
-        cursor.execute("CREATE INDEX idx_carriers_hq_state ON carriers (hq_state)")
-        cursor.execute("CREATE INDEX idx_carriers_safety_rating ON carriers (safety_rating)")
-        cursor.execute("CREATE INDEX idx_carriers_dot_number ON carriers (dot_number)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_carriers_hq_state ON carriers (hq_state)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_carriers_safety_rating ON carriers (safety_rating)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_carriers_dot_number ON carriers (dot_number)")
         
         with open(json_path, "r") as f:
             carriers = json.load(f)
