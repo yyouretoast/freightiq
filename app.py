@@ -410,7 +410,6 @@ if user_query:
         step_container = st.container()
         response_container = st.empty()
 
-        final_answer = ""
         try:
             # Sliding window: only send the last N messages to the LLM
             windowed_messages = st.session_state.messages[-config.CONVERSATION_WINDOW:]
@@ -496,14 +495,14 @@ if st.session_state.messages and isinstance(st.session_state.messages[-1], AIMes
         last_msg_idx = len(st.session_state.messages) - 1
         if st.session_state.voted_message_index != last_msg_idx:
             st.caption("Was this response helpful? Saves feedback to improve future reranker training:")
-            col1, col2, col3 = st.columns([1, 1, 10])
-            with col1:
+            fb_col1, fb_col2, fb_col3 = st.columns([1, 1, 10])
+            with fb_col1:
                 if st.button("👍 Yes", key="thumbs_up", use_container_width=True):
                     save_feedback(last_query, last_response, "up")
                     st.session_state.voted_message_index = last_msg_idx
                     st.toast("Thank you! Feedback saved to feedback.json.")
                     st.rerun()
-            with col2:
+            with fb_col2:
                 if st.button("👎 No", key="thumbs_down", use_container_width=True):
                     save_feedback(last_query, last_response, "down")
                     st.session_state.voted_message_index = last_msg_idx
