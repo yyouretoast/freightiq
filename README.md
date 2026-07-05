@@ -140,7 +140,7 @@ class CarrierReRanker(nn.Module):
 
 The database pipeline splits database ingestion tasks for clean debugging and maintenance:
 *   `rag/generate_carriers.py`: Programmatically generates 200 synthetic carriers.
-*   `rag/setup_sqlite.py`: Populates `carriers.db` (for structured queries like filtering safety ratings, years operating, and DOT searches).
+*   `rag/setup_sqlite.py`: Populates `carriers.db`. Multi-value columns (`service_regions`, `equipment_types`, `cargo_specializations`) are stored as JSON arrays, enabling precise `json_each()` queries alongside standard filters on `hq_state`, `safety_rating`, and `years_operating`.
 *   `rag/ingest_chroma.py`: Computes vector embeddings locally using `all-MiniLM-L6-v2` and persists them to ChromaDB.
 *   `setup.py`: The single-entry execution script triggering the entire database environment setup.
 

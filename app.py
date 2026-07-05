@@ -377,14 +377,14 @@ for idx, message in enumerate(st.session_state.messages):
             st.write(format_message_content(message.content))
 
 # Render Query Suggestion Chips
-st.write("")
+st.markdown("<br>", unsafe_allow_html=True)
 col1, col2, col3 = st.columns([1, 1, 1])
 clicked_query = None
 with col1:
     if st.button("🚛 FL produce & class", key="chip_fl", use_container_width=True):
         clicked_query = "Find a carrier located in Florida (FL) that handles fresh produce. What are their DOT and MC numbers, and how many years have they been operating? Also, what is the freight class for a 220 lbs crate of fresh produce measuring 36x36x36 inches? Be detailed."
 with col2:
-    if st.button("🔥 Midwest flatbeds", key="chip_midwest", use_container_width=True):
+    if st.button("🗄️ Midwest Hazmat Flatbeds", key="chip_midwest", use_container_width=True):
         clicked_query = "We need flatbed carriers that handle hazardous materials in the Midwest."
 with col3:
     if st.button("🧭 OH safety check & class", key="chip_ohio", use_container_width=True):
