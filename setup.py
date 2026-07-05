@@ -1,10 +1,11 @@
 import os
 import sys
+import config
 
 def main():
     print("=== Starting FreightIQ Data Environment Setup ===")
     
-    json_path = os.path.join("rag", "data", "carriers.json")
+    json_path = config.CARRIERS_JSON_PATH
     if not os.path.exists(json_path):
         print("carriers.json not found. Generating synthetic data...")
         from rag.generate_carriers import main as generate_data

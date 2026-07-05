@@ -44,7 +44,7 @@ def test_sql_retrieval():
     query = "SELECT carrier_name, hq_state, safety_rating FROM carriers WHERE hq_state = 'OH' AND safety_rating = 'satisfactory' LIMIT 2"
     result = carrier_sql_query.invoke({"query": query})
     print(result)
-    assert "Ohio" in result or "OH" in result or "satisfactory" in result, "SQL query failed to return expected OH carrier profiles."
+    assert "Hq State: OH" in result and "satisfactory" in result, "SQL query failed to return expected OH carrier profiles."
     print("[OK] SQL read-only retrieval validated successfully.")
 
 def test_semantic_retrieval():

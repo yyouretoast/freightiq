@@ -1,13 +1,17 @@
+import logging
 from langchain_core.tools import tool
 from duckduckgo_search import DDGS
 from rag.retriever import retrieve_carriers_semantic, query_carriers_sql
 
+logger = logging.getLogger(__name__)
+
 @tool
 def carrier_semantic_search(query: str) -> str:
     """
-    Search the carrier database semantically using natural language queries. 
-    Best for loose matches, regional capabilities, equipment matching, or qualitative descriptions 
-    (e.g., 'flatbed hauling in the midwest', 'refrigerated carriers in Ohio').
+    Search the carrier database using natural language for purely qualitative or descriptive queries.
+    Use ONLY when the query has no specific geography, state, region, equipment type, or cargo type.
+    Examples: 'carriers known for reliability', 'haulers with strong safety culture'.
+    Do NOT use for geographic or attribute-filtered queries — use carrier_sql_query for those.
     """
     results = retrieve_carriers_semantic(query, k=5)
     return "\n\n---\n\n".join(results) if results else "No carrier profiles matched your semantic query."
@@ -33,9 +37,13 @@ def carrier_sql_query(query: str) -> str:
     - contact_email (TEXT)
     - notes (TEXT)
     
+    IMPORTANT: service_regions, equipment_types, and cargo_specializations store comma-separated
+    values as plain text. Always use LIKE '%value%' to match within these columns. Never use = for them.
+    
     Example queries:
-    - SELECT * FROM carriers WHERE dot_number = '1234567'
-    - SELECT carrier_name FROM carriers WHERE hq_state = 'TX' AND safety_rating = 'satisfactory'
+    - SELECT * FROM carriers WHERE hq_state = 'OH' AND safety_rating = 'satisfactory'
+    - SELECT * FROM carriers WHERE service_regions LIKE '%Midwest%' AND equipment_types LIKE '%flatbed%' AND cargo_specializations LIKE '%hazardous%'
+    - SELECT * FROM carriers WHERE hq_state = 'FL' AND cargo_specializations LIKE '%fresh produce%'
     """
     return query_carriers_sql(query)
 
@@ -50,10 +58,11 @@ def web_search(query: str) -> str:
             # Swapped to ddgs.news endpoint since it is not blocked or throttled by DDG's anti-scraping triggers
             results = list(ddgs.news(query, max_results=3))
         if not results:
-            return "No web search results found."
+            return "No web search results found for this query."
         return "\n\n".join([f"Source: {r.get('source')}\nLink: {r.get('url')}\nContent: {r.get('body')}" for r in results])
     except Exception as e:
-        return f"Error executing web search: {str(e)}"
+        logger.error(f"Web search error: {e}")
+        return "Web search is temporarily unavailable. Please try again or rephrase your query."
 
 @tool
 def freight_class_calculator(weight_lbs: float, length_in: float, width_in: float, height_in: float, cargo_description: str = "") -> str:
@@ -123,14 +132,14 @@ def freight_class_calculator(weight_lbs: float, length_in: float, width_in: floa
         freight_class = 500
         
     if applied_exception:
-        keyword, freight_class = applied_exception
+        keyword, ex_class = applied_exception
         return (
             f"Shipment Dimensions: {length_in}x{width_in}x{height_in} inches\n"
             f"Volume: {cubic_feet:.2f} cubic feet\n"
             f"Weight: {weight_lbs} lbs\n"
             f"Calculated Density: {density:.2f} lb/ft³\n"
-            f"Standard NMFC Freight Class (Calculated): {freight_class}\n"
-            f"LTL EXCEPTION RULE APPLIED: Cargo contains '{keyword}' forcing a fixed NMFC Class {freight_class}."
+            f"Density-Based NMFC Class (pre-exception): {freight_class}\n"
+            f"LTL EXCEPTION RULE APPLIED: Cargo contains '{keyword}' — fixed NMFC Class {ex_class} overrides density calculation."
         )
 
     return (

@@ -11,6 +11,9 @@ logger = logging.getLogger(__name__)
 # System prompt defining agent instructions, tools, capabilities, and guidance
 SYSTEM_PROMPT = """You are FreightIQ, a senior logistics coordinator and agentic assistant. Your task is to resolve user queries about carriers, shipping options, freight classes, and real-time market trends.
 
+CRITICAL — DATA INTEGRITY RULE:
+Never fabricate, invent, or guess carrier names, DOT numbers, MC numbers, safety ratings, or any carrier data. You do NOT have carrier knowledge in your training data. You MUST call a tool every time carrier information is requested. If no results are returned by the tool, say so honestly — do not generate fictional carriers.
+
 You have access to the following specialized tools:
 1. `carrier_sql_query`: Best for exact lookups, filter matching (hq_state, safety_rating, dot_number, mc_number, years_operating), or aggregate math (averages, counts). You must query the 'carriers' table. Use LIKE '%value%' for partial text matches on service_regions, equipment_types, and cargo_specializations.
 2. `carrier_semantic_search`: Best ONLY for purely qualitative or descriptive queries where no specific geography, state, or structured attribute is mentioned (e.g. "carriers with strong safety culture" or "small haulers known for reliability").
@@ -52,19 +55,23 @@ def agent_node(state: AgentState):
     if len(messages) >= 2:
         prev_ai_msgs = [m for m in messages if isinstance(m, AIMessage) and m.tool_calls]
         if len(prev_ai_msgs) >= 2:
-            last_call = prev_ai_msgs[-1].tool_calls[0]
-            penultimate_call = prev_ai_msgs[-2].tool_calls[0]
+            last_calls = prev_ai_msgs[-1].tool_calls
+            penultimate_calls = prev_ai_msgs[-2].tool_calls
             
-            # If the last two tool calls have identical names and arguments, inject a loop-break message
-            if last_call["name"] == penultimate_call["name"] and last_call["args"] == penultimate_call["args"]:
-                logger.warning(f"Loop detected on tool '{last_call['name']}'. Injecting loop guardrail warning.")
-                loop_break_prompt = (
-                    f"System Warning: You have already executed the tool '{last_call['name']}' with args {last_call['args']}. "
-                    "Do NOT call this tool again. Synthesize your final answer immediately based on the results already retrieved."
-                )
-                messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + messages + [SystemMessage(content=loop_break_prompt)]
-                response = llm_with_tools.invoke(messages_with_warning)
-                return {"messages": [response]}
+            if last_calls and penultimate_calls:
+                last_call = last_calls[0]
+                penultimate_call = penultimate_calls[0]
+                
+                # If the last two tool calls have identical names and arguments, inject a loop-break message
+                if last_call["name"] == penultimate_call["name"] and last_call["args"] == penultimate_call["args"]:
+                    logger.warning(f"Loop detected on tool '{last_call['name']}'. Injecting loop guardrail warning.")
+                    loop_break_prompt = (
+                        f"System Warning: You have already executed the tool '{last_call['name']}' with args {last_call['args']}. "
+                        "Do NOT call this tool again. Synthesize your final answer immediately based on the results already retrieved."
+                    )
+                    messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + messages + [SystemMessage(content=loop_break_prompt)]
+                    response = llm_with_tools.invoke(messages_with_warning)
+                    return {"messages": [response]}
                 
     messages_with_system = [SystemMessage(content=SYSTEM_PROMPT)] + messages
     response = llm_with_tools.invoke(messages_with_system)
