@@ -27,7 +27,6 @@ def ingest_chroma():
     # Direct execution idempotency check to avoid redundant vector encodings
     if os.path.exists(config.CHROMA_PATH):
         try:
-            import chromadb
             client = chromadb.PersistentClient(path=config.CHROMA_PATH)
             collection = client.get_collection(name=config.CHROMA_COLLECTION_NAME)
             if collection.count() > 0:
