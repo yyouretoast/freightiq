@@ -34,8 +34,7 @@ def test_calculators():
         "cargo_description": "crate of insulation foam"
     })
     print(exception_result)
-    assert "LTL EXCEPTION RULE APPLIED" in exception_result, "LTL exceptions check failed!"
-    assert "Standard NMFC Freight Class (Calculated): 150" in exception_result, "LTL insulation class exception mismatch!"
+    assert "LTL EXCEPTION RULE APPLIED" in exception_result and "fixed NMFC Class 150" in exception_result, "LTL insulation class exception mismatch!"
     
     print("[OK] Calculator logic validated successfully.")
 
