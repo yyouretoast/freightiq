@@ -46,7 +46,6 @@ def setup_sqlite():
         )
         """)
         
-        # Create database indexes on columns frequently filtered/queried by the agent
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_carriers_hq_state ON carriers (hq_state)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_carriers_safety_rating ON carriers (safety_rating)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_carriers_dot_number ON carriers (dot_number)")
@@ -60,9 +59,9 @@ def setup_sqlite():
                 c["dot_number"],
                 c["mc_number"],
                 c["hq_state"],
-                ", ".join(c["service_regions"]),
-                ", ".join(c["equipment_types"]),
-                ", ".join(c["cargo_specializations"]),
+                json.dumps(c["service_regions"]),
+                json.dumps(c["equipment_types"]),
+                json.dumps(c["cargo_specializations"]),
                 c["safety_rating"],
                 c["years_operating"],
                 c["contact_email"],

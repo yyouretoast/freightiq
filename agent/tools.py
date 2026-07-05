@@ -8,10 +8,8 @@ logger = logging.getLogger(__name__)
 @tool
 def carrier_semantic_search(query: str) -> str:
     """
-    Search the carrier database using natural language for purely qualitative or descriptive queries.
-    Use ONLY when the query has no specific geography, state, region, equipment type, or cargo type.
-    Examples: 'carriers known for reliability', 'haulers with strong safety culture'.
-    Do NOT use for geographic or attribute-filtered queries — use carrier_sql_query for those.
+    Search the carrier database using natural language and vector similarity.
+    Returns the top-k most semantically relevant carrier profiles for the given query.
     """
     results = retrieve_carriers_semantic(query, k=5)
     return "\n\n---\n\n".join(results) if results else "No carrier profiles matched your semantic query."
@@ -19,31 +17,30 @@ def carrier_semantic_search(query: str) -> str:
 @tool
 def carrier_sql_query(query: str) -> str:
     """
-    Execute a read-only SQL SELECT query on the 'carriers' table to retrieve structured information. 
-    Highly recommended for exact searches, filtering by safety rating, specific states, dot_number, 
-    mc_number, or counting metrics.
+    Execute a read-only SQL SELECT query on the 'carriers' table.
     
-    Columns in 'carriers' table:
+    Columns:
     - id (INTEGER)
     - carrier_name (TEXT)
     - dot_number (TEXT)
     - mc_number (TEXT)
-    - hq_state (TEXT)
-    - service_regions (TEXT - comma-separated list, e.g., 'Midwest, Southwest')
-    - equipment_types (TEXT - comma-separated list, e.g., 'dry van, reefer')
-    - cargo_specializations (TEXT - comma-separated list, e.g., 'hazardous materials')
-    - safety_rating (TEXT - 'satisfactory', 'conditional', or 'unsatisfactory')
+    - hq_state (TEXT) — use exact match: hq_state = 'OH'
+    - service_regions (TEXT — JSON array, e.g. '["Midwest", "Southwest"]')
+    - equipment_types (TEXT — JSON array, e.g. '["dry van", "flatbed"]')
+    - cargo_specializations (TEXT — JSON array, e.g. '["hazardous materials"]')
+    - safety_rating (TEXT — 'satisfactory', 'conditional', or 'unsatisfactory')
     - years_operating (INTEGER)
     - contact_email (TEXT)
     - notes (TEXT)
     
-    IMPORTANT: service_regions, equipment_types, and cargo_specializations store comma-separated
-    values as plain text. Always use LIKE '%value%' to match within these columns. Never use = for them.
+    For JSON array columns use json_each() for exact matching, or LIKE for partial:
+    - Exact:   EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Midwest')
+    - Partial: service_regions LIKE '%Midwest%'
     
-    Example queries:
+    Examples:
     - SELECT * FROM carriers WHERE hq_state = 'OH' AND safety_rating = 'satisfactory'
-    - SELECT * FROM carriers WHERE service_regions LIKE '%Midwest%' AND equipment_types LIKE '%flatbed%' AND cargo_specializations LIKE '%hazardous%'
-    - SELECT * FROM carriers WHERE hq_state = 'FL' AND cargo_specializations LIKE '%fresh produce%'
+    - SELECT * FROM carriers WHERE EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Midwest') AND EXISTS (SELECT 1 FROM json_each(equipment_types) WHERE value = 'flatbed') AND EXISTS (SELECT 1 FROM json_each(cargo_specializations) WHERE value = 'hazardous materials')
+    - SELECT * FROM carriers WHERE hq_state = 'FL' AND EXISTS (SELECT 1 FROM json_each(cargo_specializations) WHERE value = 'fresh produce')
     """
     return query_carriers_sql(query)
 

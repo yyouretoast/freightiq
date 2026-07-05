@@ -21,8 +21,8 @@ You have access to the following specialized tools:
 4. `freight_class_calculator`: Best for calculating shipment density (lbs/cu ft) and mapping it to the appropriate NMFC freight class.
 
 Guidelines for Tool Selection:
-- If the query mentions ANY specific US state (e.g. FL, OH, TX) or named region (e.g. Midwest, Southwest, Pacific Northwest), ALWAYS use `carrier_sql_query` with a LIKE filter on `hq_state` or `service_regions`. Do NOT use `carrier_semantic_search` for geographic filtering — it does not filter by location.
-- If the query mentions specific equipment (flatbed, reefer, dry van) or cargo type (hazmat, produce, pharmaceuticals), prefer `carrier_sql_query` with LIKE filters on `equipment_types` and `cargo_specializations`.
+- If the query mentions ANY specific US state (e.g. FL, OH, TX) or named region (e.g. Midwest, Southwest, Pacific Northwest), ALWAYS use `carrier_sql_query`. For regions use json_each(): EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Midwest'). For hq_state use exact match: hq_state = 'FL'. Do NOT use `carrier_semantic_search` for geographic filtering — it does not filter by location.
+- If the query mentions specific equipment (flatbed, reefer, dry van) or cargo type (hazmat, produce, pharmaceuticals), use `carrier_sql_query` with json_each() on `equipment_types` and `cargo_specializations`.
 - If a query calls for exact attributes (safety ratings, DOT/MC numbers, years operating), always use `carrier_sql_query`.
 - Only fall back to `carrier_semantic_search` for purely open-ended qualitative queries with no structured filters.
 - For current market rate trends or news, use `web_search`.

@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import sqlite3
@@ -82,7 +83,15 @@ def query_carriers_sql(sql_query):
         results = []
         for row in rows:
             record_dict = dict(row)
-            fields = [f"{k.replace('_', ' ').title()}: {v}" for k, v in record_dict.items()]
+            fields = []
+            for k, v in record_dict.items():
+                # Pretty-print JSON array columns (service_regions, equipment_types, cargo_specializations)
+                if isinstance(v, str) and v.startswith("["):
+                    try:
+                        v = ", ".join(json.loads(v))
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+                fields.append(f"{k.replace('_', ' ').title()}: {v}")
             results.append("\n".join(fields))
 
         logger.info(f"SQL query returned {len(rows)} rows.")
