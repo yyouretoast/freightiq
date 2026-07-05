@@ -31,7 +31,8 @@ Formatting Rule:
 llm = ChatGroq(
     model="llama-3.1-8b-instant",
     groq_api_key=os.getenv("GROQ_API_KEY"),
-    temperature=0.0
+    temperature=0.0,
+    streaming=True
 )
 
 # Bind tools to the LLM and strictly disable parallel tool calls at the API schema level.

@@ -154,9 +154,15 @@ pip install -r requirements.txt
 ```
 
 ### 2. Configure Environment Variables
-Create a `.env` file in the root directory and add your Groq API key:
+Create a `.env` file in the root directory and add your keys:
 ```env
+# Core Groq LLM API Key
 GROQ_API_KEY=your_groq_api_key_here
+
+# Optional: Enable LangSmith Observability Tracing
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=your_langchain_api_key_here
+LANGCHAIN_PROJECT=FreightIQ-Agent
 ```
 
 ### 3. Run Data Ingestion
@@ -199,7 +205,7 @@ python tests/verify_system.py
 ## 🔮 Future Work & Scaling
 
 To transition FreightIQ to a commercial production standard, the following roadmap is proposed:
-*   **Active PyTorch Training:** Migrate the `CarrierReRanker` model from static weight initializations to supervised training using historical broker-carrier match logs or user click-through rates, optimizing weights via Binary Cross-Entropy (BCE) loss.
+*   **Active PyTorch Training (Implemented Collection Path):** The interface now logs user query-response helpfulness ratings (via 👍/👎 buttons) directly to `rag/data/feedback.json`. This logs positive/negative labels (polarity) alongside retrieved search queries and documents. These logs form the exact supervised training dataset required to train the custom PyTorch `CarrierReRanker` MLP model using Binary Cross-Entropy (BCE) loss.
 *   **Production Database Migration:** Upgrade the local SQLite file storage to a highly concurrent relational database like **PostgreSQL** or **Amazon RDS** to support multi-user locking.
 *   **Authentication & Rate Limiting:** Implement OAuth2 security protocols and API gateway rate-limiting to protect the Groq API token quota from abuse.
 

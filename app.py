@@ -5,11 +5,14 @@ load_dotenv()
 import logging
 import streamlit as st
 import os
+import json
 import textwrap
+from datetime import datetime
 from html import escape
 from agent.graph import build_graph
 from agent.locks import setup_lock
 from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.callbacks import BaseCallbackHandler
 import config
 
 logging.basicConfig(
@@ -18,13 +21,55 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# 2. Cache graph compilation inside Streamlit to prevent hot-reload compilation loops
+# 2. Custom LangChain callback handler to stream text tokens directly to Streamlit
+class StreamlitTokenCallbackHandler(BaseCallbackHandler):
+    def __init__(self, placeholder):
+        self.placeholder = placeholder
+        self.tokens = []
+
+    def on_llm_new_token(self, token: str, **kwargs) -> None:
+        # Ignore tokens belonging to tool calls to avoid printing JSON payloads in the chat box
+        chunk = kwargs.get("chunk")
+        if chunk and hasattr(chunk, "message") and hasattr(chunk.message, "tool_call_chunks") and chunk.message.tool_call_chunks:
+            return
+        
+        self.tokens.append(token)
+        self.placeholder.write("".join(self.tokens))
+
+# 3. Helper to serialize user feedback on query-response matches
+def save_feedback(query, response, feedback_type):
+    feedback_file = os.path.join(config.BASE_DIR, "rag", "data", "feedback.json")
+    os.makedirs(os.path.dirname(feedback_file), exist_ok=True)
+    
+    record = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "query": format_message_content(query),
+        "response": format_message_content(response),
+        "feedback": feedback_type
+    }
+    
+    data = []
+    if os.path.exists(feedback_file):
+        try:
+            with open(feedback_file, "r") as f:
+                data = json.load(f)
+        except Exception:
+            pass
+            
+    data.append(record)
+    try:
+        with open(feedback_file, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        logger.error(f"Failed to write feedback record: {e}")
+
+# 4. Cache graph compilation inside Streamlit to prevent hot-reload compilation loops
 @st.cache_resource
 def get_graph():
     logger.info("Compiling agent LangGraph workflow...")
     return build_graph()
 
-# 3. Thread-safe database auto-initialization utilizing the global locks module
+# 5. Thread-safe database auto-initialization utilizing the global locks module
 if not os.path.exists(config.DB_PATH) or not os.path.exists(config.CHROMA_PATH):
     with setup_lock:
         # Double-check condition once lock is acquired
@@ -36,7 +81,7 @@ if not os.path.exists(config.DB_PATH) or not os.path.exists(config.CHROMA_PATH):
             except Exception as e:
                 logger.error(f"Failed to auto-initialize data environment: {e}")
 
-# 4. Initialize session state variables safely at the module level
+# 6. Initialize session state variables safely at the module level
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -329,8 +374,15 @@ if user_query := st.chat_input("Ask about carriers, rates, or calculate freight 
             # Retrieve compiled cached graph resource
             graph = get_graph()
 
+            # Instantiate streaming callback handler
+            stream_handler = StreamlitTokenCallbackHandler(response_container)
+
             with st.spinner("Reasoning…"):
-                for event in graph.stream({"messages": windowed_messages}, stream_mode="updates"):
+                for event in graph.stream(
+                    {"messages": windowed_messages}, 
+                    config={"callbacks": [stream_handler]}, 
+                    stream_mode="updates"
+                ):
                     for node_name, node_output in event.items():
                         if node_name == "tools":
                             for msg in node_output.get("messages", []):
@@ -361,12 +413,36 @@ if user_query := st.chat_input("Ask about carriers, rates, or calculate freight 
                             messages = node_output.get("messages", [])
                             if messages and messages[-1].content:
                                 final_answer = format_message_content(messages[-1].content)
+                                # Force final write to make sure text formatting is clean
                                 response_container.write(final_answer)
 
             if final_answer:
                 st.session_state.messages.append(AIMessage(content=final_answer))
                 logger.info(f"Agent response complete. Session total: {st.session_state.query_count} queries.")
+                st.rerun()
 
         except Exception as e:
             logger.error(f"Agent execution error: {e}")
             st.error(f"Agent error: {str(e)}")
+
+# 7. Render feedback button loop only for the final agent message block
+if st.session_state.messages and isinstance(st.session_state.messages[-1], AIMessage):
+    last_response = st.session_state.messages[-1].content
+    last_query = ""
+    for msg in reversed(st.session_state.messages[:-1]):
+        if isinstance(msg, HumanMessage):
+            last_query = msg.content
+            break
+            
+    if last_query:
+        st.write("---")
+        st.caption("Was this response helpful? Logging feedback trains the PyTorch MLP Reranker:")
+        col1, col2, col3 = st.columns([1, 1, 10])
+        with col1:
+            if st.button("👍 Yes", key="thumbs_up", use_container_width=True):
+                save_feedback(last_query, last_response, "up")
+                st.toast("Thank you! Feedback saved to feedback.json.")
+        with col2:
+            if st.button("👎 No", key="thumbs_down", use_container_width=True):
+                save_feedback(last_query, last_response, "down")
+                st.toast("Thank you! Feedback saved to feedback.json.")
