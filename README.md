@@ -180,7 +180,7 @@ streamlit run app.py
 ### 5. Run Programmatic Verification Tests
 Validate all modules (calculators, SQL, vector search, PyTorch reranking, live APIs, and LangGraph routing) in 5 seconds via the CLI test suite:
 ```bash
-python tests/verify_system.py
+python -m tests.verify_system
 ```
 
 ---

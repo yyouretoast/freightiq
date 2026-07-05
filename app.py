@@ -23,9 +23,11 @@ logger = logging.getLogger(__name__)
 
 # 2. Custom LangChain callback handler to stream text tokens directly to Streamlit
 class StreamlitTokenCallbackHandler(BaseCallbackHandler):
-    def __init__(self, placeholder):
+    def __init__(self, placeholder, initial_text=""):
         self.placeholder = placeholder
-        self.tokens = []
+        self.tokens = [initial_text] if initial_text else []
+        if initial_text:
+            self.placeholder.write(initial_text)
 
     def on_llm_new_token(self, token: str, **kwargs) -> None:
         # Ignore tokens belonging to tool calls to avoid printing JSON payloads in the chat box
@@ -87,6 +89,9 @@ if "messages" not in st.session_state:
 
 if "query_count" not in st.session_state:
     st.session_state.query_count = 0
+
+if "voted_message_index" not in st.session_state:
+    st.session_state.voted_message_index = -1
 
 def format_message_content(content):
     if isinstance(content, str):
@@ -376,6 +381,8 @@ if user_query := st.chat_input("Ask about carriers, rates, or calculate freight 
 
             # Instantiate streaming callback handler
             stream_handler = StreamlitTokenCallbackHandler(response_container)
+            accumulated_responses = []
+            final_answer = ""
 
             with st.spinner("Reasoning…"):
                 for event in graph.stream(
@@ -412,7 +419,10 @@ if user_query := st.chat_input("Ask about carriers, rates, or calculate freight 
                         elif node_name == "agent":
                             messages = node_output.get("messages", [])
                             if messages and messages[-1].content:
-                                final_answer = format_message_content(messages[-1].content)
+                                text = format_message_content(messages[-1].content)
+                                if text and text not in accumulated_responses:
+                                    accumulated_responses.append(text)
+                                final_answer = "\n\n".join(accumulated_responses)
                                 # Force final write to make sure text formatting is clean
                                 response_container.write(final_answer)
 
@@ -436,13 +446,21 @@ if st.session_state.messages and isinstance(st.session_state.messages[-1], AIMes
             
     if last_query:
         st.write("---")
-        st.caption("Was this response helpful? Logging feedback trains the PyTorch MLP Reranker:")
-        col1, col2, col3 = st.columns([1, 1, 10])
-        with col1:
-            if st.button("👍 Yes", key="thumbs_up", use_container_width=True):
-                save_feedback(last_query, last_response, "up")
-                st.toast("Thank you! Feedback saved to feedback.json.")
-        with col2:
-            if st.button("👎 No", key="thumbs_down", use_container_width=True):
-                save_feedback(last_query, last_response, "down")
-                st.toast("Thank you! Feedback saved to feedback.json.")
+        last_msg_idx = len(st.session_state.messages) - 1
+        if st.session_state.voted_message_index != last_msg_idx:
+            st.caption("Was this response helpful? Logging feedback trains the PyTorch MLP Reranker:")
+            col1, col2, col3 = st.columns([1, 1, 10])
+            with col1:
+                if st.button("👍 Yes", key="thumbs_up", use_container_width=True):
+                    save_feedback(last_query, last_response, "up")
+                    st.session_state.voted_message_index = last_msg_idx
+                    st.toast("Thank you! Feedback saved to feedback.json.")
+                    st.rerun()
+            with col2:
+                if st.button("👎 No", key="thumbs_down", use_container_width=True):
+                    save_feedback(last_query, last_response, "down")
+                    st.session_state.voted_message_index = last_msg_idx
+                    st.toast("Thank you! Feedback saved to feedback.json.")
+                    st.rerun()
+        else:
+            st.success("Feedback logged successfully! Thank you for helping train the re-ranker.")
