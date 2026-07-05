@@ -1,6 +1,7 @@
 import json
 import random
 import os
+import config
 
 STATES = ["TX", "CA", "IL", "OH", "PA", "GA", "FL", "NC", "MI", "NY", "TN", "IN", "KY", "AL", "MO", "AZ", "WI", "CO", "SC", "OR"]
 REGIONS = ["Midwest", "Northeast", "Southeast", "Southwest", "West Coast", "Pacific Northwest", "Mountain"]
@@ -57,8 +58,8 @@ def main():
     # Seed random generator for reproducibility
     random.seed(42)
     carriers = [generate_random_carrier(i) for i in range(200)]
-    os.makedirs(os.path.join("rag", "data"), exist_ok=True)
-    out_path = os.path.join("rag", "data", "carriers.json")
+    out_path = config.CARRIERS_JSON_PATH
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w") as f:
         json.dump(carriers, f, indent=4)
     print(f"Generated 200 synthetic carrier profiles at {out_path}")

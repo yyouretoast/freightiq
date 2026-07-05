@@ -63,7 +63,7 @@ def test_web_search():
     
     # Note: DuckDuckGo occasionally rate-limits programmatic requests.
     # We warn rather than fail to prevent third-party rate limits from breaking CI/CD tests.
-    if "No web search results" in result or "Error executing" in result:
+    if "No web search results" in result or "temporarily unavailable" in result:
         print("[WARNING] Web search tool did not return results (possibly throttled by DDG). Tool is functional.")
     else:
         print("[OK] Live Web API queries validated successfully.")
