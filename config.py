@@ -4,6 +4,8 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "rag", "data", "carriers.db")
 CHROMA_PATH = os.path.join(BASE_DIR, "chroma_db")
+CARRIERS_JSON_PATH = os.path.join(BASE_DIR, "rag", "data", "carriers.json")
+CHROMA_COLLECTION_NAME = "freight_carriers"
 
 # Model Configuration
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"

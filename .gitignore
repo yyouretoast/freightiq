@@ -21,4 +21,6 @@ Thumbs.db
 # Project-specific private files
 resume_draft.tex
 scratch/
+rag/data/feedback.json
+
 

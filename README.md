@@ -84,8 +84,8 @@ Freight brokers and shippers waste hours manually searching fragmented carrier d
 |      |                                               |
 |      v (Stored embeddings)                           |
 |  +--------------------+                              |
-|  | Custom PyTorch MLP |                              |
-|  |  Re-ranking Head   |                              |
+|  |  PyTorch Embedding  |                              |
+|  | & Cosine Re-ranking |                              |
 |  +--------------------+                              |
 |      |                                               |
 |      v (Top-k Results)                               |
@@ -206,6 +206,10 @@ python -m tests.verify_system
 
 To transition FreightIQ to a commercial production standard, the following roadmap is proposed:
 *   **Active PyTorch Training (Implemented Collection Path):** The interface now logs user query-response helpfulness ratings (via 👍/👎 buttons) directly to `rag/data/feedback.json`. This logs positive/negative labels (polarity) alongside retrieved search queries and documents. These logs form the exact supervised training dataset required to train the custom PyTorch `CarrierReRanker` MLP model using Binary Cross-Entropy (BCE) loss.
+    > [!NOTE]
+    > **Hugging Face Filesystem Limitation:** In the live Hugging Face Space, the local filesystem is ephemeral and resets on cold starts. For true production environments, these logged feedback signals should be configured to stream directly to an external database (e.g. Postgres) or the Hugging Face Dataset Hub API.
+*   **LangSmith Observability:** Tracing is fully pre-integrated into the execution graph. Set `LANGCHAIN_TRACING_V2=true`, `LANGCHAIN_ENDPOINT=https://aws.api.smith.langchain.com` (for AWS subdomains), and your `LANGCHAIN_API_KEY` in your environment to view detailed query execution traces.
+*   **Persistent UI Tool Cards:** Built-in `tool_executions` and `voted_message_index` trackers save intermediate reasoning step tool cards inside `st.session_state` to prevent them from vanishing on page refreshes, keeping the reasoning traces visible across the chat history.
 *   **Production Database Migration:** Upgrade the local SQLite file storage to a highly concurrent relational database like **PostgreSQL** or **Amazon RDS** to support multi-user locking.
 *   **Authentication & Rate Limiting:** Implement OAuth2 security protocols and API gateway rate-limiting to protect the Groq API token quota from abuse.
 

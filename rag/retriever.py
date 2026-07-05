@@ -19,7 +19,7 @@ def get_chroma_collection():
         with _chroma_lock:
             if _CHROMA_COLLECTION is None:
                 client = chromadb.PersistentClient(path=config.CHROMA_PATH)
-                collection = client.get_collection(name="freight_carriers")
+                collection = client.get_collection(name=config.CHROMA_COLLECTION_NAME)
                 # Commit atomically to prevent partial initialization leaks
                 _CHROMA_CLIENT = client
                 _CHROMA_COLLECTION = collection
