@@ -7,7 +7,7 @@ import streamlit as st
 import os
 import json
 import textwrap
-from datetime import datetime
+from datetime import datetime, timezone
 from html import escape
 from agent.graph import build_graph
 from agent.locks import setup_lock
@@ -44,7 +44,7 @@ def save_feedback(query, response, feedback_type):
     os.makedirs(os.path.dirname(feedback_file), exist_ok=True)
     
     record = {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "query": format_message_content(query),
         "response": format_message_content(response),
         "feedback": feedback_type
@@ -345,6 +345,7 @@ with st.sidebar:
     if st.button("🗑️ Reset Conversation", use_container_width=True):
         st.session_state.messages = []
         st.session_state.query_count = 0
+        st.session_state.voted_message_index = -1
         st.rerun()
 
 for message in st.session_state.messages:
