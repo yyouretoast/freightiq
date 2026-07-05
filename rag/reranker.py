@@ -26,6 +26,11 @@ def get_embed_model():
     return _EMBED_MODEL
 
 def get_reranker_model(device):
+    """
+    Placeholder initialization hook for the neural network reranker.
+    Preserved for future active-learning training integration; currently unused in active
+    inference to optimize memory footprint in container builds.
+    """
     global _RERANKER_MODEL
     if _RERANKER_MODEL is None:
         with _reranker_lock:
@@ -85,7 +90,7 @@ def rerank_documents(query, documents, metadatas=None, top_k=5, doc_embeddings=N
 
     query_tensor = torch.tensor(query_vector, dtype=torch.float32, device=device).unsqueeze(0)
     doc_tensors = torch.tensor(doc_vectors, dtype=torch.float32, device=device)
-    query_tensors = query_tensor.repeat(len(documents), 1)
+    query_tensors = query_tensor.expand(len(documents), -1)
 
     # Score via cosine similarity — deterministic and semantically correct.
     # Replaces the untrained MLP forward pass until training data is available.

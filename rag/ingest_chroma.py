@@ -20,7 +20,7 @@ def format_carrier_document(c):
     )
 
 def ingest_chroma():
-    json_path = os.path.join("rag", "data", "carriers.json")
+    json_path = os.path.join(config.BASE_DIR, "rag", "data", "carriers.json")
     if not os.path.exists(json_path):
         raise FileNotFoundError(f"Source carriers.json not found at {json_path}. Run generate_carriers.py first.")
         

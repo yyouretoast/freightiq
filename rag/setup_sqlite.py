@@ -4,7 +4,7 @@ import os
 import config
 
 def setup_sqlite():
-    json_path = os.path.join("rag", "data", "carriers.json")
+    json_path = os.path.join(config.BASE_DIR, "rag", "data", "carriers.json")
     db_path = config.DB_PATH
     
     if not os.path.exists(json_path):
