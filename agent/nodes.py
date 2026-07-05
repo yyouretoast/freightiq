@@ -33,7 +33,7 @@ Formatting & Synthesis Rules:
 # Primary LLM: Groq Llama-3.1-8b (Highly efficient, large token quota to prevent TPD 429 limits)
 llm = ChatGroq(
     model="llama-3.1-8b-instant",
-    groq_api_key=os.getenv("GROQ_API_KEY"),
+    groq_api_key=os.getenv("GROQ_API_KEY") or "mock_key_for_ci",
     temperature=0.0,
     streaming=True
 )

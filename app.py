@@ -31,9 +31,12 @@ class StreamlitTokenCallbackHandler(BaseCallbackHandler):
 
     def on_llm_new_token(self, token: str, **kwargs) -> None:
         # Ignore tokens belonging to tool calls to avoid printing JSON payloads in the chat box
-        chunk = kwargs.get("chunk")
-        if chunk and hasattr(chunk, "message") and hasattr(chunk.message, "tool_call_chunks") and chunk.message.tool_call_chunks:
-            return
+        try:
+            chunk = kwargs.get("chunk")
+            if chunk and hasattr(chunk, "message") and hasattr(chunk.message, "tool_call_chunks") and chunk.message.tool_call_chunks:
+                return
+        except Exception:
+            pass
         
         self.tokens.append(token)
         self.placeholder.write("".join(self.tokens))
@@ -92,6 +95,9 @@ if "query_count" not in st.session_state:
 
 if "voted_message_index" not in st.session_state:
     st.session_state.voted_message_index = -1
+
+if "tool_executions" not in st.session_state:
+    st.session_state.tool_executions = {}
 
 def format_message_content(content):
     if isinstance(content, str):
@@ -346,17 +352,48 @@ with st.sidebar:
         st.session_state.messages = []
         st.session_state.query_count = 0
         st.session_state.voted_message_index = -1
+        st.session_state.tool_executions = {}
         st.rerun()
 
-for message in st.session_state.messages:
+for idx, message in enumerate(st.session_state.messages):
     if isinstance(message, HumanMessage):
         with st.chat_message("user"):
             st.write(format_message_content(message.content))
+            
+        # Render persistent tool executions associated with this query index
+        if idx in st.session_state.tool_executions:
+            for tool_call in st.session_state.tool_executions[idx]:
+                st.markdown(f"""
+                <div class="tool-card">
+                    <div class="tool-card-header">
+                        <span class="tool-badge">TOOL</span>
+                        <span class="tool-name">{tool_call["name"]}</span>
+                    </div>
+                    <div class="tool-output">{tool_call["output"]}</div>
+                </div>""", unsafe_allow_html=True)
+                
     elif isinstance(message, AIMessage) and message.content:
         with st.chat_message("assistant"):
             st.write(format_message_content(message.content))
 
-if user_query := st.chat_input("Ask about carriers, rates, or calculate freight class…"):
+# Render Query Suggestion Chips
+st.write("")
+col1, col2, col3 = st.columns([1, 1, 1])
+clicked_query = None
+with col1:
+    if st.button("🚛 FL produce & class", key="chip_fl", use_container_width=True):
+        clicked_query = "Find a carrier located in Florida (FL) that handles fresh produce. What are their DOT and MC numbers, and how many years have they been operating? Also, what is the freight class for a 220 lbs crate of fresh produce measuring 36x36x36 inches? Be detailed."
+with col2:
+    if st.button("🔥 Midwest flatbeds", key="chip_midwest", use_container_width=True):
+        clicked_query = "We need flatbed carriers that handle hazardous materials in the Midwest."
+with col3:
+    if st.button("🧭 OH safety check & class", key="chip_ohio", use_container_width=True):
+        clicked_query = "Find a carrier headquartered in Ohio with a satisfactory safety rating. Also, what would the freight class be for a 150 lbs crate measuring 24x24x24 inches?"
+
+chat_input_val = st.chat_input("Ask about carriers, rates, or calculate freight class…")
+user_query = clicked_query if clicked_query else chat_input_val
+
+if user_query:
     if st.session_state.query_count >= config.MAX_QUERIES_PER_SESSION:
         st.error(f"Session query limit reached ({config.MAX_QUERIES_PER_SESSION} queries). Click **Reset Conversation** to continue.")
         st.stop()
@@ -366,6 +403,7 @@ if user_query := st.chat_input("Ask about carriers, rates, or calculate freight 
 
     st.session_state.messages.append(HumanMessage(content=user_query))
     st.session_state.query_count += 1
+    current_query_idx = len(st.session_state.messages) - 1
     logger.info(f"User query #{st.session_state.query_count}: '{user_query[:80]}'")
 
     with st.chat_message("assistant"):
@@ -407,6 +445,14 @@ if user_query := st.chat_input("Ask about carriers, rates, or calculate freight 
                                     truncated_output = raw_output
                                 
                                 safe_output = escape(truncated_output)
+                                # Persist the tool card execution to state
+                                if current_query_idx not in st.session_state.tool_executions:
+                                    st.session_state.tool_executions[current_query_idx] = []
+                                st.session_state.tool_executions[current_query_idx].append({
+                                    "name": safe_name,
+                                    "output": safe_output
+                                })
+
                                 with step_container:
                                     st.markdown(f"""
                                     <div class="tool-card">
@@ -449,7 +495,7 @@ if st.session_state.messages and isinstance(st.session_state.messages[-1], AIMes
         st.write("---")
         last_msg_idx = len(st.session_state.messages) - 1
         if st.session_state.voted_message_index != last_msg_idx:
-            st.caption("Was this response helpful? Logging feedback trains the PyTorch MLP Reranker:")
+            st.caption("Was this response helpful? Saves feedback to improve future reranker training:")
             col1, col2, col3 = st.columns([1, 1, 10])
             with col1:
                 if st.button("👍 Yes", key="thumbs_up", use_container_width=True):

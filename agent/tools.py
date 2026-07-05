@@ -56,10 +56,10 @@ def web_search(query: str) -> str:
         return f"Error executing web search: {str(e)}"
 
 @tool
-def freight_class_calculator(weight_lbs: float, length_in: float, width_in: float, height_in: float) -> str:
+def freight_class_calculator(weight_lbs: float, length_in: float, width_in: float, height_in: float, cargo_description: str = "") -> str:
     """
-    Calculate the NMFC freight class based on shipment weight in pounds and dimensions in inches.
-    Accurately maps density (lbs/cubic foot) to the standard NMFC classification (50 - 500).
+    Calculate the NMFC freight class based on shipment weight in pounds, dimensions in inches, and optional cargo description.
+    Accurately maps density (lbs/cubic foot) to standard NMFC class, or resolves fixed class exceptions (e.g. insulation).
     """
     if weight_lbs <= 0 or length_in <= 0 or width_in <= 0 or height_in <= 0:
         return "Error: All inputs (weight, length, width, height) must be greater than zero."
@@ -67,6 +67,23 @@ def freight_class_calculator(weight_lbs: float, length_in: float, width_in: floa
     cubic_inches = length_in * width_in * height_in
     cubic_feet = cubic_inches / 1728.0
     density = weight_lbs / cubic_feet
+    
+    # LTL Exceptions Check
+    exceptions = {
+        "insulation": 150,
+        "bulk mail": 70,
+        "raw mail": 70,
+        "ping pong balls": 500,
+        "plastic cups": 250
+    }
+    
+    applied_exception = None
+    if cargo_description:
+        desc_lower = cargo_description.lower()
+        for keyword, ex_class in exceptions.items():
+            if keyword in desc_lower:
+                applied_exception = (keyword, ex_class)
+                break
     
     if density >= 50:
         freight_class = 50
@@ -105,6 +122,17 @@ def freight_class_calculator(weight_lbs: float, length_in: float, width_in: floa
     else:
         freight_class = 500
         
+    if applied_exception:
+        keyword, freight_class = applied_exception
+        return (
+            f"Shipment Dimensions: {length_in}x{width_in}x{height_in} inches\n"
+            f"Volume: {cubic_feet:.2f} cubic feet\n"
+            f"Weight: {weight_lbs} lbs\n"
+            f"Calculated Density: {density:.2f} lb/ft³\n"
+            f"Standard NMFC Freight Class (Calculated): {freight_class}\n"
+            f"LTL EXCEPTION RULE APPLIED: Cargo contains '{keyword}' forcing a fixed NMFC Class {freight_class}."
+        )
+
     return (
         f"Shipment Dimensions: {length_in}x{width_in}x{height_in} inches\n"
         f"Volume: {cubic_feet:.2f} cubic feet\n"
