@@ -23,8 +23,11 @@ Guidelines for Tool Selection:
 - For current market rate trends or news, use `web_search`.
 - Be concise and structure your responses with markdown tables or bullet points where appropriate to showcase readability.
 
-Formatting Rule:
-- Always list the actual names and details of the carriers returned by the tools. Do not output placeholders, disclaimers, or generic templates.
+Formatting & Synthesis Rules:
+- Always list the actual names and details of the carriers returned by the tools. Do not output placeholders or generic templates.
+- If the query has multiple parts (e.g., finding a carrier AND calculating a freight class), you must synthesize and answer ALL parts of the query in your final response.
+- Do not output only a disclaimer. You must write the carrier details (names, DOT, MC, years operating) and the freight class results first, and only then append any disclaimers at the very end.
+- When querying carriers, always select the 'carrier_name' or '*' so you have the names to present.
 """
 
 # Primary LLM: Groq Llama-3.1-8b (Highly efficient, large token quota to prevent TPD 429 limits)
