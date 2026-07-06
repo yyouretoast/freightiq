@@ -298,6 +298,70 @@ html, body, [class*="css"] {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(0, 212, 255, 0.2); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(0, 212, 255, 0.4); }
+
+/* Premium Table Styling for structured carrier tables */
+table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 15px 0 !important;
+    font-size: 0.82rem !important;
+    background-color: rgba(255, 255, 255, 0.01) !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(0, 212, 255, 0.1) !important;
+}
+th {
+    background-color: rgba(0, 212, 255, 0.08) !important;
+    color: #00d4ff !important;
+    text-align: left !important;
+    padding: 10px 14px !important;
+    font-weight: 600 !important;
+    border-bottom: 2px solid rgba(0, 212, 255, 0.2) !important;
+    text-transform: uppercase !important;
+    font-size: 0.72rem !important;
+    letter-spacing: 0.5px !important;
+}
+td {
+    padding: 10px 14px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+tr:hover {
+    background-color: rgba(0, 212, 255, 0.03) !important;
+}
+
+/* Premium Markdown Links styling */
+a {
+    color: #00d4ff !important;
+    text-decoration: none !important;
+    transition: color 0.2s ease !important;
+}
+a:hover {
+    color: #7b61ff !important;
+    text-decoration: underline !important;
+}
+
+/* Premium suggestion chips and buttons styling */
+div[data-testid="stButton"] button {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(0, 212, 255, 0.15) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+    border-radius: 8px !important;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+    font-size: 0.78rem !important;
+    padding: 6px 12px !important;
+    font-weight: 500 !important;
+}
+div[data-testid="stButton"] button:hover {
+    background: rgba(0, 212, 255, 0.05) !important;
+    border-color: #00d4ff !important;
+    color: #00d4ff !important;
+    box-shadow: 0 0 14px rgba(0, 212, 255, 0.2) !important;
+    transform: translateY(-1px) !important;
+}
+div[data-testid="stButton"] button:active {
+    transform: translateY(1px) !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
