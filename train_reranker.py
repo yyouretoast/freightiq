@@ -5,9 +5,7 @@ import logging
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import numpy as np
 from torch.utils.data import DataLoader, TensorDataset
-from sentence_transformers import SentenceTransformer
 import config
 from rag.reranker import CarrierReRanker, get_embed_model
 from rag.utils import format_carrier_document

@@ -80,8 +80,9 @@ def rerank_documents(query, documents, metadatas=None, top_k=5, doc_embeddings=N
     embed_model = get_embed_model()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    # Reranker model instantiation removed to optimize CPU/GPU memory footprint.
-    # The CarrierReRanker class is preserved above for architectural completeness and future training.
+    # Dynamic Reranker Execution:
+    # Attempt to load the fine-tuned MLP weights if they exist on disk.
+    # If the weights file is absent, score candidate documents using cosine similarity.
 
     if query_embedding is None:
         query_vector = embed_model.encode(query, convert_to_numpy=True)
