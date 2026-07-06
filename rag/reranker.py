@@ -1,3 +1,4 @@
+import os
 import logging
 import threading
 import torch
@@ -92,11 +93,26 @@ def rerank_documents(query, documents, metadatas=None, top_k=5, doc_embeddings=N
     doc_tensors = torch.tensor(doc_vectors, dtype=torch.float32, device=device)
     query_tensors = query_tensor.expand(len(documents), -1)
 
-    # Score via cosine similarity — deterministic and semantically correct.
-    # Replaces the untrained MLP forward pass until training data is available.
-    with torch.no_grad():
-        scores = F.cosine_similarity(query_tensors, doc_tensors, dim=-1)
-        scores = scores.cpu().numpy()
+    # Check if custom fine-tuned weights exist to enable active learning inference path
+    weights_path = os.path.join(config.BASE_DIR, "rag", "data", "reranker_weights.pt")
+    if os.path.exists(weights_path):
+        try:
+            model = get_reranker_model(device)
+            model.load_state_dict(torch.load(weights_path, map_location=device))
+            model.eval()
+            with torch.no_grad():
+                scores_tensor = model(query_tensors, doc_tensors).squeeze(-1)
+                scores = scores_tensor.cpu().numpy()
+            logger.info("Reranked candidate documents utilizing fine-tuned PyTorch MLP reranker.")
+        except Exception as e:
+            logger.error(f"Failed to load/run custom PyTorch reranker, falling back to cosine similarity: {e}")
+            with torch.no_grad():
+                scores = F.cosine_similarity(query_tensors, doc_tensors, dim=-1).cpu().numpy()
+    else:
+        # Score via cosine similarity — deterministic and semantically correct.
+        with torch.no_grad():
+            scores = F.cosine_similarity(query_tensors, doc_tensors, dim=-1)
+            scores = scores.cpu().numpy()
 
     ranked_indices = np.argsort(scores)[::-1]
     logger.debug(f"Reranked {len(documents)} docs, top score: {scores[ranked_indices[0]]:.4f}")

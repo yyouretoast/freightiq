@@ -22,5 +22,6 @@ Thumbs.db
 resume_draft.tex
 scratch/
 rag/data/feedback.json
+*.pt
 
 
