@@ -35,9 +35,9 @@ Formatting & Synthesis Rules:
 - When querying carriers, always select the 'carrier_name' or '*' so you have the names to present.
 """
 
-# Primary LLM: Groq Llama-3.1-8b (Highly efficient, large token quota to prevent TPD 429 limits)
+# Primary LLM: Groq Llama-3.3-70b (High reasoning, accurate function calling)
 llm = ChatGroq(
-    model="llama-3.1-8b-instant",
+    model="llama-3.3-70b-versatile",
     groq_api_key=os.getenv("GROQ_API_KEY") or "mock_key_for_ci",
     temperature=0.0,
     streaming=True
@@ -67,9 +67,10 @@ def agent_node(state: AgentState):
                     logger.warning(f"Loop detected on tool '{last_call['name']}'. Injecting loop guardrail warning.")
                     loop_break_prompt = (
                         f"System Warning: You have already executed the tool '{last_call['name']}' with args {last_call['args']}. "
-                        "Do NOT call this tool again. Synthesize your final answer immediately based on the results already retrieved."
+                        "Do NOT call this tool again. Synthesize your final answer immediately based on the results already retrieved. "
+                        "RESPOND IN PLAIN TEXT NOW. DO NOT CALL ANY TOOLS. DO NOT OUTPUT JSON TOOL CALLS OR SYNTAX. WRITE A DIRECT ENGLISH RESPONSE."
                     )
-                    messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + messages + [SystemMessage(content=loop_break_prompt)]
+                    messages_with_warning = [SystemMessage(content="You are FreightIQ, a senior logistics coordinator. Respond directly in plain text. Do not output any tool calls or JSON markup.")] + messages + [SystemMessage(content=loop_break_prompt)]
                     response = llm.invoke(messages_with_warning)
                     return {"messages": [response]}
 
@@ -90,9 +91,10 @@ def agent_node(state: AgentState):
                 "System Warning: You have already executed carrier_sql_query multiple times. "
                 "If the database returns no matching records, do NOT continue to reformulate and repeat SQL queries. "
                 "Synthesize your final answer immediately, stating clearly that no carriers matching the requested criteria "
-                "were found in the database."
+                "were found in the database. "
+                "RESPOND IN PLAIN TEXT NOW. DO NOT CALL ANY TOOLS. DO NOT OUTPUT JSON TOOL CALLS OR SYNTAX. WRITE A DIRECT ENGLISH RESPONSE."
             )
-            messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + messages + [SystemMessage(content=loop_break_prompt)]
+            messages_with_warning = [SystemMessage(content="You are FreightIQ, a senior logistics coordinator. Respond directly in plain text. Do not output any tool calls or JSON markup.")] + messages + [SystemMessage(content=loop_break_prompt)]
             response = llm.invoke(messages_with_warning)
             return {"messages": [response]}
                 

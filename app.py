@@ -13,6 +13,7 @@ from agent.graph import build_graph
 from agent.locks import setup_lock, feedback_lock
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from langchain_core.callbacks import BaseCallbackHandler
+from rag.utils import save_feedback, format_message_content
 import config
 
 logging.basicConfig(
@@ -42,32 +43,7 @@ class StreamlitTokenCallbackHandler(BaseCallbackHandler):
         self.placeholder.write("".join(self.tokens))
 
 # 3. Helper to serialize user feedback on query-response matches
-def save_feedback(query, response, feedback_type):
-    feedback_file = os.path.join(config.BASE_DIR, "rag", "data", "feedback.json")
-    os.makedirs(os.path.dirname(feedback_file), exist_ok=True)
-    
-    record = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "query": format_message_content(query),
-        "response": format_message_content(response),
-        "feedback": feedback_type
-    }
-    
-    with feedback_lock:
-        data = []
-        if os.path.exists(feedback_file):
-            try:
-                with open(feedback_file, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-            except Exception:
-                pass
-                
-        data.append(record)
-        try:
-            with open(feedback_file, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2)
-        except Exception as e:
-            logger.error(f"Failed to write feedback record: {e}")
+# save_feedback helper has been relocated to rag/utils.py to avoid Streamlit module import errors on CLI tasks.
 
 # Helper to dynamically trim conversation history without orphaning ToolMessages or starting with a non-HumanMessage
 def get_windowed_messages(messages, max_messages=8):
@@ -123,19 +99,7 @@ if "voted_message_index" not in st.session_state:
 if "tool_executions" not in st.session_state:
     st.session_state.tool_executions = {}
 
-def format_message_content(content):
-    if isinstance(content, str):
-        return content
-    elif isinstance(content, list):
-        text_parts = []
-        for block in content:
-            if isinstance(block, dict):
-                if block.get("type") == "text":
-                    text_parts.append(block.get("text", ""))
-            elif isinstance(block, str):
-                text_parts.append(block)
-        return "".join(text_parts)
-    return str(content)
+# format_message_content has been relocated to rag/utils.py
 
 st.set_page_config(
     page_title="FreightIQ | Carrier Intelligence",
@@ -477,20 +441,20 @@ for idx, message in enumerate(st.session_state.messages):
         with st.chat_message("user"):
             st.write(format_message_content(message.content))
             
-        # Render persistent tool executions associated with this query index
-        if idx in st.session_state.tool_executions:
-            for tool_call in st.session_state.tool_executions[idx]:
-                st.markdown(f"""
-                <div class="tool-card">
-                    <div class="tool-card-header">
-                        <span class="tool-badge">TOOL</span>
-                        <span class="tool-name">{tool_call["name"]}</span>
-                    </div>
-                    <div class="tool-output">{tool_call["output"]}</div>
-                </div>""", unsafe_allow_html=True)
-                
     elif isinstance(message, AIMessage) and message.content:
         with st.chat_message("assistant"):
+            # Render persistent tool executions associated with the preceding human query (idx - 1)
+            query_idx = idx - 1
+            if query_idx in st.session_state.tool_executions:
+                for tool_call in st.session_state.tool_executions[query_idx]:
+                    st.markdown(f"""
+                    <div class="tool-card">
+                        <div class="tool-card-header">
+                            <span class="tool-badge">TOOL</span>
+                            <span class="tool-name">{tool_call["name"]}</span>
+                        </div>
+                        <div class="tool-output">{tool_call["output"]}</div>
+                    </div>""", unsafe_allow_html=True)
             st.write(format_message_content(message.content))
 
 # Render Query Suggestion Chips only on landing (empty chat history)
@@ -585,10 +549,7 @@ if user_query:
                         elif node_name == "agent":
                             messages = node_output.get("messages", [])
                             if messages and messages[-1].content:
-                                text = format_message_content(messages[-1].content)
-                                if text and text not in accumulated_responses:
-                                    accumulated_responses.append(text)
-                                final_answer = "\n\n".join(accumulated_responses)
+                                final_answer = format_message_content(messages[-1].content)
                                 # Force final write to make sure text formatting is clean
                                 response_container.write(final_answer)
 

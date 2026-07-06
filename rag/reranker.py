@@ -73,7 +73,7 @@ class CarrierReRanker(nn.Module):
         x = torch.cat((query_emb, doc_emb), dim=-1)
         return self.mlp(x)
 
-def rerank_documents(query, documents, metadatas=None, top_k=5, doc_embeddings=None, query_embedding=None):
+def rerank_documents(query, documents, metadatas=None, top_k=5, doc_embeddings=None, query_embedding=None, force_cosine=False):
     if not documents:
         return []
 
@@ -98,7 +98,7 @@ def rerank_documents(query, documents, metadatas=None, top_k=5, doc_embeddings=N
     doc_tensors = torch.tensor(doc_vectors, dtype=torch.float32, device=device)
     query_tensors = query_tensor.expand(len(documents), -1)
 
-    model = get_reranker_model(device)
+    model = None if force_cosine else get_reranker_model(device)
     if model is not None:
         try:
             with torch.no_grad():

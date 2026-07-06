@@ -23,5 +23,6 @@ resume_draft.tex
 scratch/
 rag/data/feedback.json
 *.pt
+rag/data/reranker_weights.pt
 
 

@@ -14,11 +14,12 @@ pinned: false
 [![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=flat-square&logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![LangGraph](https://img.shields.io/badge/LangGraph-Orchestrator-orange?style=flat-square)](https://github.com/langchain-ai/langgraph)
 [![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![LangSmith](https://img.shields.io/badge/LangSmith-Tracing-blue?style=flat-square&logo=analytics)](https://smith.langchain.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
 [![FreightIQ Verification CI](https://github.com/yyouretoast/freightiq/actions/workflows/verify.yml/badge.svg)](https://github.com/yyouretoast/freightiq/actions/workflows/verify.yml)
 
-FreightIQ is a high-performance agentic carrier intelligence and logistics research assistant. Powered by a **LangGraph ReAct loop** and **Groq (Llama 3.1 8B)**, it reasons over shipping queries, retrieves documents using a **hybrid search engine (ChromaDB + SQLite)**, re-ranks carrier profiles using a custom **PyTorch MLP**, and leverages live web search to answer real-time market rate questions.
+FreightIQ is an agentic carrier intelligence and logistics research assistant. Powered by a **LangGraph ReAct loop** and **Groq (Llama 3.3 70B)**, it reasons over shipping queries, retrieves documents using a **hybrid search engine (ChromaDB + SQLite)**, re-ranks carrier profiles using a custom **PyTorch MLP**, and leverages live web search to answer real-time market rate questions.
 
 > 🚀 **Live Demo:** [huggingface.co/spaces/yyouretoast/freightiq](https://huggingface.co/spaces/yyouretoast/freightiq)
 
@@ -33,12 +34,12 @@ Freight brokers and shippers waste hours manually searching fragmented carrier d
 ## 🛠️ Tech Stack & Keywords
 
 *   **Agent Orchestration:** LangGraph, LangChain (ReAct loop, conditional routing)
-*   **LLM:** Llama 3.1 8B (Groq Cloud API)
+*   **LLM:** Llama 3.3 70B (Groq Cloud API)
 *   **Vector DB & RAG:** ChromaDB (persistent local storage)
 *   **Structured Database:** SQLite (structured carrier queries)
 *   **Deep Learning Reranking:** PyTorch (`torch.nn.Module` custom classifier)
 *   **Embeddings:** SentenceTransformers (`all-MiniLM-L6-v2`)
-*   **Observability:** LangSmith (end-to-end agent trace visualization)
+*   **Observability:** LangSmith (end-to-end agent trace auto-instrumentation via callbacks)
 *   **Web APIs:** DuckDuckGo API (live freight market rate search)
 *   **Frontend UI:** Streamlit (intermediate tool execution streaming)
 
@@ -47,53 +48,53 @@ Freight brokers and shippers waste hours manually searching fragmented carrier d
 ## 📊 System Architecture
 
 ```text
-                     +---------------------------------------+
-                     |              User Query               |
-                     +---------------------------------------+
-                                         |
-                                         v
-                    +-----------------------------------------+
-                    |           LangGraph START Node          |
-                    +-----------------------------------------+
-                                         |
-                                         v
-                    +-----------------------------------------+
-+------------------>|               Agent Node                |
-|                   |         (Llama 3.1 8B + Tools)          |
-|                   +-----------------------------------------+
-|                                  /           \
-|                       (Tool Requested?)   (No Tool / Done)
-|                             /                     \
-|                            v                       v
-|                    +---------------+         +---------------+
-|                    |   Tool Node   |         |  LangGraph    |
-|                    | (Executes tool|         |   END Node    |
-|                    +---------------+         +---------------+
-|                            |                         |
-|      +---------------------+-----+-----------------+ |
-|      |                           |                 | |
-|      v                           v                 v v
-|  +--------------------+  +---------------+  +------------------+
-|  |  carrier_semantic  |  |  carrier_sql  |  |  freight_class   |
-|  |      _search       |  |    _query     |  |    calculator    |
-|  +--------------------+  +---------------+  +------------------+
-|      |                           |                 |
-|      | (Retrieves k docs)        | (Runs SELECT)   | (Runs cubic density
-|      v                           v                 |  calculations)
-|  +--------------------+  +---------------+         v
-|  |     ChromaDB       |  |   SQLite DB   |  +------------------+
-|  | (Pre-computed embs)|  |  (Read-Only)  |  |   Output Results |
-|  +--------------------+  +---------------+  +------------------+
-|      |                                               |
-|      v (Stored embeddings)                           |
-|  +--------------------+                              |
-|  |  PyTorch Embedding  |                              |
-|  | & Cosine Re-ranking |                              |
-|  +--------------------+                              |
-|      |                                               |
-|      v (Top-k Results)                               |
-|      |                                               |
-+------+-----------------------------------------------+
+                      +---------------------------------------+
+                      |              User Query               |
+                      +---------------------------------------+
+                                           |
+                                           v
+                      +-----------------------------------------+
+                      |           LangGraph START Node          |
+                      +-----------------------------------------+
+                                           |
+                                           v
+                      +-----------------------------------------+
++-------------------> |               Agent Node                |
+|                     |        (Llama 3.3 70B + Tools)          |
+|                     +-----------------------------------------+
+|                                    /           \
+|                         (Tool Requested?)   (No Tool / Done)
+|                               /                     \
+|                              v                       v
+|                      +---------------+         +---------------+
+|                      |   Tool Node   |         |  LangGraph    |
+|                      | (Executes tool|         |   END Node    |
+|                      +---------------+         +---------------+
+|                              |                         |
+|        +---------------------+-----+-----------------+ |
+|        |                           |                 | |
+|        v                           v                 v v
+|    +--------------------+  +---------------+  +------------------+
+|    |  carrier_semantic  |  |  carrier_sql  |  |  freight_class   |
+|    |      _search       |  |    _query     |  |    calculator    |
+|    +--------------------+  +---------------+  +------------------+
+|        |                           |                 |
+|        | (Retrieves k docs)        | (Runs SELECT)   | (Runs cubic density
+|        v                           v                 |  calculations)
+|    +--------------------+  +---------------+         v
+|    |     ChromaDB       |  |   SQLite DB   |  +------------------+
+|    | (Pre-computed embs)|  |  (Read-Only)  |  |   Output Results |
+|    +--------------------+  +---------------+  +------------------+
+|        |                                               |
+|        v (Stored embeddings)                           |
+|    +--------------------+                              |
+|    |  PyTorch MLP Model |                              |
+|    | (Cosine Fallback)  |                              |
+|    +--------------------+                              |
+|        |                                               |
+|        v (Top-k Results)                               |
+|        |                                               |
++--------+-----------------------------------------------+
 ```
 
 ---
@@ -112,6 +113,17 @@ Reranking Steps:
 3. **Scoring:** Query and document tensors are scored via the fine-tuned MLP (if weights exist) or raw cosine similarity.
 4. **Re-sorting:** Documents are ranked by descending score, returning the top-k most relevant profiles to the LLM agent.
 
+### Retrieval Performance Benchmarks
+
+An evaluation harness (`tests/evaluate_retrieval.py`) benchmarks retrieval performance across 20 distinct queries. The MLP Reranker shows significant improvements in Recall@3 and Recall@5 compared to the baseline vector search:
+
+| Strategy | Recall@1 | Recall@3 | Recall@5 | MRR |
+| :--- | :--- | :--- | :--- | :--- |
+| **SQLite Exact Query** | 0.900 | 0.900 | 0.900 | 0.900 |
+| **ChromaDB Base Vector** | 0.250 | 0.400 | 0.550 | 0.349 |
+| **Reranked Search (Cosine)** | 0.250 | 0.400 | 0.550 | 0.349 |
+| **Reranked Search (Trained MLP)** | 0.150 | 0.500 | 0.650 | 0.335 |
+
 ---
 
 ## ⚡ Production Best Practices Implemented
@@ -121,7 +133,6 @@ Reranking Steps:
 *   **Deterministic Data Generation:** Uses static random seeding (`random.seed(42)`) to ensure carrier database generation is fully reproducible across developer environments.
 *   **Transaction Safety:** Populates SQLite tables using batch operations (`executemany`) inside a single secure database transaction.
 *   **Connection-Level Read Security:** Connects to the SQLite database using read-only URI mode (`file:DB?mode=ro`) to safeguard against SQL injection or unauthorized table write operations from the agent.
-*   **CTE Queries Supported:** Enhances raw query parsing to safely support Common Table Expressions (`WITH` queries) generated by advanced LLMs.
 *   **Per-Session Rate Limiting:** Caps each user session at 10 agent queries via `st.session_state` to prevent API quota exhaustion from a single session.
 *   **Conversation Window Truncation:** Only the last 8 messages are passed to the LLM context window per query, preventing token limit breaches and history contamination in long sessions while preserving full UI history.
 *   **Structured Logging:** `logging.basicConfig` with timestamped `INFO`/`ERROR` format is active across all modules for observability in container environments (e.g. Hugging Face Spaces logs).
@@ -133,7 +144,7 @@ Reranking Steps:
 
 The database pipeline splits database ingestion tasks for clean debugging and maintenance:
 *   `rag/generate_carriers.py`: Programmatically generates 200 synthetic carriers.
-*   `rag/setup_sqlite.py`: Populates `carriers.db`. Multi-value columns (`service_regions`, `equipment_types`, `cargo_specializations`) are stored as JSON arrays, enabling precise `json_each()` queries alongside standard filters on `hq_state`, `safety_rating`, and `years_operating`.
+*   `rag/setup_sqlite.py`: Populates `carriers.db`. Multi-value columns (`service_regions`, `equipment_types`, `cargo_specializations`) are stored as JSON arrays, enabling precise `json_each()` queries alongside standard filters on `hq_state`, `safety_rating`, and `years_operating`. Ingests the database file with Write-Ahead Logging (`PRAGMA journal_mode=WAL;`) enabled permanently to handle multi-threaded concurrency.
 *   `rag/ingest_chroma.py`: Computes vector embeddings locally using `all-MiniLM-L6-v2` and persists them to ChromaDB.
 *   `setup.py`: The single-entry execution script triggering the entire database environment setup.
 
@@ -175,7 +186,7 @@ streamlit run app.py
 ```
 
 ### 5. Run Programmatic Verification Tests
-Validate all modules (calculators, SQL, vector search, PyTorch reranking, live APIs, and LangGraph routing) in 5 seconds via the CLI test suite:
+Validate all modules (calculators, SQL, vector search, PyTorch reranking, live APIs, and LangGraph routing) via the CLI test suite:
 ```bash
 python -m tests.verify_system
 ```
@@ -214,7 +225,7 @@ python tests/stress_test_concurrency.py
     *   *Flow:* Triggers `carrier_sql_query` tool -> executes exact-match SQL utilizing `json_each()` on the JSON array columns (`service_regions`, `equipment_types`, and `cargo_specializations`).
 3.  **Semantic RAG + PyTorch Re-ranking:**
     *   *Prompt:* `"Find me carriers known for exceptional handling of temperature-sensitive goods."`
-    *   *Flow:* Triggers `carrier_semantic_search` -> ChromaDB extracts vectors -> PyTorch cosine/MLP re-ranks profiles -> returns top-k candidates.
+    *   *Flow:* Triggers `carrier_semantic_search` -> ChromaDB retrieves candidates -> scores them via custom PyTorch MLP (or falls back to cosine similarity if weights do not exist on disk) -> returns top-k candidates.
 4.  **Freight Class Density Calculation:**
     *   *Prompt:* `"What is the NMFC freight class for a 1200 lbs pallet measuring 48x48x48 inches?"`
     *   *Flow:* Triggers `freight_class_calculator` -> computes volume/density (18.75 lb/ft³) -> maps class 70.
@@ -227,7 +238,7 @@ python tests/stress_test_concurrency.py
 ## 🔮 Future Work & Scaling
 
 To transition FreightIQ to a commercial production standard, the following roadmap is proposed:
-*   **Active PyTorch Training (Implemented & Deployed):** The active learning feedback loop is fully implemented. Thumbs-up/down ratings logged to `feedback.json` are combined with bootstrap carrier attributes in `train_reranker.py` to optimize weights, which are hot-reloaded by the inference path.
+*   **Active PyTorch Training (Implemented):** The active learning feedback loop is fully implemented and runs locally via the training pipeline. Thumbs-up/down ratings logged to `feedback.json` are combined with bootstrap carrier attributes in `train_reranker.py` to optimize weights, which are hot-reloaded by the inference path.
     > [!NOTE]
     > **Hugging Face Filesystem Limitation:** In the live Hugging Face Space, the local filesystem is ephemeral and resets on cold starts. For true production environments, these logged feedback signals should be configured to stream directly to an external database (e.g. Postgres) or the Hugging Face Dataset Hub API.
 *   **Production Database Migration:** Upgrade the local SQLite file storage to a highly concurrent relational database like **PostgreSQL** or **Amazon RDS** to support multi-user locking.

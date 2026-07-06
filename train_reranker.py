@@ -154,16 +154,31 @@ def main():
     X_doc = torch.tensor(doc_embs, dtype=torch.float32)
     y = torch.tensor(labels, dtype=torch.float32).unsqueeze(1)
     
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    logger.info(f"Training on device: {device}")
+    # Split into train/validation datasets (80% train, 20% validation)
+    dataset_size = len(all_pairs)
+    indices = list(range(dataset_size))
+    random.seed(42)  # For reproducible splits
+    random.shuffle(indices)
     
-    # Define dataset & dataloader
-    dataset = TensorDataset(X_query, X_doc, y)
-    dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
+    split_idx = int(0.8 * dataset_size)
+    train_indices = indices[:split_idx]
+    val_indices = indices[split_idx:]
+    
+    X_query_train, X_query_val = X_query[train_indices], X_query[val_indices]
+    X_doc_train, X_doc_val = X_doc[train_indices], X_doc[val_indices]
+    y_train, y_val = y[train_indices], y[val_indices]
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    logger.info(f"Training on device: {device} | Train Size: {len(train_indices)} | Val Size: {len(val_indices)}")
+    
+    train_dataset = TensorDataset(X_query_train, X_doc_train, y_train)
+    val_dataset = TensorDataset(X_query_val, X_doc_val, y_val)
+    
+    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False)
     
     # Initialize ReRanker model
     model = CarrierReRanker(embedding_dim=config.EMBEDDING_DIM, hidden_dim=config.RERANKER_HIDDEN_DIM).to(device)
-    model.train()
     
     criterion = nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
@@ -173,26 +188,41 @@ def main():
     logger.info(f"Training MLP model for {epochs} epochs...")
     
     for epoch in range(epochs):
-        epoch_loss = 0.0
-        for batch_query, batch_doc, batch_label in dataloader:
+        # 1. Training Phase
+        model.train()
+        epoch_train_loss = 0.0
+        for batch_query, batch_doc, batch_label in train_loader:
             batch_query = batch_query.to(device)
             batch_doc = batch_doc.to(device)
             batch_label = batch_label.to(device)
             
             optimizer.zero_grad()
-            
-            # Forward pass through MLP
             predictions = model(batch_query, batch_doc)
             loss = criterion(predictions, batch_label)
-            
             loss.backward()
             optimizer.step()
             
-            epoch_loss += loss.item() * batch_query.size(0)
+            epoch_train_loss += loss.item() * batch_query.size(0)
             
-        avg_loss = epoch_loss / len(dataset)
+        avg_train_loss = epoch_train_loss / len(train_dataset)
+        
+        # 2. Validation Phase
+        model.eval()
+        epoch_val_loss = 0.0
+        with torch.no_grad():
+            for batch_query, batch_doc, batch_label in val_loader:
+                batch_query = batch_query.to(device)
+                batch_doc = batch_doc.to(device)
+                batch_label = batch_label.to(device)
+                
+                predictions = model(batch_query, batch_doc)
+                loss = criterion(predictions, batch_label)
+                epoch_val_loss += loss.item() * batch_query.size(0)
+                
+        avg_val_loss = epoch_val_loss / len(val_dataset)
+        
         if (epoch + 1) % 5 == 0 or epoch == 0:
-            logger.info(f"Epoch {epoch+1:02d}/{epochs:02d} | Avg Loss: {avg_loss:.5f}")
+            logger.info(f"Epoch {epoch+1:02d}/{epochs:02d} | Train Loss: {avg_train_loss:.5f} | Val Loss: {avg_val_loss:.5f}")
             
     # Save trained weights
     out_dir = os.path.join(config.BASE_DIR, "rag", "data")

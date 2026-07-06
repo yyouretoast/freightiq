@@ -7,7 +7,7 @@ import logging
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import config
-from app import save_feedback
+from rag.utils import save_feedback
 from rag.reranker import rerank_documents
 from rag.retriever import query_carriers_sql
 
