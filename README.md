@@ -194,13 +194,16 @@ python -m tests.verify_system
 1.  **Structured SQL Query:**
     *   *Prompt:* `"Find all carriers based in Ohio (OH) with a satisfactory safety rating."`
     *   *Flow:* Triggers `carrier_sql_query` tool -> runs secure SQL read-only SELECT -> formats clean profiles.
-2.  **Semantic RAG + PyTorch Re-ranking:**
+2.  **Structured Multi-Value Query:**
+    *   *Prompt:* `"We need flatbed carriers that handle hazardous materials in the Midwest."`
+    *   *Flow:* Triggers `carrier_sql_query` tool -> executes exact-match SQL utilizing `json_each()` on the JSON array columns (`service_regions`, `equipment_types`, and `cargo_specializations`).
+3.  **Semantic RAG + PyTorch Re-ranking:**
     *   *Prompt:* `"Find me carriers known for exceptional handling of temperature-sensitive goods."`
     *   *Flow:* Triggers `carrier_semantic_search` -> ChromaDB extracts vectors -> PyTorch cosine re-ranks profiles -> returns top-k candidates.
-3.  **Freight Class Density Calculation:**
+4.  **Freight Class Density Calculation:**
     *   *Prompt:* `"What is the NMFC freight class for a 1200 lbs pallet measuring 48x48x48 inches?"`
     *   *Flow:* Triggers `freight_class_calculator` -> computes volume/density (18.75 lb/ft³) -> maps class 70.
-4.  **Web Search Integration:**
+5.  **Web Search Integration:**
     *   *Prompt:* `"What is the current average national dry van spot rate per mile?"`
     *   *Flow:* Triggers `web_search` -> queries DuckDuckGo News API (structured index) -> summarizes latest logistics news.
 
