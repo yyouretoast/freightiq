@@ -23,7 +23,7 @@ FreightIQ is an agentic carrier intelligence and logistics research assistant. P
 
 > 🚀 **Live Demo:** [huggingface.co/spaces/yyouretoast/freightiq](https://huggingface.co/spaces/yyouretoast/freightiq)
 
-<video src="https://raw.githubusercontent.com/yyouretoast/freightiq/main/assets/demo.mp4" controls="controls" style="max-width: 100%;"></video>
+<video src="https://github.com/user-attachments/assets/dbf58565-39ee-4d17-a434-6a321c8afed4" width="100%" controls></video>
 
 ---
 
