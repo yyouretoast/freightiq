@@ -2,6 +2,7 @@ import logging
 from langchain_core.tools import tool
 from duckduckgo_search import DDGS
 from rag.retriever import retrieve_carriers_semantic, query_carriers_sql
+import config
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +12,7 @@ def carrier_semantic_search(query: str) -> str:
     Search the carrier database using natural language and vector similarity.
     Returns the top-k most semantically relevant carrier profiles for the given query.
     """
-    results = retrieve_carriers_semantic(query, k=5)
+    results = retrieve_carriers_semantic(query, k=config.SEMANTIC_RETRIEVAL_K)
     return "\n\n---\n\n".join(results) if results else "No carrier profiles matched your semantic query."
 
 @tool

@@ -17,6 +17,7 @@ def setup_sqlite():
         try:
             with sqlite3.connect(db_path) as conn:
                 cursor = conn.cursor()
+                cursor.execute("PRAGMA journal_mode=WAL;")
                 cursor.execute("SELECT COUNT(*) FROM carriers")
                 count = cursor.fetchone()[0]
                 if count > 0:
@@ -28,6 +29,7 @@ def setup_sqlite():
             
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL;")
         cursor.execute("DROP TABLE IF EXISTS carriers")
         cursor.execute("""
         CREATE TABLE carriers (

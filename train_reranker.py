@@ -10,24 +10,10 @@ from torch.utils.data import DataLoader, TensorDataset
 from sentence_transformers import SentenceTransformer
 import config
 from rag.reranker import CarrierReRanker, get_embed_model
+from rag.utils import format_carrier_document
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
-
-def format_carrier_document(c):
-    return (
-        f"Carrier Name: {c['carrier_name']}\n"
-        f"DOT Number: {c['dot_number']}\n"
-        f"MC Number: {c['mc_number']}\n"
-        f"HQ State: {c['hq_state']}\n"
-        f"Service Regions: {', '.join(c['service_regions'])}\n"
-        f"Equipment: {', '.join(c['equipment_types'])}\n"
-        f"Specializations: {', '.join(c['cargo_specializations'])}\n"
-        f"Safety Rating: {c['safety_rating']}\n"
-        f"Years Operating: {c['years_operating']} years\n"
-        f"Contact: {c['contact_email']}\n"
-        f"Notes: {c['notes']}"
-    )
 
 def generate_bootstrap_data(carriers):
     """

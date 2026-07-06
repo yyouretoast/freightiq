@@ -70,7 +70,7 @@ def agent_node(state: AgentState):
                         "Do NOT call this tool again. Synthesize your final answer immediately based on the results already retrieved."
                     )
                     messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + messages + [SystemMessage(content=loop_break_prompt)]
-                    response = llm_with_tools.invoke(messages_with_warning)
+                    response = llm.invoke(messages_with_warning)
                     return {"messages": [response]}
 
         # Count consecutive carrier_sql_query calls to break loops when agent reformulates queries iteratively returning empty/errors
@@ -93,7 +93,7 @@ def agent_node(state: AgentState):
                 "were found in the database."
             )
             messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + messages + [SystemMessage(content=loop_break_prompt)]
-            response = llm_with_tools.invoke(messages_with_warning)
+            response = llm.invoke(messages_with_warning)
             return {"messages": [response]}
                 
     messages_with_system = [SystemMessage(content=SYSTEM_PROMPT)] + messages

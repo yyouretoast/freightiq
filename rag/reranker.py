@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 # Singletons and Thread Locks
 _EMBED_MODEL = None
 _RERANKER_MODEL = None
+_RERANKER_LOADED_TIME = 0.0
 
 _embed_lock = threading.Lock()
 _reranker_lock = threading.Lock()
@@ -27,20 +28,23 @@ def get_embed_model():
     return _EMBED_MODEL
 
 def get_reranker_model(device):
-    """
-    Placeholder initialization hook for the neural network reranker.
-    Preserved for future active-learning training integration; currently unused in active
-    inference to optimize memory footprint in container builds.
-    """
-    global _RERANKER_MODEL
-    if _RERANKER_MODEL is None:
-        with _reranker_lock:
+    global _RERANKER_MODEL, _RERANKER_LOADED_TIME
+    weights_path = os.path.join(config.BASE_DIR, "rag", "data", "reranker_weights.pt")
+    if not os.path.exists(weights_path):
+        return None
+        
+    with _reranker_lock:
+        mtime = os.path.getmtime(weights_path)
+        if _RERANKER_MODEL is None or mtime > _RERANKER_LOADED_TIME:
+            logger.info("Initializing/Reloading CarrierReRanker weights from disk...")
             if _RERANKER_MODEL is None:
-                logger.info(f"Initializing CarrierReRanker on device: {device}")
                 _RERANKER_MODEL = CarrierReRanker(
                     embedding_dim=config.EMBEDDING_DIM, 
                     hidden_dim=config.RERANKER_HIDDEN_DIM
                 ).to(device)
+            _RERANKER_MODEL.load_state_dict(torch.load(weights_path, map_location=device))
+            _RERANKER_MODEL.eval()
+            _RERANKER_LOADED_TIME = mtime
     return _RERANKER_MODEL
 
 class CarrierReRanker(nn.Module):
@@ -93,26 +97,21 @@ def rerank_documents(query, documents, metadatas=None, top_k=5, doc_embeddings=N
     doc_tensors = torch.tensor(doc_vectors, dtype=torch.float32, device=device)
     query_tensors = query_tensor.expand(len(documents), -1)
 
-    # Check if custom fine-tuned weights exist to enable active learning inference path
-    weights_path = os.path.join(config.BASE_DIR, "rag", "data", "reranker_weights.pt")
-    if os.path.exists(weights_path):
+    model = get_reranker_model(device)
+    if model is not None:
         try:
-            model = get_reranker_model(device)
-            model.load_state_dict(torch.load(weights_path, map_location=device))
-            model.eval()
             with torch.no_grad():
                 scores_tensor = model(query_tensors, doc_tensors).squeeze(-1)
                 scores = scores_tensor.cpu().numpy()
             logger.info("Reranked candidate documents utilizing fine-tuned PyTorch MLP reranker.")
         except Exception as e:
-            logger.error(f"Failed to load/run custom PyTorch reranker, falling back to cosine similarity: {e}")
+            logger.error(f"Failed to run custom PyTorch reranker, falling back to cosine similarity: {e}")
             with torch.no_grad():
                 scores = F.cosine_similarity(query_tensors, doc_tensors, dim=-1).cpu().numpy()
     else:
         # Score via cosine similarity — deterministic and semantically correct.
         with torch.no_grad():
-            scores = F.cosine_similarity(query_tensors, doc_tensors, dim=-1)
-            scores = scores.cpu().numpy()
+            scores = F.cosine_similarity(query_tensors, doc_tensors, dim=-1).cpu().numpy()
 
     ranked_indices = np.argsort(scores)[::-1]
     logger.debug(f"Reranked {len(documents)} docs, top score: {scores[ranked_indices[0]]:.4f}")

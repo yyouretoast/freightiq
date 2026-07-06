@@ -71,7 +71,7 @@ def query_carriers_sql(sql_query):
 
     conn = None
     try:
-        conn = sqlite3.connect(f"file:{config.DB_PATH}?mode=ro", uri=True)
+        conn = sqlite3.connect(f"file:{config.DB_PATH}?mode=ro", uri=True, timeout=30.0)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         cursor.execute(sql_query)

@@ -10,8 +10,8 @@ import textwrap
 from datetime import datetime, timezone
 from html import escape
 from agent.graph import build_graph
-from agent.locks import setup_lock
-from langchain_core.messages import HumanMessage, AIMessage
+from agent.locks import setup_lock, feedback_lock
+from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from langchain_core.callbacks import BaseCallbackHandler
 import config
 
@@ -53,20 +53,44 @@ def save_feedback(query, response, feedback_type):
         "feedback": feedback_type
     }
     
-    data = []
-    if os.path.exists(feedback_file):
+    with feedback_lock:
+        data = []
+        if os.path.exists(feedback_file):
+            try:
+                with open(feedback_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except Exception:
+                pass
+                
+        data.append(record)
         try:
-            with open(feedback_file, "r") as f:
-                data = json.load(f)
-        except Exception:
-            pass
+            with open(feedback_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            logger.error(f"Failed to write feedback record: {e}")
+
+# Helper to dynamically trim conversation history without orphaning ToolMessages or starting with a non-HumanMessage
+def get_windowed_messages(messages, max_messages=8):
+    if len(messages) <= max_messages:
+        return messages
+    
+    slice_idx = -max_messages
+    
+    # Trace backward to ensure no orphaned tool/assistant sequences
+    while abs(slice_idx) < len(messages):
+        first_msg = messages[slice_idx]
+        if isinstance(first_msg, ToolMessage):
+            slice_idx -= 1
+        elif isinstance(first_msg, AIMessage) and first_msg.tool_calls:
+            slice_idx -= 1
+        else:
+            break
             
-    data.append(record)
-    try:
-        with open(feedback_file, "w") as f:
-            json.dump(data, f, indent=2)
-    except Exception as e:
-        logger.error(f"Failed to write feedback record: {e}")
+    # Always initiate the message sequence with a HumanMessage to satisfy API validation
+    while abs(slice_idx) < len(messages) and not isinstance(messages[slice_idx], HumanMessage):
+        slice_idx -= 1
+        
+    return messages[slice_idx:]
 
 # 4. Cache graph compilation inside Streamlit to prevent hot-reload compilation loops
 @st.cache_resource
@@ -475,8 +499,8 @@ if user_query:
         response_container = st.empty()
 
         try:
-            # Sliding window: only send the last N messages to the LLM
-            windowed_messages = st.session_state.messages[-config.CONVERSATION_WINDOW:]
+            # Sliding window: only send the last N messages to the LLM (turn-aware to avoid sequence errors)
+            windowed_messages = get_windowed_messages(st.session_state.messages, config.CONVERSATION_WINDOW)
 
             # Retrieve compiled cached graph resource
             graph = get_graph()
