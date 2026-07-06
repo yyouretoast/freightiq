@@ -20,4 +20,4 @@ SEMANTIC_RETRIEVAL_K = 5
 MAX_QUERIES_PER_SESSION = 10
 # Increased from 5 to 8 to restore context memory without hitting Groq TPM limits
 CONVERSATION_WINDOW = 8
-TOOL_TRUNCATION_LIMIT = 400
+TOOL_TRUNCATION_LIMIT = 1200

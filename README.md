@@ -100,24 +100,17 @@ Freight brokers and shippers waste hours manually searching fragmented carrier d
 
 ## 🔬 How the Custom PyTorch Re-ranker Works
 
-FreightIQ implements a two-stage retrieval pipeline. The `CarrierReRanker` is a custom `torch.nn.Module` (2-layer MLP with Xavier initialization) architected for future supervised training on broker-carrier match logs via Binary Cross-Entropy loss. Current scoring uses `torch.nn.functional.cosine_similarity` — deterministic, semantically correct, and fully defensible pending training data collection:
+FreightIQ implements a two-stage retrieval pipeline. The `CarrierReRanker` is a custom `torch.nn.Module` (2-layer MLP with Xavier initialization) designed to re-rank carrier profiles.
 
-```python
-class CarrierReRanker(nn.Module):
-    def __init__(self, embedding_dim=384, hidden_dim=128):
-        super().__init__()
-        self.mlp = nn.Sequential(
-            nn.Linear(embedding_dim * 2, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, 1)
-        )
-        self._init_weights()  # Xavier uniform initialization
-```
+The system supports two execution paths:
+1. **Fine-Tuned MLP Mode**: If trained weights exist on disk (`rag/data/reranker_weights.pt`), the system loads the weights and runs document-query embedding pairs through the MLP network. The model outputs relevance logits, which are used to rank candidates.
+2. **Cosine Similarity Fallback**: If the weights file is absent, the system dynamically falls back to computing raw cosine similarities (`torch.nn.functional.cosine_similarity`) as a deterministic semantic baseline.
 
-1.  **Candidate Retrieval:** ChromaDB extracts the top 15 nearest carrier profiles using vector similarity.
-2.  **Zero-Latency Embedding Extraction:** Stored document embeddings are fetched directly from ChromaDB (`include=["embeddings"]`), bypassing redundant re-encoding entirely.
-3.  **Scoring:** Query and document tensors are scored via `F.cosine_similarity(query_tensors, doc_tensors, dim=-1)` using the cached PyTorch device context (CUDA/CPU auto-detected).
-4.  **Re-sorting:** Documents are ranked by descending cosine score, returning the top-k most relevant profiles to the LLM agent.
+Reranking Steps:
+1. **Candidate Retrieval:** ChromaDB extracts the top 15 nearest carrier profiles using vector similarity.
+2. **Zero-Latency Embedding Extraction:** Stored document embeddings are fetched directly from ChromaDB (`include=["embeddings"]`), bypassing redundant re-encoding entirely.
+3. **Scoring:** Query and document tensors are scored via the fine-tuned MLP (if weights exist) or raw cosine similarity.
+4. **Re-sorting:** Documents are ranked by descending score, returning the top-k most relevant profiles to the LLM agent.
 
 ---
 
@@ -187,6 +180,28 @@ Validate all modules (calculators, SQL, vector search, PyTorch reranking, live A
 python -m tests.verify_system
 ```
 
+### 6. Fine-Tune the Reranker Model
+Train the PyTorch MLP reranker on a mixture of programmatically generated bootstrap pairs and actual user feedback:
+```bash
+python train_reranker.py
+```
+* **Bootstrap Generator**: Generates positive and negative query-document pairs directly from carrier database attributes to establish baseline model convergence.
+* **User Feedback Ingest**: Loads feedback signals logged to `rag/data/feedback.json` from thumbs-up/down UI interactions.
+* **Weights Export**: Optimizes the network parameters using `BCEWithLogitsLoss` and saves the updated state dict to `rag/data/reranker_weights.pt`, which is dynamically hot-reloaded by the app on the next query.
+
+### 7. Run Retrieval Evaluation & Benchmarking
+Run the retrieval evaluation harness to benchmark and compare SQLite exact queries, ChromaDB base vector search, Cosine re-ranked search, and Trained MLP re-ranked search:
+```bash
+python -m tests.evaluate_retrieval
+```
+This computes **Recall@1**, **Recall@3**, **Recall@5**, and **Mean Reciprocal Rank (MRR)**.
+
+### 8. Run Concurrency Stress Tests
+Run the multi-threaded concurrency stress test to verify SQLite WAL mode, feedback log serialization, and cached weights loading under concurrent Streamlit user load:
+```bash
+python tests/stress_test_concurrency.py
+```
+
 ---
 
 ## 📝 Example Queries to Test
@@ -199,7 +214,7 @@ python -m tests.verify_system
     *   *Flow:* Triggers `carrier_sql_query` tool -> executes exact-match SQL utilizing `json_each()` on the JSON array columns (`service_regions`, `equipment_types`, and `cargo_specializations`).
 3.  **Semantic RAG + PyTorch Re-ranking:**
     *   *Prompt:* `"Find me carriers known for exceptional handling of temperature-sensitive goods."`
-    *   *Flow:* Triggers `carrier_semantic_search` -> ChromaDB extracts vectors -> PyTorch cosine re-ranks profiles -> returns top-k candidates.
+    *   *Flow:* Triggers `carrier_semantic_search` -> ChromaDB extracts vectors -> PyTorch cosine/MLP re-ranks profiles -> returns top-k candidates.
 4.  **Freight Class Density Calculation:**
     *   *Prompt:* `"What is the NMFC freight class for a 1200 lbs pallet measuring 48x48x48 inches?"`
     *   *Flow:* Triggers `freight_class_calculator` -> computes volume/density (18.75 lb/ft³) -> maps class 70.
@@ -212,11 +227,9 @@ python -m tests.verify_system
 ## 🔮 Future Work & Scaling
 
 To transition FreightIQ to a commercial production standard, the following roadmap is proposed:
-*   **Active PyTorch Training (Implemented Collection Path):** The interface now logs user query-response helpfulness ratings (via 👍/👎 buttons) directly to `rag/data/feedback.json`. This logs positive/negative labels (polarity) alongside retrieved search queries and documents. These logs form the exact supervised training dataset required to train the custom PyTorch `CarrierReRanker` MLP model using Binary Cross-Entropy (BCE) loss.
+*   **Active PyTorch Training (Implemented & Deployed):** The active learning feedback loop is fully implemented. Thumbs-up/down ratings logged to `feedback.json` are combined with bootstrap carrier attributes in `train_reranker.py` to optimize weights, which are hot-reloaded by the inference path.
     > [!NOTE]
     > **Hugging Face Filesystem Limitation:** In the live Hugging Face Space, the local filesystem is ephemeral and resets on cold starts. For true production environments, these logged feedback signals should be configured to stream directly to an external database (e.g. Postgres) or the Hugging Face Dataset Hub API.
-
-
 *   **Production Database Migration:** Upgrade the local SQLite file storage to a highly concurrent relational database like **PostgreSQL** or **Amazon RDS** to support multi-user locking.
 *   **Authentication & Rate Limiting:** Implement OAuth2 security protocols and API gateway rate-limiting to protect the Groq API token quota from abuse.
 

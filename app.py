@@ -246,6 +246,8 @@ html, body, [class*="css"] {
     white-space: pre-wrap;
     margin-top: 4px;
     font-family: 'Space Mono', monospace;
+    max-height: 180px;
+    overflow-y: auto;
 }
 
 [data-testid="stSidebar"] {
@@ -280,6 +282,11 @@ html, body, [class*="css"] {
     background: rgba(0, 255, 136, 0.12);
     color: #00ff88;
     border: 1px solid rgba(0, 255, 136, 0.25);
+}
+.status-warning {
+    background: rgba(255, 165, 0, 0.12);
+    color: #ffa500;
+    border: 1px solid rgba(255, 165, 0, 0.25);
 }
 .status-err {
     background: rgba(255, 80, 80, 0.12);
@@ -399,8 +406,26 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# Dynamic checks for reranker model configuration & feedback logs size
+weights_path = os.path.join(config.BASE_DIR, "rag", "data", "reranker_weights.pt")
+has_weights = os.path.exists(weights_path)
+reranker_status = "PyTorch MLP (Fine-tuned)" if has_weights else "Cosine Similarity (Fallback)"
+reranker_class = "status-ok" if has_weights else "status-warning"
+
+feedback_path = os.path.join(config.BASE_DIR, "rag", "data", "feedback.json")
+feedback_count = 0
+if os.path.exists(feedback_path):
+    try:
+        with open(feedback_path, "r", encoding="utf-8") as f:
+            feedback_data = json.load(f)
+            feedback_count = len(feedback_data)
+    except Exception:
+        pass
+
+semantic_search_desc = "Vector DB + Fine-tuned PyTorch MLP" if has_weights else "Vector DB + Cosine Reranker fallback"
+
 TOOLS = [
-    ("🔍", "Semantic Search", "Vector DB + PyTorch cosine reranker"),
+    ("🔍", "Semantic Search", semantic_search_desc),
     ("🗄️", "SQL Database", "Structured carrier lookups via SQLite"),
     ("🌐", "Web Search", "Live DuckDuckGo market research"),
     ("🔢", "Freight Class", "NMFC density calculator"),
@@ -424,7 +449,11 @@ with st.sidebar:
     st.markdown(f"""
     <div class="sidebar-section">
         <div class="sidebar-title">Agent Status</div>
-        <span class="status-badge {status_class}">● {status_text}</span>
+        <div style="margin-bottom: 8px;"><span class="status-badge {status_class}">● LLM: {status_text}</span></div>
+        <div style="margin-bottom: 8px;"><span class="status-badge {reranker_class}">● Re-ranker: {reranker_status}</span></div>
+        <div style="font-size: 0.72rem; color: rgba(255,255,255,0.4); margin-top: 4px; margin-left: 2px;">
+            Feedback Logs: {feedback_count} entries
+        </div>
         {counter_html}
     </div>
     <div class="sidebar-section">
@@ -464,19 +493,22 @@ for idx, message in enumerate(st.session_state.messages):
         with st.chat_message("assistant"):
             st.write(format_message_content(message.content))
 
-# Render Query Suggestion Chips
-st.markdown("<br>", unsafe_allow_html=True)
-col1, col2, col3 = st.columns([1, 1, 1])
-clicked_query = None
-with col1:
-    if st.button("🚛 FL produce & class", key="chip_fl", use_container_width=True):
-        clicked_query = "Find a carrier located in Florida (FL) that handles fresh produce. What are their DOT and MC numbers, and how many years have they been operating? Also, what is the freight class for a 220 lbs crate of fresh produce measuring 36x36x36 inches? Be detailed."
-with col2:
-    if st.button("🗄️ Midwest Hazmat Flatbeds", key="chip_midwest", use_container_width=True):
-        clicked_query = "We need flatbed carriers that handle hazardous materials in the Midwest."
-with col3:
-    if st.button("🧭 OH safety check & class", key="chip_ohio", use_container_width=True):
-        clicked_query = "Find a carrier headquartered in Ohio with a satisfactory safety rating. Also, what would the freight class be for a 150 lbs crate measuring 24x24x24 inches?"
+# Render Query Suggestion Chips only on landing (empty chat history)
+if not st.session_state.messages:
+    st.markdown("<br>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 1, 1])
+    clicked_query = None
+    with col1:
+        if st.button("🚛 FL produce & class", key="chip_fl", use_container_width=True):
+            clicked_query = "Find a carrier located in Florida (FL) that handles fresh produce. What are their DOT and MC numbers, and how many years have they been operating? Also, what is the freight class for a 220 lbs crate of fresh produce measuring 36x36x36 inches? Be detailed."
+    with col2:
+        if st.button("🗄️ Midwest Hazmat Flatbeds", key="chip_midwest", use_container_width=True):
+            clicked_query = "We need flatbed carriers that handle hazardous materials in the Midwest."
+    with col3:
+        if st.button("🧭 OH safety check & class", key="chip_ohio", use_container_width=True):
+            clicked_query = "Find a carrier headquartered in Ohio with a satisfactory safety rating. Also, what would the freight class be for a 150 lbs crate measuring 24x24x24 inches?"
+else:
+    clicked_query = None
 
 chat_input_val = st.chat_input("Ask about carriers, rates, or calculate freight class…")
 user_query = clicked_query if clicked_query else chat_input_val
