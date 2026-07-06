@@ -75,11 +75,11 @@ def get_graph():
     return build_graph()
 
 # 5. Thread-safe database auto-initialization utilizing the global locks module
-if not os.path.exists(config.DB_PATH) or not os.path.exists(config.CHROMA_PATH):
+if not os.path.exists(config.DB_PATH) or os.path.getsize(config.DB_PATH) == 0 or not os.path.exists(config.CHROMA_PATH):
     with setup_lock:
         # Double-check condition once lock is acquired
-        if not os.path.exists(config.DB_PATH) or not os.path.exists(config.CHROMA_PATH):
-            logger.info("Database or vector index missing. Triggering thread-safe auto-setup...")
+        if not os.path.exists(config.DB_PATH) or os.path.getsize(config.DB_PATH) == 0 or not os.path.exists(config.CHROMA_PATH):
+            logger.info("Database or vector index missing or empty. Triggering thread-safe auto-setup...")
             try:
                 from setup import main as run_setup
                 run_setup()

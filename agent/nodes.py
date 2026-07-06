@@ -2,7 +2,7 @@ import logging
 import os
 from langchain_groq import ChatGroq
 from langgraph.prebuilt import ToolNode
-from langchain_core.messages import SystemMessage, AIMessage
+from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
 from agent.state import AgentState
 from agent.tools import tools
 
@@ -51,7 +51,7 @@ def agent_node(state: AgentState):
     messages = state["messages"]
     
     # Global Loop Guardrail:
-    # Detect duplicate back-to-back tool calls
+    # Detect duplicate back-to-back tool calls or excessive carrier_sql_query reformulations
     if len(messages) >= 2:
         prev_ai_msgs = [m for m in messages if isinstance(m, AIMessage) and m.tool_calls]
         if len(prev_ai_msgs) >= 2:
@@ -72,6 +72,29 @@ def agent_node(state: AgentState):
                     messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + messages + [SystemMessage(content=loop_break_prompt)]
                     response = llm_with_tools.invoke(messages_with_warning)
                     return {"messages": [response]}
+
+        # Count consecutive carrier_sql_query calls to break loops when agent reformulates queries iteratively returning empty/errors
+        sql_calls = 0
+        for m in reversed(messages):
+            if isinstance(m, AIMessage) and m.tool_calls:
+                if any(tc["name"] == "carrier_sql_query" for tc in m.tool_calls):
+                    sql_calls += 1
+                else:
+                    break
+            elif isinstance(m, HumanMessage):
+                break
+        
+        if sql_calls >= 2:
+            logger.warning(f"Excessive SQL queries detected ({sql_calls}). Injecting SQL loop guardrail warning.")
+            loop_break_prompt = (
+                "System Warning: You have already executed carrier_sql_query multiple times. "
+                "If the database returns no matching records, do NOT continue to reformulate and repeat SQL queries. "
+                "Synthesize your final answer immediately, stating clearly that no carriers matching the requested criteria "
+                "were found in the database."
+            )
+            messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + messages + [SystemMessage(content=loop_break_prompt)]
+            response = llm_with_tools.invoke(messages_with_warning)
+            return {"messages": [response]}
                 
     messages_with_system = [SystemMessage(content=SYSTEM_PROMPT)] + messages
     response = llm_with_tools.invoke(messages_with_system)
