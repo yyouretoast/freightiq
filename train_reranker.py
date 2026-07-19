@@ -131,7 +131,7 @@ def main():
     real_pairs = load_feedback_data(carriers)
     bootstrap_pairs = generate_bootstrap_data(carriers)
     
-    # Combine datasets (weighing real feedback higher if present)
+    # Combine real feedback pairs and bootstrap synthetic pairs
     all_pairs = real_pairs + bootstrap_pairs
     logger.info(f"Total dataset size: {len(all_pairs)} query-document pairs.")
     
@@ -183,9 +183,13 @@ def main():
     criterion = nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     
-    # Train model
+    # Train model with early stopping
     epochs = 15
-    logger.info(f"Training MLP model for {epochs} epochs...")
+    patience = 5  # Stop early if val loss doesn't improve for this many epochs
+    best_val_loss = float('inf')
+    epochs_without_improvement = 0
+    best_model_state = None
+    logger.info(f"Training MLP model for up to {epochs} epochs (early stopping patience={patience})...")
     
     for epoch in range(epochs):
         # 1. Training Phase
@@ -223,14 +227,29 @@ def main():
         
         if (epoch + 1) % 5 == 0 or epoch == 0:
             logger.info(f"Epoch {epoch+1:02d}/{epochs:02d} | Train Loss: {avg_train_loss:.5f} | Val Loss: {avg_val_loss:.5f}")
+        
+        # Early stopping: save best model and track improvement
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+            best_model_state = model.state_dict().copy()
+            epochs_without_improvement = 0
+            logger.info(f"  ↳ New best val loss: {best_val_loss:.5f} — checkpoint saved.")
+        else:
+            epochs_without_improvement += 1
+            if epochs_without_improvement >= patience:
+                logger.info(f"Early stopping triggered at epoch {epoch+1} (no improvement for {patience} epochs).")
+                break
             
-    # Save trained weights
+    # Save the best model weights (not the final epoch)
+    if best_model_state is None:
+        best_model_state = model.state_dict()
+    
     out_dir = os.path.join(config.BASE_DIR, "rag", "data")
     os.makedirs(out_dir, exist_ok=True)
     weights_path = os.path.join(out_dir, "reranker_weights.pt")
     
-    torch.save(model.state_dict(), weights_path)
-    logger.info(f"Model weights saved successfully to {weights_path}")
+    torch.save(best_model_state, weights_path)
+    logger.info(f"Best model weights (val loss={best_val_loss:.5f}) saved to {weights_path}")
     logger.info("=== Reranker Training Pipeline Complete ===")
 
 if __name__ == "__main__":

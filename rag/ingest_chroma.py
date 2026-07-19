@@ -13,14 +13,14 @@ def ingest_chroma():
     # Initialize a single client instance reused for both the idempotency check and the upsert
     chroma_client = chromadb.PersistentClient(path=config.CHROMA_PATH)
 
-    # Idempotency check: skip re-encoding if collection already populated
+    # Idempotency check: skip re-encoding if collection exists and is populated
     try:
         collection = chroma_client.get_collection(name=config.CHROMA_COLLECTION_NAME)
         if collection.count() > 0:
             print("Chroma collection already populated. Skipping embedding ingestion...")
             return
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Collection not found or empty ({e}). Proceeding to ingest...")
 
     print("Ingesting carrier profiles into ChromaDB...")
 

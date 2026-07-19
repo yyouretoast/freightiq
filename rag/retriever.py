@@ -10,21 +10,17 @@ import config
 logger = logging.getLogger(__name__)
 
 # Singletons and Thread Locks
-_CHROMA_CLIENT = None
 _CHROMA_COLLECTION = None
 _chroma_lock = threading.Lock()
 
 def get_chroma_collection():
-    global _CHROMA_CLIENT, _CHROMA_COLLECTION
+    global _CHROMA_COLLECTION
     if _CHROMA_COLLECTION is None:
         with _chroma_lock:
             if _CHROMA_COLLECTION is None:
                 client = chromadb.PersistentClient(path=config.CHROMA_PATH)
-                collection = client.get_collection(name=config.CHROMA_COLLECTION_NAME)
-                # Commit atomically to prevent partial initialization leaks
-                _CHROMA_CLIENT = client
-                _CHROMA_COLLECTION = collection
-                logger.info(f"ChromaDB collection loaded: {collection.count()} documents")
+                _CHROMA_COLLECTION = client.get_collection(name=config.CHROMA_COLLECTION_NAME)
+                logger.info(f"ChromaDB collection loaded: {_CHROMA_COLLECTION.count()} documents")
     return _CHROMA_COLLECTION
 
 def retrieve_carriers_semantic(query, k=config.SEMANTIC_RETRIEVAL_K):

@@ -1,5 +1,4 @@
 from dotenv import load_dotenv
-# 1. Load environment variables first before importing any project packages that instantiate LLMs
 load_dotenv()
 
 import logging
@@ -22,7 +21,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# 2. Custom LangChain callback handler to stream text tokens directly to Streamlit
 class StreamlitTokenCallbackHandler(BaseCallbackHandler):
     def __init__(self, placeholder, initial_text=""):
         self.placeholder = placeholder
@@ -31,28 +29,22 @@ class StreamlitTokenCallbackHandler(BaseCallbackHandler):
             self.placeholder.write(initial_text)
 
     def on_llm_new_token(self, token: str, **kwargs) -> None:
-        # Ignore tokens belonging to tool calls to avoid printing JSON payloads in the chat box
         try:
             chunk = kwargs.get("chunk")
             if chunk and hasattr(chunk, "message") and hasattr(chunk.message, "tool_call_chunks") and chunk.message.tool_call_chunks:
                 return
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Error checking tool call chunk: {e}")
         
         self.tokens.append(token)
         self.placeholder.write("".join(self.tokens))
 
-# 3. Helper to serialize user feedback on query-response matches
-# save_feedback helper has been relocated to rag/utils.py to avoid Streamlit module import errors on CLI tasks.
-
-# Helper to dynamically trim conversation history without orphaning ToolMessages or starting with a non-HumanMessage
 def get_windowed_messages(messages, max_messages=8):
     if len(messages) <= max_messages:
         return messages
     
     slice_idx = -max_messages
     
-    # Trace backward to ensure no orphaned tool/assistant sequences
     while abs(slice_idx) < len(messages):
         first_msg = messages[slice_idx]
         if isinstance(first_msg, ToolMessage):
@@ -62,31 +54,26 @@ def get_windowed_messages(messages, max_messages=8):
         else:
             break
             
-    # Always initiate the message sequence with a HumanMessage to satisfy API validation
     while abs(slice_idx) < len(messages) and not isinstance(messages[slice_idx], HumanMessage):
         slice_idx -= 1
         
     return messages[slice_idx:]
 
-# 4. Cache graph compilation inside Streamlit to prevent hot-reload compilation loops
 @st.cache_resource
 def get_graph():
     logger.info("Compiling agent LangGraph workflow...")
     return build_graph()
 
-# 5. Thread-safe database auto-initialization utilizing the global locks module
 if not os.path.exists(config.DB_PATH) or os.path.getsize(config.DB_PATH) == 0 or not os.path.exists(config.CHROMA_PATH):
     with setup_lock:
-        # Double-check condition once lock is acquired
         if not os.path.exists(config.DB_PATH) or os.path.getsize(config.DB_PATH) == 0 or not os.path.exists(config.CHROMA_PATH):
-            logger.info("Database or vector index missing or empty. Triggering thread-safe auto-setup...")
+            logger.info("Database or vector index missing. Triggering auto-setup...")
             try:
                 from setup import main as run_setup
                 run_setup()
             except Exception as e:
                 logger.error(f"Failed to auto-initialize data environment: {e}")
 
-# 6. Initialize session state variables safely at the module level
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -98,8 +85,6 @@ if "voted_message_index" not in st.session_state:
 
 if "tool_executions" not in st.session_state:
     st.session_state.tool_executions = {}
-
-# format_message_content has been relocated to rag/utils.py
 
 st.set_page_config(
     page_title="FreightIQ | Carrier Intelligence",
@@ -383,8 +368,8 @@ if os.path.exists(feedback_path):
         with open(feedback_path, "r", encoding="utf-8") as f:
             feedback_data = json.load(f)
             feedback_count = len(feedback_data)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"Could not read feedback_path: {e}")
 
 semantic_search_desc = "Vector DB + Fine-tuned PyTorch MLP" if has_weights else "Vector DB + Cosine Reranker fallback"
 
@@ -398,7 +383,7 @@ TOOLS = [
 with st.sidebar:
     api_key_set = bool(os.getenv("GROQ_API_KEY"))
     status_class = "status-ok" if api_key_set else "status-err"
-    status_text = "Llama 3.1 8B · Connected" if api_key_set else "Groq API Key Missing"
+    status_text = f"{config.AGENT_MODEL} · Connected" if api_key_set else "Groq API Key Missing"
 
     tool_items_html = "".join([
         f'<div class="tool-item"><span class="tool-icon">{icon}</span>'
@@ -509,7 +494,7 @@ if user_query:
             with st.spinner("Reasoning…"):
                 for event in graph.stream(
                     {"messages": windowed_messages}, 
-                    config={"callbacks": [stream_handler]}, 
+                    config={"callbacks": [stream_handler], "recursion_limit": 10}, 
                     stream_mode="updates"
                 ):
                     for node_name, node_output in event.items():

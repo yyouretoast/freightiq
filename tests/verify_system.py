@@ -74,7 +74,7 @@ def test_agent_graph():
     print(f"User Prompt: {prompt}")
     
     graph = build_graph()
-    events = graph.stream({"messages": [HumanMessage(content=prompt)]}, stream_mode="updates")
+    events = graph.stream({"messages": [HumanMessage(content=prompt)]}, config={"recursion_limit": 10}, stream_mode="updates")
     
     tool_executed = False
     agent_replied = False

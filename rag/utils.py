@@ -53,8 +53,8 @@ def save_feedback(query, response, feedback_type):
             try:
                 with open(feedback_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Could not load existing feedback.json ({e}). Re-initializing feedback file.")
                 
         data.append(record)
         try:

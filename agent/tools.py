@@ -43,7 +43,17 @@ def carrier_sql_query(query: str) -> str:
     - SELECT * FROM carriers WHERE EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Midwest') AND EXISTS (SELECT 1 FROM json_each(equipment_types) WHERE value = 'flatbed') AND EXISTS (SELECT 1 FROM json_each(cargo_specializations) WHERE value = 'hazardous materials')
     - SELECT * FROM carriers WHERE hq_state = 'FL' AND EXISTS (SELECT 1 FROM json_each(cargo_specializations) WHERE value = 'fresh produce')
     """
-    return query_carriers_sql(query)
+    # Security: Only allow SELECT queries, reject anything else
+    stripped = query.strip()
+    if not stripped.upper().startswith("SELECT"):
+        return "Error: Only SELECT queries are permitted on the carriers database."
+    
+    # Enforce a row limit to prevent unbounded result sets
+    if "LIMIT" not in stripped.upper():
+        stripped = stripped.rstrip(";")
+        stripped += " LIMIT 25"
+    
+    return query_carriers_sql(stripped)
 
 @tool
 def web_search(query: str) -> str:

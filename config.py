@@ -12,6 +12,10 @@ EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 EMBEDDING_DIM = 384
 RERANKER_HIDDEN_DIM = 128
 
+# LLM Configuration (centralized env var reads)
+AGENT_MODEL = os.getenv("AGENT_MODEL", "llama-3.3-70b-versatile")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY") or "mock_key_for_ci"
+
 # Retrieval Parameters
 SEMANTIC_POOL_SIZE = 15
 SEMANTIC_RETRIEVAL_K = 5
@@ -21,3 +25,4 @@ MAX_QUERIES_PER_SESSION = 10
 # Increased from 5 to 8 to restore context memory without hitting Groq TPM limits
 CONVERSATION_WINDOW = 8
 TOOL_TRUNCATION_LIMIT = 1200
+
