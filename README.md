@@ -123,7 +123,7 @@ Freight brokers and shippers spend significant time manually querying carrier di
 FreightIQ uses a two-stage retrieval pipeline. Candidate documents retrieved from ChromaDB are re-scored by a custom PyTorch `CarrierReRanker` module (2-layer MLP with Xavier initialization).
 
 The system executes one of two scoring paths:
-1. **Fine-Tuned MLP Mode**: If trained weights exist on disk (`rag/data/reranker_weights.pt`), candidate document-query embedding pairs are passed through the MLP network to produce relevance logits.
+1. **Fine-Tuned MLP Mode**: If trained weights exist on disk (`models/reranker_weights.pt`), candidate document-query embedding pairs are passed through the MLP network to produce relevance logits.
 2. **Cosine Fallback**: If weights are not present, the pipeline falls back to computing cosine similarity via `torch.nn.functional.cosine_similarity`.
 
 Pipeline Steps:
@@ -209,10 +209,10 @@ For a 220 lbs crate (36x36x36 in, 27.0 cu ft), the density is 8.15 lb/ft³, whic
 ## Database Setup & Data Ingestion
 
 Data setup is handled via distinct scripts for maintenance and reproducibility:
-* `rag/generate_carriers.py`: Generates 200 synthetic carrier profiles.
-* `rag/setup_sqlite.py`: Ingests carrier records into `carriers.db` with Write-Ahead Logging (`PRAGMA journal_mode=WAL;`). Multi-value lists (`service_regions`, `equipment_types`, `cargo_specializations`) are stored as JSON arrays for `json_each()` SQL queries.
-* `rag/ingest_chroma.py`: Encodes carrier profiles using `all-MiniLM-L6-v2` embeddings and persists them to ChromaDB.
-* `scripts/init_db.py`: Master setup script executing generation, SQLite schema creation, and vector index ingestion.
+* `rag/generate_carriers.py`: Generates synthetic carrier profiles at `data/carriers.json`.
+* `rag/setup_sqlite.py`: Ingests carrier records into `data/carriers.db` with Write-Ahead Logging (`PRAGMA journal_mode=WAL;`). Multi-value lists (`service_regions`, `equipment_types`, `cargo_specializations`) are stored as JSON arrays for `json_each()` SQL queries.
+* `rag/ingest_chroma.py`: Encodes carrier profiles using `all-MiniLM-L6-v2` embeddings and persists them to `data/chroma_db/`.
+* `scripts/init_db.py`: Master setup script executing generation, SQLite schema creation, and vector index ingestion (`setup.py` acts as a backward-compatibility shim).
 
 ---
 
@@ -292,7 +292,7 @@ python -m tests.stress_test_concurrency
 
 - **Evaluator Self-Preference Bias**: Evaluation of generated agent answers using LLM-as-a-Judge exhibits self-preference bias when the evaluator and generator share the same model family. Production evaluation harnesses should pair cross-provider evaluators (e.g., GPT-4o, Gemini 1.5 Pro) with exact metric benchmarks.
 - **Groq API Free-Tier Throttling**: Groq free-tier rate limits enforce strict TPM/RPM quotas. Automated test scripts set `AGENT_MODEL=llama-3.1-8b-instant` to avoid rate limit spikes during batch test runs.
-- **Ephemeral Host Filesystem**: Hugging Face Spaces storage is ephemeral. User feedback logged to `rag/data/feedback.json` resets on cold starts. In multi-instance production environments, feedback records should write directly to PostgreSQL or S3.
+- **Ephemeral Host Filesystem**: Hugging Face Spaces storage is ephemeral. User feedback logged to `data/feedback.json` resets on cold starts. In multi-instance production environments, feedback records should write directly to PostgreSQL or S3.
 
 ---
 
