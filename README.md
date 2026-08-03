@@ -8,7 +8,7 @@ app_file: app.py
 pinned: false
 ---
 
-# 🚚 FreightIQ: Agentic Carrier Intelligence System
+# FreightIQ: Agentic Carrier Intelligence System
 
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-blue.svg?style=flat-square&logo=python)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=flat-square&logo=pytorch&logoColor=white)](https://pytorch.org/)
@@ -16,38 +16,55 @@ pinned: false
 [![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![LangSmith](https://img.shields.io/badge/LangSmith-Tracing-blue?style=flat-square&logo=analytics)](https://smith.langchain.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](https://opensource.org/licenses/MIT)
-
 [![FreightIQ Verification CI](https://github.com/yyouretoast/freightiq/actions/workflows/verify.yml/badge.svg)](https://github.com/yyouretoast/freightiq/actions/workflows/verify.yml)
 
-FreightIQ is an agentic carrier intelligence and logistics research assistant. Powered by a **LangGraph ReAct loop** and **Groq (Llama 3.3 70B)**, it reasons over shipping queries, retrieves documents using a **hybrid search engine (ChromaDB + SQLite)**, re-ranks carrier profiles using a custom **PyTorch MLP**, and leverages live web search to answer real-time market rate questions.
+FreightIQ is an agentic research and carrier intelligence assistant. Powered by a **LangGraph ReAct loop** and **Groq (Llama 3.3 70B)**, it routes shipping queries across a **hybrid search engine (ChromaDB + SQLite)**, re-ranks candidate profiles using a custom **PyTorch MLP**, and queries live web search for real-time market freight rates.
 
-> 🚀 **Live Demo:** [huggingface.co/spaces/yyouretoast/freightiq](https://huggingface.co/spaces/yyouretoast/freightiq)
+> **Live Demo:** [huggingface.co/spaces/yyouretoast/freightiq](https://huggingface.co/spaces/yyouretoast/freightiq)
 
 <video src="https://github.com/user-attachments/assets/dbf58565-39ee-4d17-a434-6a321c8afed4" width="100%" controls></video>
 
 ---
 
-## 🎯 Why FreightIQ?
+## Table of Contents
 
-Freight brokers and shippers waste hours manually searching fragmented carrier directories, filtering by state, safety rating, and equipment type across disconnected spreadsheets and DOT lookup tools. FreightIQ collapses this workflow into a single natural-language interface: ask a question in plain English, and the agent autonomously selects the right tool (SQL for exact filters, vector search for qualitative matches, web search for live rates), executes it, and synthesizes a clean answer — no forms, no manual filtering.
-
----
-
-## 🛠️ Tech Stack & Keywords
-
-*   **Agent Orchestration:** LangGraph, LangChain (ReAct loop, conditional routing)
-*   **LLM:** Llama 3.3 70B (Groq Cloud API)
-*   **Vector DB & RAG:** ChromaDB (persistent local storage)
-*   **Structured Database:** SQLite (structured carrier queries)
-*   **Deep Learning Reranking:** PyTorch (`torch.nn.Module` custom classifier)
-*   **Embeddings:** SentenceTransformers (`all-MiniLM-L6-v2`)
-*   **Observability:** LangSmith (end-to-end agent trace auto-instrumentation via callbacks)
-*   **Web APIs:** DuckDuckGo API (live freight market rate search)
-*   **Frontend UI:** Streamlit (intermediate tool execution streaming)
+- [Overview](#overview)
+- [Architecture & Tech Stack](#architecture--tech-stack)
+- [System Architecture](#system-architecture)
+- [Custom PyTorch Reranker](#custom-pytorch-reranker)
+  - [Retrieval Performance Benchmarks](#retrieval-performance-benchmarks)
+- [Production Hardening & Guardrails](#production-hardening--guardrails)
+- [Execution Trace](#execution-trace)
+- [Database Setup & Data Ingestion](#database-setup--data-ingestion)
+- [Quickstart & Installation](#quickstart--installation)
+- [Usage Examples](#usage-examples)
+- [Known Limitations & Trade-offs](#known-limitations--trade-offs)
+- [Roadmap & Production Scaling](#roadmap--production-scaling)
+- [License](#license)
 
 ---
 
-## 📊 System Architecture
+## Overview
+
+Freight brokers and shippers spend significant time manually querying carrier directories, cross-referencing states, safety ratings, and equipment types across static spreadsheets and DOT lookup portals. FreightIQ provides a unified natural-language interface over these datasets: a user submits a query in plain text, and the agent dynamically routes the request to exact SQL queries, vector similarity lookups, NMFC density calculation, or live web search.
+
+---
+
+## Architecture & Tech Stack
+
+* **Agent Orchestration:** LangGraph, LangChain (ReAct loop, conditional routing)
+* **LLM Core:** Llama 3.3 70B (`llama-3.3-70b-versatile` via Groq Cloud API)
+* **Vector DB & RAG:** ChromaDB (persistent vector storage)
+* **Relational Database:** SQLite (structured read-only query engine)
+* **Deep Learning Reranking:** PyTorch (`CarrierReRanker` 2-layer MLP classifier)
+* **Embeddings:** SentenceTransformers (`all-MiniLM-L6-v2`)
+* **Observability:** LangSmith (trace callbacks and execution telemetry)
+* **Web APIs:** DuckDuckGo News API (market rate search)
+* **Frontend:** Streamlit (streaming tokens, tool execution cards, active feedback logging)
+
+---
+
+## System Architecture
 
 ```text
                       +---------------------------------------+
@@ -101,63 +118,107 @@ Freight brokers and shippers waste hours manually searching fragmented carrier d
 
 ---
 
-## 🔬 How the Custom PyTorch Re-ranker Works
+## Custom PyTorch Reranker
 
-FreightIQ implements a two-stage retrieval pipeline. The `CarrierReRanker` is a custom `torch.nn.Module` (2-layer MLP with Xavier initialization) designed to re-rank carrier profiles.
+FreightIQ uses a two-stage retrieval pipeline. Candidate documents retrieved from ChromaDB are re-scored by a custom PyTorch `CarrierReRanker` module (2-layer MLP with Xavier initialization).
 
-The system supports two execution paths:
-1. **Fine-Tuned MLP Mode**: If trained weights exist on disk (`rag/data/reranker_weights.pt`), the system loads the weights and runs document-query embedding pairs through the MLP network. The model outputs relevance logits, which are used to rank candidates.
-2. **Cosine Similarity Fallback**: If the weights file is absent, the system dynamically falls back to computing raw cosine similarities (`torch.nn.functional.cosine_similarity`) as a deterministic semantic baseline.
+The system executes one of two scoring paths:
+1. **Fine-Tuned MLP Mode**: If trained weights exist on disk (`rag/data/reranker_weights.pt`), candidate document-query embedding pairs are passed through the MLP network to produce relevance logits.
+2. **Cosine Fallback**: If weights are not present, the pipeline falls back to computing cosine similarity via `torch.nn.functional.cosine_similarity`.
 
-Reranking Steps:
-1. **Candidate Retrieval:** ChromaDB extracts the top 15 nearest carrier profiles using vector similarity.
-2. **Zero-Latency Embedding Extraction:** Stored document embeddings are fetched directly from ChromaDB (`include=["embeddings"]`), bypassing redundant re-encoding entirely.
-3. **Scoring:** Query and document tensors are scored via the fine-tuned MLP (if weights exist) or raw cosine similarity.
-4. **Re-sorting:** Documents are ranked by descending score, returning the top-k most relevant profiles to the LLM agent.
+Pipeline Steps:
+1. **Candidate Retrieval**: ChromaDB extracts the top 15 nearest carrier profiles via vector similarity.
+2. **Embedding Re-use**: Stored document embeddings are fetched directly from ChromaDB (`include=["embeddings"]`), avoiding re-encoding latency.
+3. **Scoring & Ranking**: Tensors are scored by the MLP network or cosine fallback and sorted in descending order to return the top 5 candidates to the LLM agent.
 
 ### Retrieval Performance Benchmarks
 
-An evaluation harness (`tests/evaluate_retrieval.py`) benchmarks retrieval performance across 20 distinct queries. The MLP Reranker shows significant improvements in Recall@3 and Recall@5 compared to the baseline vector search:
+Retrieved results were benchmarked across 20 ground-truth query scenarios (`tests/evaluate_retrieval.py`):
 
 | Strategy | Recall@1 | Recall@3 | Recall@5 | MRR |
-| :--- | :--- | :--- | :--- | :--- |
-| **SQLite Exact Query** | 0.900 | 0.900 | 0.900 | 0.900 |
+| :--- | :---: | :---: | :---: | :---: |
+| **SQLite Exact Query** | **0.900** | **0.900** | **0.900** | **0.900** |
 | **ChromaDB Base Vector** | 0.250 | 0.400 | 0.550 | 0.349 |
 | **Reranked Search (Cosine)** | 0.250 | 0.400 | 0.550 | 0.349 |
-| **Reranked Search (Trained MLP)** | 0.150 | 0.500 | 0.650 | 0.335 |
+| **Reranked Search (Trained MLP)** | 0.150 | **0.500** | **0.650** | 0.335 |
 
 ---
 
-## ⚡ Production Best Practices Implemented
+## Production Hardening & Guardrails
 
-*   **SQL Query Validation & Limit Enforcement:** `carrier_sql_query` enforces strict `SELECT`-only query validation to reject unauthorized statements and automatically appends `LIMIT 25` to prevent context window overflow or memory spikes.
-*   **Rate-Limit Resilience & Backoff:** LLM invocations are wrapped with `tenacity.retry` configured for exponential backoff, automatically handling Groq `RateLimitError` (`429`) and API status errors across network spikes.
-*   **Graph Recursion & Loop Guardrails:** Enforces `recursion_limit=10` at runtime and employs dual guardrail nodes to catch duplicate tool invocations and excessive SQL reformulations.
-*   **Global Model Caching (Instant Queries):** Loaded models (`SentenceTransformer` & PyTorch `CarrierReRanker`) are cached globally using a lazy-initialized singleton pattern, eliminating model reload overhead on repeated queries and achieving sub-second tool execution after warm-up.
-*   **Persistent DB Handles:** Caches persistent ChromaDB connection handles to eliminate redundant disk-reads and prevent thread-safety file locks.
-*   **Deterministic Data Generation:** Uses static random seeding (`random.seed(42)`) to ensure carrier database generation is fully reproducible across developer environments.
-*   **Transaction Safety:** Populates SQLite tables using batch operations (`executemany`) inside a single secure database transaction.
-*   **Connection-Level Read Security:** Connects to the SQLite database using read-only URI mode (`file:DB?mode=ro`) to safeguard against SQL injection or unauthorized table write operations from the agent.
-*   **Per-Session Rate Limiting:** Caps each user session at 10 agent queries via `st.session_state` to prevent API quota exhaustion from a single session.
-*   **Conversation Window Truncation:** Only the last 8 messages are passed to the LLM context window per query, preventing token limit breaches and history contamination in long sessions while preserving full UI history.
-*   **Structured Logging:** `logging.basicConfig` with timestamped `INFO`/`ERROR` format is active across all modules for observability in container environments (e.g. Hugging Face Spaces logs).
-*   **LangSmith Tracing:** End-to-end agent execution traces are pre-integrated via LangChain callbacks. Set `LANGCHAIN_TRACING_V2=true` and `LANGCHAIN_API_KEY` in your environment to stream full ReAct loop traces — tool selections, inputs, outputs, and latencies — to the LangSmith dashboard.
+- **SQL Safety**: `carrier_sql_query` enforces strict `SELECT`-only validation and automatically appends `LIMIT 25` to prevent unbounded memory spikes and data exfiltration.
+- **Rate-Limit Resilience**: LLM invocations are wrapped with `tenacity.retry` configured for exponential backoff, handling Groq `429 Too Many Requests` API rate limits automatically.
+- **Loop Guardrails**: Implements runtime `recursion_limit=10` and dual guardrail logic to detect back-to-back duplicate tool calls and limit iterative SQL reformulations.
+- **Read-Only SQLite Isolation**: Connects via `file:DB?mode=ro` to enforce connection-level read-only safety.
+- **Singleton Model Caching**: Uses double-checked locking singletons to cache `SentenceTransformer` and PyTorch model instances in memory across Streamlit session runs.
+- **Context Window Truncation**: Restricts message context to the last 8 messages per turn, keeping token consumption within API limits while preserving UI history.
 
 ---
 
-## 🗄️ Database Setup (Modular Ingestion)
+## Execution Trace
 
-The database pipeline splits database ingestion tasks for clean debugging and maintenance:
-*   `rag/generate_carriers.py`: Programmatically generates 200 synthetic carriers.
-*   `rag/setup_sqlite.py`: Populates `carriers.db`. Multi-value columns (`service_regions`, `equipment_types`, `cargo_specializations`) are stored as JSON arrays, enabling precise `json_each()` queries alongside standard filters on `hq_state`, `safety_rating`, and `years_operating`. Ingests the database file with Write-Ahead Logging (`PRAGMA journal_mode=WAL;`) enabled permanently to handle multi-threaded concurrency.
-*   `rag/ingest_chroma.py`: Computes vector embeddings locally using `all-MiniLM-L6-v2` and persists them to ChromaDB.
-*   `setup.py`: The single-entry execution script triggering the entire database environment setup.
+<details>
+<summary><b>View multi-tool agent routing trace</b></summary>
+
+```text
+[User Prompt]:
+"Find a carrier located in Florida (FL) that handles fresh produce. 
+What are their DOT and MC numbers? Also, what is the freight class for a 220 lbs crate 
+measuring 36x36x36 inches?"
+
+[Step 1 - Agent Reasoning]:
+Tool Selected: carrier_sql_query
+Input: SELECT * FROM carriers WHERE hq_state = 'FL' AND EXISTS (SELECT 1 FROM json_each(cargo_specializations) WHERE value = 'fresh produce') LIMIT 25
+
+[Step 1 - Tool Execution Result]:
+Carrier Name: SunState Logistics
+DOT Number: 4892019
+MC Number: MC-304918
+HQ State: FL
+Service Regions: Southeast, Mid-Atlantic
+Equipment: Reefer, Dry Van
+Specializations: Fresh Produce, Temperature-Controlled
+Safety Rating: satisfactory
+Years Operating: 14 years
+
+[Step 2 - Agent Reasoning]:
+Tool Selected: freight_class_calculator
+Input: {"weight_lbs": 220, "length_in": 36, "width_in": 36, "height_in": 36, "cargo_description": "fresh produce"}
+
+[Step 2 - Tool Execution Result]:
+Shipment Dimensions: 36x36x36 inches
+Volume: 27.00 cubic feet
+Weight: 220 lbs
+Calculated Density: 8.15 lb/ft³
+Standard NMFC Freight Class: 110
+
+[Step 3 - Final Response Synthesis]:
+"SunState Logistics is headquartered in Florida (FL) and specializes in fresh produce.
+- DOT Number: 4892019
+- MC Number: MC-304918
+- Safety Rating: Satisfactory (14 years operating)
+
+Shipment Freight Class:
+For a 220 lbs crate (36x36x36 in, 27.0 cu ft), the density is 8.15 lb/ft³, which maps to Standard NMFC Freight Class 110."
+```
+
+</details>
 
 ---
 
-## 🚀 Setup & Installation
+## Database Setup & Data Ingestion
 
-### 1. Clone the repository and install dependencies
+Data setup is handled via distinct scripts for maintenance and reproducibility:
+* `rag/generate_carriers.py`: Generates 200 synthetic carrier profiles.
+* `rag/setup_sqlite.py`: Ingests carrier records into `carriers.db` with Write-Ahead Logging (`PRAGMA journal_mode=WAL;`). Multi-value lists (`service_regions`, `equipment_types`, `cargo_specializations`) are stored as JSON arrays for `json_each()` SQL queries.
+* `rag/ingest_chroma.py`: Encodes carrier profiles using `all-MiniLM-L6-v2` embeddings and persists them to ChromaDB.
+* `setup.py`: Master setup script executing generation, SQLite schema creation, and vector index ingestion.
+
+---
+
+## Quickstart & Installation
+
+### 1. Clone repository & install dependencies
 ```bash
 git clone https://github.com/yyouretoast/freightiq.git
 cd freightiq
@@ -166,100 +227,83 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment Variables
-Create a `.env` file in the root directory and add your keys:
+### 2. Configure environment variables
+Create a `.env` file in the root directory:
 ```env
-# Core Groq LLM API Key
 GROQ_API_KEY=your_groq_api_key_here
 
-# Optional: Override agent model (defaults to llama-3.3-70b-versatile, set to llama-3.1-8b-instant for fast CI testing)
-# AGENT_MODEL=llama-3.3-70b-versatile
+# Optional: Override agent model for fast testing
+# AGENT_MODEL=llama-3.1-8b-instant
 
-# Optional: Enable LangSmith Observability Tracing
+# Optional: LangSmith Telemetry
 LANGCHAIN_TRACING_V2=true
 LANGCHAIN_API_KEY=your_langchain_api_key_here
 LANGCHAIN_PROJECT=FreightIQ-Agent
 ```
 
-### 3. Run Data Ingestion
-Initialize the SQLite database, generate synthetic carriers, and index the vectors in ChromaDB:
+### 3. Initialize data environment
 ```bash
 python setup.py
 ```
 
-### 4. Start the Application
-Run the Streamlit frontend locally:
+### 4. Run application
 ```bash
 streamlit run app.py
 ```
 
-### 5. Run Programmatic Verification Tests
-Validate all modules (calculators, SQL, vector search, PyTorch reranking, live APIs, and LangGraph routing) via the CLI test suite:
+### 5. Run test suites & benchmarks
 ```bash
+# Integration verification smoke test
 python -m tests.verify_system
-```
 
-### 6. Fine-Tune the Reranker Model
-Train the PyTorch MLP reranker on a mixture of programmatically generated bootstrap pairs and actual user feedback:
-```bash
+# Train PyTorch reranker with early stopping
 python train_reranker.py
-```
-* **Bootstrap Generator**: Generates positive and negative query-document pairs directly from carrier database attributes to establish baseline model convergence.
-* **User Feedback Ingest**: Loads feedback signals logged to `rag/data/feedback.json` from thumbs-up/down UI interactions.
-* **Early Stopping & Weights Export**: Tracks validation loss with early stopping (patience=5) and exports the optimal model parameters (`BCEWithLogitsLoss`) state dict to `rag/data/reranker_weights.pt`, which is dynamically hot-reloaded by the app on the next query.
 
-### 7. Run Retrieval Evaluation & Benchmarking
-Run the retrieval evaluation harness to benchmark and compare SQLite exact queries, ChromaDB base vector search, Cosine re-ranked search, and Trained MLP re-ranked search:
-```bash
+# Retrieval benchmark evaluation
 python -m tests.evaluate_retrieval
-```
-This computes **Recall@1**, **Recall@3**, **Recall@5**, and **Mean Reciprocal Rank (MRR)**.
 
-### 8. Run Concurrency Stress Tests
-Run the multi-threaded concurrency stress test to verify SQLite WAL mode, feedback log serialization, and cached weights loading under concurrent Streamlit user load:
-```bash
-python tests/stress_test_concurrency.py
+# Multi-threaded concurrency stress test
+python -m tests.stress_test_concurrency
 ```
 
 ---
 
-## 📝 Example Queries to Test
+## Usage Examples
 
-1.  **Structured SQL Query:**
-    *   *Prompt:* `"Find all carriers based in Ohio (OH) with a satisfactory safety rating."`
-    *   *Flow:* Triggers `carrier_sql_query` tool -> runs secure SQL read-only SELECT -> formats clean profiles.
-2.  **Structured Multi-Value Query:**
-    *   *Prompt:* `"We need flatbed carriers that handle hazardous materials in the Midwest."`
-    *   *Flow:* Triggers `carrier_sql_query` tool -> executes exact-match SQL utilizing `json_each()` on the JSON array columns (`service_regions`, `equipment_types`, and `cargo_specializations`).
-3.  **Semantic RAG + PyTorch Re-ranking:**
-    *   *Prompt:* `"Find me carriers known for exceptional handling of temperature-sensitive goods."`
-    *   *Flow:* Triggers `carrier_semantic_search` -> ChromaDB retrieves candidates -> scores them via custom PyTorch MLP (or falls back to cosine similarity if weights do not exist on disk) -> returns top-k candidates.
-4.  **Freight Class Density Calculation:**
-    *   *Prompt:* `"What is the NMFC freight class for a 1200 lbs pallet measuring 48x48x48 inches?"`
-    *   *Flow:* Triggers `freight_class_calculator` -> computes volume/density (18.75 lb/ft³) -> maps class 70.
-5.  **Web Search Integration:**
-    *   *Prompt:* `"What is the current average national dry van spot rate per mile?"`
-    *   *Flow:* Triggers `web_search` -> queries DuckDuckGo News API (structured index) -> summarizes latest logistics news.
+1. **Structured State & Safety Search:**
+   - *Query:* `"Find all carriers based in Ohio (OH) with a satisfactory safety rating."`
+   - *Routing:* Triggers `carrier_sql_query` -> runs `SELECT * FROM carriers WHERE hq_state = 'OH' AND safety_rating = 'satisfactory' LIMIT 25`.
 
----
+2. **JSON Array Attribute Matching:**
+   - *Query:* `"We need flatbed carriers that handle hazardous materials in the Midwest."`
+   - *Routing:* Triggers `carrier_sql_query` using `json_each()` on `service_regions`, `equipment_types`, and `cargo_specializations`.
 
-## ⚠️ Known Limitations & Evaluation Bias
+3. **Qualitative Semantic Search:**
+   - *Query:* `"Find me carriers known for exceptional handling of temperature-sensitive goods."`
+   - *Routing:* Triggers `carrier_semantic_search` -> candidate retrieval via ChromaDB -> re-ranked via PyTorch MLP.
 
-*   **LLM Self-Judge Bias:** When evaluating RAG answers or trajectories using LLM-as-a-Judge harnesses (e.g. Llama 3.3 70B judging generated answers), the evaluator model exhibits documented self-preference bias (scoring outputs generated by the same model family more favorably). In production evaluation pipelines, cross-provider evaluators (e.g. Gemini 1.5 or GPT-4o) should be paired alongside automated ground-truth metrics.
-*   **Groq API Rate Limits:** The free-tier Groq API enforces tight Tokens Per Minute (TPM) and Requests Per Minute (RPM) limits. Automated test scripts override the production model to `llama-3.1-8b-instant` via `AGENT_MODEL` to prevent throttling during trajectory test runs.
-*   **Hugging Face Filesystem Ephemerality:** In live Hugging Face Spaces deployments, local disk changes are non-persistent across restarts. Logged feedback records in `rag/data/feedback.json` should be configured to write to external relational storage (e.g. PostgreSQL) or an S3 bucket for continuous training at enterprise scale.
+4. **NMFC Freight Class Calculation:**
+   - *Query:* `"What is the NMFC freight class for a 1200 lbs pallet measuring 48x48x48 inches?"`
+   - *Routing:* Triggers `freight_class_calculator` -> computes volume (64 cu ft) and density (18.75 lb/ft³) -> maps to Class 70.
 
 ---
 
-## 🔮 Future Work & Scaling
+## Known Limitations & Trade-offs
 
-To transition FreightIQ to a commercial production standard, the following roadmap is proposed:
-*   **Production Database Migration:** Upgrade local SQLite file storage to a distributed relational database like **PostgreSQL** or **Amazon RDS** to support multi-region locking.
-*   **Vector Scale Upgrade:** Upgrade local ChromaDB persistence to a managed vector store (e.g., Pinecone or Pgvector) for multi-million document candidate pools.
-*   **OAuth2 Security & Rate Limiting:** Implement enterprise API gateway rate-limiting and user authentication to protect underlying model quotas.
+- **Evaluator Self-Preference Bias**: Evaluation of generated agent answers using LLM-as-a-Judge exhibits self-preference bias when the evaluator and generator share the same model family. Production evaluation harnesses should pair cross-provider evaluators (e.g., GPT-4o, Gemini 1.5 Pro) with exact metric benchmarks.
+- **Groq API Free-Tier Throttling**: Groq free-tier rate limits enforce strict TPM/RPM quotas. Automated test scripts set `AGENT_MODEL=llama-3.1-8b-instant` to avoid rate limit spikes during batch test runs.
+- **Ephemeral Host Filesystem**: Hugging Face Spaces storage is ephemeral. User feedback logged to `rag/data/feedback.json` resets on cold starts. In multi-instance production environments, feedback records should write directly to PostgreSQL or S3.
 
 ---
 
-## 📄 License
+## Roadmap & Production Scaling
+
+- **Database Scale**: Migrate local SQLite storage to PostgreSQL / Amazon RDS to support multi-region ACID transactions and distributed locking.
+- **Vector Store Scale**: Transition local ChromaDB storage to managed vector infrastructure (Pgvector / Pinecone) for multi-million document indexes.
+- **Async Execution**: Convert tool execution paths to `asyncio` for non-blocking concurrent tool execution under API server loads (FastAPI / Gunicorn).
+
+---
+
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
