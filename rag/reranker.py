@@ -29,7 +29,7 @@ def get_embed_model():
 
 def get_reranker_model(device):
     global _RERANKER_MODEL, _RERANKER_LOADED_TIME
-    weights_path = os.path.join(config.BASE_DIR, "rag", "data", "reranker_weights.pt")
+    weights_path = config.WEIGHTS_PATH
     if not os.path.exists(weights_path):
         return None
         

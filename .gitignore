@@ -10,19 +10,18 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Databases & Vector Stores
-chroma_db/
-rag/data/carriers.db
+# Data & Databases
+data/carriers.db*
+data/chroma_db/
+data/feedback.json
+
+# Model Checkpoints (generated at runtime by scripts/train_reranker.py)
+models/reranker_weights.pt
+*.pt
 
 # System files
 .DS_Store
 Thumbs.db
 
-# Project-specific private files
-resume_draft.tex
+# Project scratch & logs
 scratch/
-rag/data/feedback.json
-*.pt
-rag/data/reranker_weights.pt
-
-

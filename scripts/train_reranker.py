@@ -1,4 +1,9 @@
+import sys
 import os
+
+# Ensure project root is in Python path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import json
 import random
 import logging
@@ -69,7 +74,7 @@ def load_feedback_data(carriers):
     """
     Load user feedback from feedback.json and parse it into query-document pairs.
     """
-    feedback_path = os.path.join(config.BASE_DIR, "rag", "data", "feedback.json")
+    feedback_path = config.FEEDBACK_PATH
     if not os.path.exists(feedback_path):
         logger.info("No feedback.json file found.")
         return []
@@ -98,7 +103,6 @@ def load_feedback_data(carriers):
         # Identify which carriers were mentioned in the response
         matched_carriers = []
         for c in carriers:
-            # Check if name or DOT number is mentioned in response
             if c["carrier_name"] in response or c["dot_number"] in response:
                 matched_carriers.append(c)
                 
@@ -106,7 +110,6 @@ def load_feedback_data(carriers):
             doc = format_carrier_document(mc)
             feedback_pairs.append((query, doc, label))
             
-            # Negative sampling: if positive feedback, add a random negative sample
             if label == 1.0:
                 unmatched = [other for other in carriers if other not in matched_carriers]
                 if unmatched:
@@ -185,7 +188,7 @@ def main():
     
     # Train model with early stopping
     epochs = 15
-    patience = 5  # Stop early if val loss doesn't improve for this many epochs
+    patience = 5
     best_val_loss = float('inf')
     epochs_without_improvement = 0
     best_model_state = None
@@ -240,13 +243,12 @@ def main():
                 logger.info(f"Early stopping triggered at epoch {epoch+1} (no improvement for {patience} epochs).")
                 break
             
-    # Save the best model weights (not the final epoch)
+    # Save the best model weights
     if best_model_state is None:
         best_model_state = model.state_dict()
     
-    out_dir = os.path.join(config.BASE_DIR, "rag", "data")
-    os.makedirs(out_dir, exist_ok=True)
-    weights_path = os.path.join(out_dir, "reranker_weights.pt")
+    weights_path = config.WEIGHTS_PATH
+    os.makedirs(os.path.dirname(weights_path), exist_ok=True)
     
     torch.save(best_model_state, weights_path)
     logger.info(f"Best model weights (val loss={best_val_loss:.5f}) saved to {weights_path}")

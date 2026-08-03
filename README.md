@@ -212,7 +212,7 @@ Data setup is handled via distinct scripts for maintenance and reproducibility:
 * `rag/generate_carriers.py`: Generates 200 synthetic carrier profiles.
 * `rag/setup_sqlite.py`: Ingests carrier records into `carriers.db` with Write-Ahead Logging (`PRAGMA journal_mode=WAL;`). Multi-value lists (`service_regions`, `equipment_types`, `cargo_specializations`) are stored as JSON arrays for `json_each()` SQL queries.
 * `rag/ingest_chroma.py`: Encodes carrier profiles using `all-MiniLM-L6-v2` embeddings and persists them to ChromaDB.
-* `setup.py`: Master setup script executing generation, SQLite schema creation, and vector index ingestion.
+* `scripts/init_db.py`: Master setup script executing generation, SQLite schema creation, and vector index ingestion.
 
 ---
 
@@ -243,7 +243,7 @@ LANGCHAIN_PROJECT=FreightIQ-Agent
 
 ### 3. Initialize data environment
 ```bash
-python setup.py
+python scripts/init_db.py
 ```
 
 ### 4. Run application
@@ -257,7 +257,7 @@ streamlit run app.py
 python -m tests.verify_system
 
 # Train PyTorch reranker with early stopping
-python train_reranker.py
+python scripts/train_reranker.py
 
 # Retrieval benchmark evaluation
 python -m tests.evaluate_retrieval

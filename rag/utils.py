@@ -3,7 +3,7 @@ import json
 import logging
 from datetime import datetime, timezone
 import config
-from agent.locks import feedback_lock
+from utils.locks import feedback_lock
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ def format_message_content(content):
     return str(content)
 
 def save_feedback(query, response, feedback_type):
-    feedback_file = os.path.join(config.BASE_DIR, "rag", "data", "feedback.json")
+    feedback_file = config.FEEDBACK_PATH
     os.makedirs(os.path.dirname(feedback_file), exist_ok=True)
     
     record = {

@@ -1,10 +1,22 @@
 import os
 
-# Database & Storage Paths
+# Base & Root Directories
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "rag", "data", "carriers.db")
-CHROMA_PATH = os.path.join(BASE_DIR, "chroma_db")
-CARRIERS_JSON_PATH = os.path.join(BASE_DIR, "rag", "data", "carriers.json")
+DATA_DIR = os.path.join(BASE_DIR, "data")
+MODELS_DIR = os.path.join(BASE_DIR, "models")
+SCRIPTS_DIR = os.path.join(BASE_DIR, "scripts")
+
+# Auto-create runtime directories
+os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(MODELS_DIR, exist_ok=True)
+os.makedirs(SCRIPTS_DIR, exist_ok=True)
+
+# Database & Storage Paths
+DB_PATH = os.path.join(DATA_DIR, "carriers.db")
+CHROMA_PATH = os.path.join(DATA_DIR, "chroma_db")
+CARRIERS_JSON_PATH = os.path.join(DATA_DIR, "carriers.json")
+FEEDBACK_PATH = os.path.join(DATA_DIR, "feedback.json")
+WEIGHTS_PATH = os.path.join(MODELS_DIR, "reranker_weights.pt")
 CHROMA_COLLECTION_NAME = "freight_carriers"
 
 # Model Configuration
@@ -22,7 +34,5 @@ SEMANTIC_RETRIEVAL_K = 5
 
 # UI & Agent Session Configuration
 MAX_QUERIES_PER_SESSION = 10
-# Increased from 5 to 8 to restore context memory without hitting Groq TPM limits
 CONVERSATION_WINDOW = 8
 TOOL_TRUNCATION_LIMIT = 1200
-

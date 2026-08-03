@@ -27,7 +27,7 @@ jobs:
 
     - name: Initialize Databases
       run: |
-        python setup.py
+        python scripts/init_db.py
 
     - name: Run verification test suite
       run: |

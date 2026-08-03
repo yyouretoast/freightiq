@@ -1,5 +1,5 @@
 import threading
 
-# Global locks shared across all Streamlit sessions via the python module cache
+# Thread-safe synchronization locks for initialization and feedback logging
 setup_lock = threading.Lock()
 feedback_lock = threading.Lock()

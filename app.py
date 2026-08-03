@@ -9,7 +9,7 @@ import textwrap
 from datetime import datetime, timezone
 from html import escape
 from agent.graph import build_graph
-from agent.locks import setup_lock, feedback_lock
+from utils.locks import setup_lock, feedback_lock
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from langchain_core.callbacks import BaseCallbackHandler
 from rag.utils import save_feedback, format_message_content
@@ -69,7 +69,7 @@ if not os.path.exists(config.DB_PATH) or os.path.getsize(config.DB_PATH) == 0 or
         if not os.path.exists(config.DB_PATH) or os.path.getsize(config.DB_PATH) == 0 or not os.path.exists(config.CHROMA_PATH):
             logger.info("Database or vector index missing. Triggering auto-setup...")
             try:
-                from setup import main as run_setup
+                from scripts.init_db import main as run_setup
                 run_setup()
             except Exception as e:
                 logger.error(f"Failed to auto-initialize data environment: {e}")
@@ -356,12 +356,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Dynamic checks for reranker model configuration & feedback logs size
-weights_path = os.path.join(config.BASE_DIR, "rag", "data", "reranker_weights.pt")
+weights_path = config.WEIGHTS_PATH
 has_weights = os.path.exists(weights_path)
 reranker_status = "PyTorch MLP (Fine-tuned)" if has_weights else "Cosine Similarity (Fallback)"
 reranker_class = "status-ok" if has_weights else "status-warning"
 
-feedback_path = os.path.join(config.BASE_DIR, "rag", "data", "feedback.json")
+feedback_path = config.FEEDBACK_PATH
 feedback_count = 0
 if os.path.exists(feedback_path):
     try:
