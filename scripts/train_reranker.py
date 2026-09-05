@@ -13,7 +13,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 import config
 from rag.reranker import CarrierReRanker, get_embed_model
-from rag.utils import format_carrier_document
+from rag.utils import format_carrier_document, load_feedback
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -72,18 +72,11 @@ def generate_bootstrap_data(carriers):
 
 def load_feedback_data(carriers):
     """
-    Load user feedback from feedback.json and parse it into query-document pairs.
+    Load user feedback from feedback.json/feedback.jsonl and parse it into query-document pairs.
     """
-    feedback_path = config.FEEDBACK_PATH
-    if not os.path.exists(feedback_path):
-        logger.info("No feedback.json file found.")
-        return []
-        
-    try:
-        with open(feedback_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    except Exception as e:
-        logger.error(f"Failed to read feedback.json: {e}")
+    data = load_feedback()
+    if not data:
+        logger.info("No user feedback records found.")
         return []
         
     feedback_pairs = []
@@ -93,6 +86,10 @@ def load_feedback_data(carriers):
         query = record.get("query", "")
         response = record.get("response", "")
         feedback = record.get("feedback", "")
+        
+        # Exclude mock stress-test records
+        if "Test Query from worker" in query:
+            continue
         
         if not query or not response or not feedback:
             continue
@@ -130,49 +127,40 @@ def main():
     with open(json_path, "r", encoding="utf-8") as f:
         carriers = json.load(f)
         
-    # Load feedback and bootstrap dataset
+    # Split carriers into disjoint train (80%) and validation (20%) sets to prevent data leakage
+    random.seed(42)
+    shuffled_carriers = list(carriers)
+    random.shuffle(shuffled_carriers)
+    split_idx = int(0.8 * len(shuffled_carriers))
+    train_carriers = shuffled_carriers[:split_idx]
+    val_carriers = shuffled_carriers[split_idx:]
+    
+    train_bootstrap = generate_bootstrap_data(train_carriers)
+    val_bootstrap = generate_bootstrap_data(val_carriers)
+    
+    # Load feedback data
     real_pairs = load_feedback_data(carriers)
-    bootstrap_pairs = generate_bootstrap_data(carriers)
+    random.shuffle(real_pairs)
+    real_split = int(0.8 * len(real_pairs))
+    train_pairs = real_pairs[:real_split] + train_bootstrap
+    val_pairs = real_pairs[real_split:] + val_bootstrap
     
-    # Combine real feedback pairs and bootstrap synthetic pairs
-    all_pairs = real_pairs + bootstrap_pairs
-    logger.info(f"Total dataset size: {len(all_pairs)} query-document pairs.")
+    logger.info(f"Total dataset: {len(train_pairs)} train pairs | {len(val_pairs)} val pairs.")
     
-    # Deduplicate and split queries / docs
-    queries = [p[0] for p in all_pairs]
-    documents = [p[1] for p in all_pairs]
-    labels = [p[2] for p in all_pairs]
-    
-    # Load SentenceTransformer model to generate embeddings
     embed_model = get_embed_model()
     
-    logger.info("Generating query embeddings...")
-    query_embs = embed_model.encode(queries, show_progress_bar=True, convert_to_numpy=True)
+    logger.info("Generating training embeddings...")
+    X_query_train = torch.tensor(embed_model.encode([p[0] for p in train_pairs], show_progress_bar=True, convert_to_numpy=True), dtype=torch.float32)
+    X_doc_train = torch.tensor(embed_model.encode([p[1] for p in train_pairs], show_progress_bar=True, convert_to_numpy=True), dtype=torch.float32)
+    y_train = torch.tensor([p[2] for p in train_pairs], dtype=torch.float32).unsqueeze(1)
     
-    logger.info("Generating document embeddings...")
-    doc_embs = embed_model.encode(documents, show_progress_bar=True, convert_to_numpy=True)
-    
-    # Convert to PyTorch tensors
-    X_query = torch.tensor(query_embs, dtype=torch.float32)
-    X_doc = torch.tensor(doc_embs, dtype=torch.float32)
-    y = torch.tensor(labels, dtype=torch.float32).unsqueeze(1)
-    
-    # Split into train/validation datasets (80% train, 20% validation)
-    dataset_size = len(all_pairs)
-    indices = list(range(dataset_size))
-    random.seed(42)  # For reproducible splits
-    random.shuffle(indices)
-    
-    split_idx = int(0.8 * dataset_size)
-    train_indices = indices[:split_idx]
-    val_indices = indices[split_idx:]
-    
-    X_query_train, X_query_val = X_query[train_indices], X_query[val_indices]
-    X_doc_train, X_doc_val = X_doc[train_indices], X_doc[val_indices]
-    y_train, y_val = y[train_indices], y[val_indices]
+    logger.info("Generating validation embeddings...")
+    X_query_val = torch.tensor(embed_model.encode([p[0] for p in val_pairs], show_progress_bar=True, convert_to_numpy=True), dtype=torch.float32)
+    X_doc_val = torch.tensor(embed_model.encode([p[1] for p in val_pairs], show_progress_bar=True, convert_to_numpy=True), dtype=torch.float32)
+    y_val = torch.tensor([p[2] for p in val_pairs], dtype=torch.float32).unsqueeze(1)
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    logger.info(f"Training on device: {device} | Train Size: {len(train_indices)} | Val Size: {len(val_indices)}")
+    logger.info(f"Training on device: {device} | Train Size: {len(train_pairs)} | Val Size: {len(val_pairs)}")
     
     train_dataset = TensorDataset(X_query_train, X_doc_train, y_train)
     val_dataset = TensorDataset(X_query_val, X_doc_val, y_val)
@@ -234,7 +222,7 @@ def main():
         # Early stopping: save best model and track improvement
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            best_model_state = model.state_dict().copy()
+            best_model_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
             epochs_without_improvement = 0
             logger.info(f"  ↳ New best val loss: {best_val_loss:.5f} — checkpoint saved.")
         else:
@@ -245,13 +233,15 @@ def main():
             
     # Save the best model weights
     if best_model_state is None:
-        best_model_state = model.state_dict()
+        best_model_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
     
     weights_path = config.WEIGHTS_PATH
     os.makedirs(os.path.dirname(weights_path), exist_ok=True)
     
-    torch.save(best_model_state, weights_path)
-    logger.info(f"Best model weights (val loss={best_val_loss:.5f}) saved to {weights_path}")
+    temp_weights_path = f"{weights_path}.tmp"
+    torch.save(best_model_state, temp_weights_path)
+    os.replace(temp_weights_path, weights_path)
+    logger.info(f"Best model weights (val loss={best_val_loss:.5f}) atomically saved to {weights_path}")
     logger.info("=== Reranker Training Pipeline Complete ===")
 
 if __name__ == "__main__":

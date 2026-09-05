@@ -50,7 +50,6 @@ def setup_sqlite():
         
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_carriers_hq_state ON carriers (hq_state)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_carriers_safety_rating ON carriers (safety_rating)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_carriers_dot_number ON carriers (dot_number)")
         
         with open(json_path, "r") as f:
             carriers = json.load(f)

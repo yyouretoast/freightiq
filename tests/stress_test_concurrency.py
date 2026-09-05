@@ -14,6 +14,8 @@ from rag.retriever import query_carriers_sql
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(threadName)s: %(message)s")
 logger = logging.getLogger(__name__)
 
+TEST_FEEDBACK_PATH = os.path.join(config.DATA_DIR, "test_feedback.jsonl")
+
 def worker_task(worker_id):
     logger.info(f"Worker {worker_id} starting concurrency stress test operations...")
     
@@ -23,7 +25,7 @@ def worker_task(worker_id):
         response_text = f"Carrier Name: Swift Freight 80 #143 | DOT: 5942938 (logged by worker {worker_id})"
         feedback_type = "up" if worker_id % 2 == 0 else "down"
         
-        save_feedback(query_text, response_text, feedback_type)
+        save_feedback(query_text, response_text, feedback_type, filepath=TEST_FEEDBACK_PATH)
         logger.info(f"Worker {worker_id}: Feedback saved successfully.")
         
         # 2. Stress concurrent reranking loading & scoring
@@ -81,6 +83,13 @@ def main():
     print(f"Total spawned workers: {num_workers}")
     print(f"Successful executions: {success_count}")
     
+    # Clean up test feedback file
+    if os.path.exists(TEST_FEEDBACK_PATH):
+        try:
+            os.remove(TEST_FEEDBACK_PATH)
+        except Exception:
+            pass
+
     if success_count == num_workers:
         print("[SUCCESS] ALL workers completed operations with ZERO errors under load! Thread-safety verified.")
         sys.exit(0)

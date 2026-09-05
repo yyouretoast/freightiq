@@ -43,17 +43,17 @@ def carrier_sql_query(query: str) -> str:
     - SELECT * FROM carriers WHERE EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Midwest') AND EXISTS (SELECT 1 FROM json_each(equipment_types) WHERE value = 'flatbed') AND EXISTS (SELECT 1 FROM json_each(cargo_specializations) WHERE value = 'hazardous materials')
     - SELECT * FROM carriers WHERE hq_state = 'FL' AND EXISTS (SELECT 1 FROM json_each(cargo_specializations) WHERE value = 'fresh produce')
     """
-    # Security: Only allow SELECT queries, reject anything else
-    stripped = query.strip()
-    if not stripped.upper().startswith("SELECT"):
+    # Security: Only allow SELECT and WITH queries, reject anything else
+    clean = query.strip().rstrip(";").strip()
+    upper_clean = clean.upper()
+    if not (upper_clean.startswith("SELECT") or upper_clean.startswith("WITH")):
         return "Error: Only SELECT queries are permitted on the carriers database."
     
-    # Enforce a row limit to prevent unbounded result sets
-    if "LIMIT" not in stripped.upper():
-        stripped = stripped.rstrip(";")
-        stripped += " LIMIT 25"
+    # Enforce an upper bound of 25 rows via subquery wrapping
+    # Guarantees limit enforcement regardless of inner clauses, aliases, or string content
+    wrapped_query = f"SELECT * FROM ({clean}) AS _bounded_carriers LIMIT 25"
     
-    return query_carriers_sql(stripped)
+    return query_carriers_sql(wrapped_query)
 
 @tool
 def web_search(query: str) -> str:
@@ -62,15 +62,28 @@ def web_search(query: str) -> str:
     and real-time logistics or shipping industry data.
     """
     try:
+        results = []
         with DDGS() as ddgs:
-            # Swapped to ddgs.news endpoint since it is not blocked or throttled by DDG's anti-scraping triggers
-            results = list(ddgs.news(query, max_results=3))
+            try:
+                results = list(ddgs.text(query, max_results=3))
+            except Exception as e:
+                logger.debug(f"DDGS text search failed, falling back to news: {e}")
+            if not results:
+                results = list(ddgs.news(query, max_results=3))
         if not results:
             return "No web search results found for this query."
-        return "\n\n".join([f"Source: {r.get('source')}\nLink: {r.get('url')}\nContent: {r.get('body')}" for r in results])
+        formatted = []
+        for r in results:
+            title = r.get("title", "")
+            url = r.get("href") or r.get("url") or ""
+            body = r.get("body") or r.get("snippet") or ""
+            source = r.get("source") or ""
+            prefix = f"Source: {source}\n" if source else ""
+            formatted.append(f"{prefix}Title: {title}\nLink: {url}\nContent: {body}".strip())
+        return "\n\n".join(formatted)
     except Exception as e:
         logger.error(f"Web search error: {e}")
-        return "Web search is temporarily unavailable. Please try again or rephrase your query."
+        return "Web search is temporarily unavailable due to upstream network limits. Do not retry web search; answer the query directly based on available information or state that live market search is currently unavailable."
 
 @tool
 def freight_class_calculator(weight_lbs: float, length_in: float, width_in: float, height_in: float, cargo_description: str = "") -> str:

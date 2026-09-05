@@ -35,9 +35,37 @@ def format_message_content(content):
                 text_parts.append(block)
         return "".join(text_parts)
     return str(content)
+def load_feedback(filepath=None):
+    feedback_file = filepath or config.FEEDBACK_PATH
+    if not os.path.exists(feedback_file):
+        return []
+    
+    with feedback_lock:
+        try:
+            with open(feedback_file, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+            if not content:
+                return []
+            if content.startswith("["):
+                try:
+                    return json.loads(content)
+                except Exception:
+                    pass
+            records = []
+            for line in content.splitlines():
+                line = line.strip()
+                if line and not line.startswith("[") and not line.startswith("]"):
+                    try:
+                        records.append(json.loads(line.rstrip(",")))
+                    except Exception:
+                        continue
+            return records
+        except Exception as e:
+            logger.error(f"Failed to read feedback from {feedback_file}: {e}")
+            return []
 
-def save_feedback(query, response, feedback_type):
-    feedback_file = config.FEEDBACK_PATH
+def save_feedback(query, response, feedback_type, filepath=None):
+    feedback_file = filepath or config.FEEDBACK_PATH
     os.makedirs(os.path.dirname(feedback_file), exist_ok=True)
     
     record = {
@@ -47,18 +75,25 @@ def save_feedback(query, response, feedback_type):
         "feedback": feedback_type
     }
     
+    record_line = json.dumps(record, ensure_ascii=False)
+    
     with feedback_lock:
-        data = []
-        if os.path.exists(feedback_file):
-            try:
-                with open(feedback_file, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-            except Exception as e:
-                logger.warning(f"Could not load existing feedback.json ({e}). Re-initializing feedback file.")
-                
-        data.append(record)
         try:
-            with open(feedback_file, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2)
+            # If existing file is a JSON array, migrate to JSONL format once
+            if os.path.exists(feedback_file):
+                with open(feedback_file, "r", encoding="utf-8") as f:
+                    content = f.read().strip()
+                if content.startswith("["):
+                    try:
+                        existing = json.loads(content)
+                        if isinstance(existing, list):
+                            with open(feedback_file, "w", encoding="utf-8") as f:
+                                for item in existing:
+                                    f.write(json.dumps(item, ensure_ascii=False) + "\n")
+                    except Exception:
+                        pass
+            
+            with open(feedback_file, "a", encoding="utf-8") as f:
+                f.write(record_line + "\n")
         except Exception as e:
             logger.error(f"Failed to write feedback record: {e}")

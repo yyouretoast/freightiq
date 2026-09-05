@@ -73,8 +73,8 @@ EVAL_CASES = [
         "sql": "SELECT dot_number FROM carriers WHERE hq_state = 'FL' AND EXISTS (SELECT 1 FROM json_each(equipment_types) WHERE value = 'reefer') AND EXISTS (SELECT 1 FROM json_each(cargo_specializations) WHERE value = 'fresh produce')"
     },
     {
-        "query": "Find a carrier operating in the Mid-Atlantic region specializing in electronics.",
-        "sql": "SELECT dot_number FROM carriers WHERE EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Mid-Atlantic') AND EXISTS (SELECT 1 FROM json_each(cargo_specializations) WHERE value = 'electronics')"
+        "query": "Find a carrier operating in the Northeast region specializing in electronics.",
+        "sql": "SELECT dot_number FROM carriers WHERE EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Northeast') AND EXISTS (SELECT 1 FROM json_each(cargo_specializations) WHERE value = 'electronics')"
     },
     {
         "query": "We need flatbed carriers in Texas (TX) with over 10 years of operations.",
@@ -156,7 +156,7 @@ def run_reranked_hybrid_search(query, k=5, use_trained=True):
     embeddings = results["embeddings"][0]
     
     # Check weights file
-    weights_path = os.path.join(config.BASE_DIR, "rag", "data", "reranker_weights.pt")
+    weights_path = config.WEIGHTS_PATH
     has_weights = os.path.exists(weights_path)
     
     # Pass force_cosine flag based on use_trained and whether weights file actually exists
@@ -205,7 +205,7 @@ def main():
         print(f"\nEvaluating Query: '{case['query']}'")
         for name, search_fn in strategies.items():
             # Skip trained MLP if weights don't exist yet
-            if name == "Reranked Search (Trained MLP)" and not os.path.exists(os.path.join(config.BASE_DIR, "rag", "data", "reranker_weights.pt")):
+            if name == "Reranked Search (Trained MLP)" and not os.path.exists(config.WEIGHTS_PATH):
                 continue
                 
             retrieved = search_fn(case)

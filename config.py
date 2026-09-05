@@ -27,6 +27,7 @@ RERANKER_HIDDEN_DIM = 128
 # LLM Configuration (centralized env var reads)
 AGENT_MODEL = os.getenv("AGENT_MODEL", "llama-3.3-70b-versatile")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY") or "mock_key_for_ci"
+MAX_OUTPUT_TOKENS = int(os.getenv("MAX_OUTPUT_TOKENS", "800"))
 
 # Retrieval Parameters
 SEMANTIC_POOL_SIZE = 15

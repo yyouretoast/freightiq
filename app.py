@@ -12,7 +12,7 @@ from agent.graph import build_graph
 from utils.locks import setup_lock, feedback_lock
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from langchain_core.callbacks import BaseCallbackHandler
-from rag.utils import save_feedback, format_message_content
+from rag.utils import save_feedback, load_feedback, format_message_content
 import config
 
 logging.basicConfig(
@@ -27,6 +27,9 @@ class StreamlitTokenCallbackHandler(BaseCallbackHandler):
         self.tokens = [initial_text] if initial_text else []
         if initial_text:
             self.placeholder.write(initial_text)
+
+    def on_llm_start(self, serialized, prompts, **kwargs) -> None:
+        self.tokens = []
 
     def on_llm_new_token(self, token: str, **kwargs) -> None:
         try:
@@ -64,13 +67,16 @@ def get_graph():
     logger.info("Compiling agent LangGraph workflow...")
     return build_graph()
 
-if not os.path.exists(config.DB_PATH) or os.path.getsize(config.DB_PATH) == 0 or not os.path.exists(config.CHROMA_PATH):
+init_sentinel = os.path.join(config.DATA_DIR, ".init_complete")
+if not os.path.exists(init_sentinel) or not os.path.exists(config.DB_PATH) or not os.path.exists(config.CHROMA_PATH):
     with setup_lock:
-        if not os.path.exists(config.DB_PATH) or os.path.getsize(config.DB_PATH) == 0 or not os.path.exists(config.CHROMA_PATH):
+        if not os.path.exists(init_sentinel) or not os.path.exists(config.DB_PATH) or not os.path.exists(config.CHROMA_PATH):
             logger.info("Database or vector index missing. Triggering auto-setup...")
             try:
                 from scripts.init_db import main as run_setup
                 run_setup()
+                with open(init_sentinel, "w", encoding="utf-8") as f:
+                    f.write("OK")
             except Exception as e:
                 logger.error(f"Failed to auto-initialize data environment: {e}")
 
@@ -361,15 +367,8 @@ has_weights = os.path.exists(weights_path)
 reranker_status = "PyTorch MLP (Fine-tuned)" if has_weights else "Cosine Similarity (Fallback)"
 reranker_class = "status-ok" if has_weights else "status-warning"
 
-feedback_path = config.FEEDBACK_PATH
-feedback_count = 0
-if os.path.exists(feedback_path):
-    try:
-        with open(feedback_path, "r", encoding="utf-8") as f:
-            feedback_data = json.load(f)
-            feedback_count = len(feedback_data)
-    except Exception as e:
-        logger.debug(f"Could not read feedback_path: {e}")
+feedback_data = load_feedback()
+feedback_count = len(feedback_data)
 
 semantic_search_desc = "Vector DB + Fine-tuned PyTorch MLP" if has_weights else "Vector DB + Cosine Reranker fallback"
 
@@ -428,18 +427,16 @@ for idx, message in enumerate(st.session_state.messages):
             
     elif isinstance(message, AIMessage) and message.content:
         with st.chat_message("assistant"):
-            # Render persistent tool executions associated with the preceding human query (idx - 1)
-            query_idx = idx - 1
-            if query_idx in st.session_state.tool_executions:
-                for tool_call in st.session_state.tool_executions[query_idx]:
-                    st.markdown(f"""
-                    <div class="tool-card">
-                        <div class="tool-card-header">
-                            <span class="tool-badge">TOOL</span>
-                            <span class="tool-name">{tool_call["name"]}</span>
-                        </div>
-                        <div class="tool-output">{tool_call["output"]}</div>
-                    </div>""", unsafe_allow_html=True)
+            tool_cards = message.additional_kwargs.get("tool_executions", [])
+            for tool_call in tool_cards:
+                st.markdown(f"""
+                <div class="tool-card">
+                    <div class="tool-card-header">
+                        <span class="tool-badge">TOOL</span>
+                        <span class="tool-name">{tool_call["name"]}</span>
+                    </div>
+                    <div class="tool-output">{tool_call["output"]}</div>
+                </div>""", unsafe_allow_html=True)
             st.write(format_message_content(message.content))
 
 # Render Query Suggestion Chips only on landing (empty chat history)
@@ -472,12 +469,12 @@ if user_query:
 
     st.session_state.messages.append(HumanMessage(content=user_query))
     st.session_state.query_count += 1
-    current_query_idx = len(st.session_state.messages) - 1
     logger.info(f"User query #{st.session_state.query_count}: '{user_query[:80]}'")
 
     with st.chat_message("assistant"):
         step_container = st.container()
         response_container = st.empty()
+        turn_tool_cards = []
 
         try:
             # Sliding window: only send the last N messages to the LLM (turn-aware to avoid sequence errors)
@@ -513,10 +510,7 @@ if user_query:
                                     truncated_output = raw_output
                                 
                                 safe_output = escape(truncated_output)
-                                # Persist the tool card execution to state
-                                if current_query_idx not in st.session_state.tool_executions:
-                                    st.session_state.tool_executions[current_query_idx] = []
-                                st.session_state.tool_executions[current_query_idx].append({
+                                turn_tool_cards.append({
                                     "name": safe_name,
                                     "output": safe_output
                                 })
@@ -539,13 +533,21 @@ if user_query:
                                 response_container.write(final_answer)
 
             if final_answer:
-                st.session_state.messages.append(AIMessage(content=final_answer))
+                st.session_state.messages.append(AIMessage(
+                    content=final_answer,
+                    additional_kwargs={"tool_executions": turn_tool_cards}
+                ))
                 logger.info(f"Agent response complete. Session total: {st.session_state.query_count} queries.")
                 st.rerun()
 
         except Exception as e:
             logger.error(f"Agent execution error: {e}")
-            st.error(f"Agent error: {str(e)}")
+            err_msg = f"Agent error: {str(e)}"
+            st.error(err_msg)
+            st.session_state.messages.append(AIMessage(
+                content=err_msg,
+                additional_kwargs={"tool_executions": turn_tool_cards}
+            ))
 
 # 7. Render feedback button loop only for the final agent message block
 if st.session_state.messages and isinstance(st.session_state.messages[-1], AIMessage):

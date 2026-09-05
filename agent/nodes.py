@@ -3,45 +3,40 @@ from langchain_groq import ChatGroq
 from langgraph.prebuilt import ToolNode
 from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-from groq import RateLimitError, APIStatusError
+from groq import RateLimitError, InternalServerError, APIConnectionError
 from agent.state import AgentState
 from agent.tools import tools
 import config
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """You are FreightIQ, a senior logistics coordinator and agentic assistant. Your task is to resolve user queries about carriers, shipping options, freight classes, and real-time market trends.
+SYSTEM_PROMPT = """You are a freight carrier research assistant. Answer logistics, carrier lookup, freight class, and market rate queries using the provided tools.
 
-CRITICAL — DATA INTEGRITY RULE:
-Never fabricate carrier names, DOT numbers, MC numbers, safety ratings, or any carrier data. You do NOT have carrier knowledge in your training data. You MUST call a tool every time carrier information is requested. If no results are returned, state so honestly.
-
-Tool Selection Guidelines:
-- If the query mentions ANY US state (e.g. FL, OH, TX) or region (e.g. Midwest, Southwest), ALWAYS use `carrier_sql_query`. For regions: EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Midwest'). For state: hq_state = 'FL'.
-- If the query mentions equipment (flatbed, reefer, dry van) or cargo type (hazmat, produce, pharmaceuticals), use `carrier_sql_query` with json_each() on equipment_types and cargo_specializations.
-- If exact attributes (safety ratings, DOT/MC numbers, years operating) are requested, use `carrier_sql_query`.
-- Use `carrier_semantic_search` ONLY for qualitative queries with no geographic or structured filters.
-- For current market rate trends or news, use `web_search`.
-- For NMFC density and freight class calculations, use `freight_class_calculator`.
-
-Formatting & Synthesis:
-- List actual carrier names and details returned by tools.
-- Synthesize all parts of multi-part queries in your final response.
-- When querying carriers, always select carrier_name or * so names are available to present.
+Rules:
+1. Grounding: All carrier facts (names, DOT/MC numbers, safety ratings, equipment, locations) must come strictly from tool results. If no records match, state that directly. Never invent carrier data.
+2. Tool Routing:
+   - Structured carrier queries (by state, region, equipment, cargo, safety rating, DOT/MC): use `carrier_sql_query`.
+   - Qualitative carrier descriptions (reputation, service quality, specialized handling): use `carrier_semantic_search`. Do not follow up with SQL queries unless structured filtering is explicitly requested.
+   - Live market rates and industry news: use `web_search`.
+   - NMFC density and freight class lookups: use `freight_class_calculator`.
+3. Single Tool Principle: Select the single most appropriate tool for the inquiry. Synthesize and present the final answer immediately once results are returned from that tool; do not chain or invoke secondary tools unless the user explicitly requested multiple distinct lookups.
+4. Presentation: Format carrier results cleanly using markdown tables or bullet points with key attributes (Name, DOT/MC, HQ, Equipment, Safety). For multi-part queries, address every component directly.
 """
 
 llm = ChatGroq(
     model=config.AGENT_MODEL,
     groq_api_key=config.GROQ_API_KEY,
     temperature=0.0,
+    max_tokens=config.MAX_OUTPUT_TOKENS,
     streaming=True
 )
 
 llm_with_tools = llm.bind_tools(tools, parallel_tool_calls=False)
 
 @retry(
-    retry=retry_if_exception_type((RateLimitError, APIStatusError)),
-    wait=wait_exponential(multiplier=1, min=2, max=60),
-    stop=stop_after_attempt(4),
+    retry=retry_if_exception_type((RateLimitError, InternalServerError, APIConnectionError)),
+    wait=wait_exponential(multiplier=1, min=2, max=30),
+    stop=stop_after_attempt(3),
     reraise=True
 )
 def _invoke_with_retry(model_obj, messages):
@@ -51,8 +46,12 @@ def agent_node(state: AgentState):
     logger.info(f"Agent invoked with {len(state['messages'])} messages in context.")
     messages = state["messages"]
     
-    if len(messages) >= 2:
-        prev_ai_msgs = [m for m in messages if isinstance(m, AIMessage) and m.tool_calls]
+    # Scope loop detection to the current user turn to prevent false alarms across multi-turn sessions
+    last_human_idx = max((i for i, m in enumerate(messages) if isinstance(m, HumanMessage)), default=-1)
+    current_turn_msgs = messages[last_human_idx + 1:] if last_human_idx >= 0 else messages
+    
+    if len(current_turn_msgs) >= 2:
+        prev_ai_msgs = [m for m in current_turn_msgs if isinstance(m, AIMessage) and m.tool_calls]
         if len(prev_ai_msgs) >= 2:
             last_calls = prev_ai_msgs[-1].tool_calls
             penultimate_calls = prev_ai_msgs[-2].tool_calls
@@ -63,31 +62,37 @@ def agent_node(state: AgentState):
                 
                 if last_call["name"] == penultimate_call["name"] and last_call["args"] == penultimate_call["args"]:
                     logger.warning(f"Loop detected on tool '{last_call['name']}'. Injecting loop guardrail.")
-                    loop_break_prompt = (
-                        f"System Warning: You have already executed '{last_call['name']}' with args {last_call['args']}. "
-                        "Do NOT call this tool again. Synthesize your final answer immediately based on the results already retrieved in plain text."
+                    loop_break_directive = (
+                        f"Repeat tool call detected for '{last_call['name']}'. "
+                        "Do not invoke this tool again. Synthesize your final answer directly in plain text using the results already retrieved."
                     )
-                    messages_with_warning = [SystemMessage(content="You are FreightIQ. Respond directly in plain text. Do not output tool calls or JSON markup.")] + messages + [SystemMessage(content=loop_break_prompt)]
+                    messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + messages + [HumanMessage(content=loop_break_directive)]
                     response = _invoke_with_retry(llm, messages_with_warning)
                     return {"messages": [response]}
 
-        sql_calls = 0
-        for m in reversed(messages):
+        # Check for excessive consecutive calls to ANY single tool (e.g. 3 consecutive calls)
+        consecutive_tool_count = 0
+        last_tool_name = None
+        for m in reversed(current_turn_msgs):
             if isinstance(m, AIMessage) and m.tool_calls:
-                if any(tc["name"] == "carrier_sql_query" for tc in m.tool_calls):
-                    sql_calls += 1
+                tname = m.tool_calls[0]["name"]
+                if last_tool_name is None:
+                    last_tool_name = tname
+                    consecutive_tool_count = 1
+                elif last_tool_name == tname:
+                    consecutive_tool_count += 1
                 else:
                     break
             elif isinstance(m, HumanMessage):
                 break
         
-        if sql_calls >= 4:
-            logger.warning(f"Excessive SQL queries detected ({sql_calls}). Injecting SQL loop guardrail.")
-            loop_break_prompt = (
-                "System Warning: You have executed carrier_sql_query multiple times. "
-                "If no matching records exist, synthesize your final answer now in plain text stating that no matching carriers were found."
+        if consecutive_tool_count >= 3:
+            logger.warning(f"Excessive repeated calls detected for tool '{last_tool_name}' ({consecutive_tool_count}). Injecting loop guardrail.")
+            loop_break_directive = (
+                f"Multiple repeated calls executed for tool '{last_tool_name}'. "
+                "Do not invoke any tools again. Synthesize your final answer now in plain text using the results retrieved so far, or state that data is unavailable."
             )
-            messages_with_warning = [SystemMessage(content="You are FreightIQ. Respond directly in plain text. Do not output tool calls or JSON markup.")] + messages + [SystemMessage(content=loop_break_prompt)]
+            messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + messages + [HumanMessage(content=loop_break_directive)]
             response = _invoke_with_retry(llm, messages_with_warning)
             return {"messages": [response]}
                 

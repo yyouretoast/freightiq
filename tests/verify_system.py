@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 # Load environment variables at the absolute top before importing local modules
 load_dotenv()
 
-# Set logging to warning to keep output clean
-logging.basicConfig(level=logging.WARNING)
+# Ensure project root is in path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agent.tools import carrier_semantic_search, carrier_sql_query, freight_class_calculator, web_search
 from agent.graph import build_graph

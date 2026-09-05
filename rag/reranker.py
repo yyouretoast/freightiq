@@ -1,4 +1,5 @@
 import os
+import time
 import logging
 import threading
 import torch
@@ -14,6 +15,8 @@ logger = logging.getLogger(__name__)
 _EMBED_MODEL = None
 _RERANKER_MODEL = None
 _RERANKER_LOADED_TIME = 0.0
+_LAST_MTIME_CHECK = 0.0
+_LAST_KNOWN_MTIME = 0.0
 
 _embed_lock = threading.Lock()
 _reranker_lock = threading.Lock()
@@ -28,23 +31,36 @@ def get_embed_model():
     return _EMBED_MODEL
 
 def get_reranker_model(device):
-    global _RERANKER_MODEL, _RERANKER_LOADED_TIME
+    global _RERANKER_MODEL, _RERANKER_LOADED_TIME, _LAST_MTIME_CHECK, _LAST_KNOWN_MTIME
     weights_path = config.WEIGHTS_PATH
     if not os.path.exists(weights_path):
         return None
         
-    with _reranker_lock:
-        mtime = os.path.getmtime(weights_path)
-        if _RERANKER_MODEL is None or mtime > _RERANKER_LOADED_TIME:
-            logger.info("Initializing/Reloading CarrierReRanker weights from disk...")
-            if _RERANKER_MODEL is None:
-                _RERANKER_MODEL = CarrierReRanker(
-                    embedding_dim=config.EMBEDDING_DIM, 
-                    hidden_dim=config.RERANKER_HIDDEN_DIM
-                ).to(device)
-            _RERANKER_MODEL.load_state_dict(torch.load(weights_path, map_location=device))
-            _RERANKER_MODEL.eval()
-            _RERANKER_LOADED_TIME = mtime
+    now = time.time()
+    # Debounce filesystem stat check to once every 5 seconds outside the lock
+    if now - _LAST_MTIME_CHECK > 5.0 or _RERANKER_MODEL is None:
+        try:
+            _LAST_KNOWN_MTIME = os.path.getmtime(weights_path)
+            _LAST_MTIME_CHECK = now
+        except OSError:
+            pass
+
+    if _RERANKER_MODEL is None or _LAST_KNOWN_MTIME > _RERANKER_LOADED_TIME:
+        with _reranker_lock:
+            if _RERANKER_MODEL is None or _LAST_KNOWN_MTIME > _RERANKER_LOADED_TIME:
+                try:
+                    logger.info("Initializing/Reloading CarrierReRanker weights from disk...")
+                    if _RERANKER_MODEL is None:
+                        _RERANKER_MODEL = CarrierReRanker(
+                            embedding_dim=config.EMBEDDING_DIM, 
+                            hidden_dim=config.RERANKER_HIDDEN_DIM
+                        ).to(device)
+                    _RERANKER_MODEL.load_state_dict(torch.load(weights_path, map_location=device))
+                    _RERANKER_MODEL.eval()
+                    _RERANKER_LOADED_TIME = _LAST_KNOWN_MTIME
+                except Exception as e:
+                    logger.error(f"Failed to load reranker model weights: {e}")
+                    return None
     return _RERANKER_MODEL
 
 class CarrierReRanker(nn.Module):
@@ -98,7 +114,14 @@ def rerank_documents(query, documents, metadatas=None, top_k=5, doc_embeddings=N
     doc_tensors = torch.tensor(doc_vectors, dtype=torch.float32, device=device)
     query_tensors = query_tensor.expand(len(documents), -1)
 
-    model = None if force_cosine else get_reranker_model(device)
+    model = None
+    if not force_cosine:
+        try:
+            model = get_reranker_model(device)
+        except Exception as e:
+            logger.error(f"Failed to load reranker model, falling back to cosine: {e}")
+            model = None
+
     if model is not None:
         try:
             with torch.no_grad():

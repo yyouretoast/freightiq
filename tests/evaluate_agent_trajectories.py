@@ -7,8 +7,9 @@ from dotenv import load_dotenv
 # Load environment variables first
 load_dotenv()
 
-# Override model to Llama 3.1 8B for tests to bypass daily Groq 70B token limits
-os.environ["AGENT_MODEL"] = "llama-3.1-8b-instant"
+# Ensure AGENT_MODEL is set; default to qwen/qwen3.8-27b if not specified
+if "AGENT_MODEL" not in os.environ:
+    os.environ["AGENT_MODEL"] = "qwen/qwen3.8-27b"
 
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 
@@ -127,7 +128,7 @@ def main():
     
     for idx, case in enumerate(TRAJECTORY_CASES):
         if idx > 0:
-            time.sleep(2.0)
+            time.sleep(4.0)
         print(f"\n[{idx+1}/{total_count}] Testing Case (Type: {case['type']}): '{case['query']}'")
         
         try:

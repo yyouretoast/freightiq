@@ -32,7 +32,11 @@ def retrieve_carriers_semantic(query, k=config.SEMANTIC_RETRIEVAL_K):
         query_vector = embed_model.encode(query, convert_to_numpy=True).tolist()
 
         collection = get_chroma_collection()
-        n_results = min(config.SEMANTIC_POOL_SIZE, collection.count())
+        total_docs = collection.count()
+        if total_docs == 0:
+            logger.warning("Chroma collection is empty.")
+            return []
+        n_results = min(config.SEMANTIC_POOL_SIZE, total_docs)
         results = collection.query(
             query_embeddings=[query_vector],
             n_results=n_results,
