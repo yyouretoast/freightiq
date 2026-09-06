@@ -4,6 +4,8 @@ load_dotenv()
 import logging
 import streamlit as st
 import os
+import textwrap
+from html import escape
 from agent.graph import build_graph
 from utils.locks import setup_lock
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
