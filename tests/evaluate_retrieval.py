@@ -137,7 +137,7 @@ def run_chroma_vector_search(query, k=5):
         return []
     return [str(m["dot_number"]) for m in results["metadatas"][0]]
 
-def run_reranked_hybrid_search(query, k=5, use_trained=True):
+def run_reranked_hybrid_search(query, k=5, force_cosine=False):
     collection = get_chroma_collection()
     embed_model = get_embed_model()
     query_vector = embed_model.encode(query, convert_to_numpy=True).tolist()
@@ -155,12 +155,6 @@ def run_reranked_hybrid_search(query, k=5, use_trained=True):
     metadatas = results["metadatas"][0]
     embeddings = results["embeddings"][0]
     
-    # Check weights file
-    weights_path = config.WEIGHTS_PATH
-    has_weights = os.path.exists(weights_path)
-    
-    # Pass force_cosine flag based on use_trained and whether weights file actually exists
-    force_cosine = not use_trained or not has_weights
     ranked = rerank_documents(
         query, docs, metadatas, top_k=k,
         doc_embeddings=embeddings, query_embedding=query_vector,
@@ -193,8 +187,8 @@ def main():
     strategies = {
         "SQLite Exact Query": lambda case: run_sqlite_retrieval(case["sql"]),
         "ChromaDB Base Vector": lambda case: run_chroma_vector_search(case["query"]),
-        "Reranked Search (Cosine)": lambda case: run_reranked_hybrid_search(case["query"], use_trained=False),
-        "Reranked Search (Trained MLP)": lambda case: run_reranked_hybrid_search(case["query"], use_trained=True)
+        "Reranked Search (Cosine)": lambda case: run_reranked_hybrid_search(case["query"], force_cosine=True),
+        "Reranked Search (Cross-Encoder)": lambda case: run_reranked_hybrid_search(case["query"], force_cosine=False)
     }
     
     results = {}
@@ -204,10 +198,6 @@ def main():
     for case in EVAL_CASES:
         print(f"\nEvaluating Query: '{case['query']}'")
         for name, search_fn in strategies.items():
-            # Skip trained MLP if weights don't exist yet
-            if name == "Reranked Search (Trained MLP)" and not os.path.exists(config.WEIGHTS_PATH):
-                continue
-                
             retrieved = search_fn(case)
             r1, r3, r5, mrr = calculate_metrics(retrieved, case.get("targets", []))
             

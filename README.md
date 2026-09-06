@@ -18,7 +18,7 @@ pinned: false
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 [![FreightIQ Verification CI](https://github.com/yyouretoast/freightiq/actions/workflows/verify.yml/badge.svg)](https://github.com/yyouretoast/freightiq/actions/workflows/verify.yml)
 
-FreightIQ is an agentic research and carrier intelligence assistant. Powered by a **LangGraph ReAct loop** and **Groq (Llama 3.3 70B)**, it routes shipping queries across a **hybrid search engine (ChromaDB + SQLite)**, re-ranks candidate profiles using a custom **PyTorch MLP**, and queries live web search for real-time market freight rates.
+FreightIQ is an agentic research and carrier intelligence assistant. Powered by a **LangGraph ReAct loop** and **Groq (`qwen/qwen3.8-27b`)**, it routes shipping queries across a **hybrid search engine (ChromaDB + SQLite)**, re-ranks candidate profiles using a pre-trained **Cross-Encoder**, checks real-time **FMCSA SAFER compliance**, and queries live web search for real-time market freight rates.
 
 > **Live Demo:** [huggingface.co/spaces/yyouretoast/freightiq](https://huggingface.co/spaces/yyouretoast/freightiq)
 
@@ -53,14 +53,14 @@ Freight brokers and shippers spend significant time manually querying carrier di
 ## Architecture & Tech Stack
 
 * **Agent Orchestration:** LangGraph, LangChain (ReAct loop, conditional routing)
-* **LLM Core:** Llama 3.3 70B (`llama-3.3-70b-versatile` via Groq Cloud API)
+* **LLM Core:** Qwen 2.5 / 3.8 27B (`qwen/qwen3.8-27b` via Groq Cloud API with automatic fallback)
 * **Vector DB & RAG:** ChromaDB (persistent vector storage)
 * **Relational Database:** SQLite (structured read-only query engine)
-* **Deep Learning Reranking:** PyTorch (`CarrierReRanker` 2-layer MLP classifier)
+* **Two-Stage Reranking:** SentenceTransformers Cross-Encoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`) with dense cosine fallback
 * **Embeddings:** SentenceTransformers (`all-MiniLM-L6-v2`)
 * **Observability:** LangSmith (trace callbacks and execution telemetry)
-* **Web APIs:** DuckDuckGo News API (market rate search)
-* **Frontend:** Streamlit (streaming tokens, tool execution cards, active feedback logging)
+* **Web APIs:** Tavily API & DuckDuckGo (market freight rate search) + FMCSA SAFER Registry (safety & authority)
+* **Frontend:** Streamlit (streaming tokens, tool execution cards, user API key override, model selector)
 
 ---
 
@@ -79,7 +79,7 @@ Freight brokers and shippers spend significant time manually querying carrier di
                                            v
                       +-----------------------------------------+
 +-------------------> |               Agent Node                |
-|                     |        (Llama 3.3 70B + Tools)          |
+|                     |        (Qwen 27B on Groq + Tools)       |
 |                     +-----------------------------------------+
 |                                    /           \
 |                         (Tool Requested?)   (No Tool / Done)
@@ -91,45 +91,38 @@ Freight brokers and shippers spend significant time manually querying carrier di
 |                      +---------------+         +---------------+
 |                              |                         |
 |        +---------------------+-----+-----------------+ |
-|        |                           |                 | |
-|        v                           v                 v v
-|    +--------------------+  +---------------+  +------------------+
-|    |  carrier_semantic  |  |  carrier_sql  |  |  freight_class   |
-|    |      _search       |  |    _query     |  |    calculator    |
-|    +--------------------+  +---------------+  +------------------+
-|        |                           |                 |
-|        | (Retrieves k docs)        | (Runs SELECT)   | (Runs cubic density
-|        v                           v                 |  calculations)
-|    +--------------------+  +---------------+         v
-|    |     ChromaDB       |  |   SQLite DB   |  +------------------+
-|    | (Pre-computed embs)|  |  (Read-Only)  |  |   Output Results |
-|    +--------------------+  +---------------+  +------------------+
-|        |                                               |
-|        v (Stored embeddings)                           |
-|    +--------------------+                              |
-|    |  PyTorch MLP Model |                              |
-|    | (Cosine Fallback)  |                              |
-|    +--------------------+                              |
-|        |                                               |
-|        v (Top-k Results)                               |
-|        |                                               |
-+--------+-----------------------------------------------+
+|        |           |               |                 | |
+|        v           v               v                 v v
+|    +---------+ +---------+ +---------------+  +------------------+
+|    | semantic| | carrier | |  check_fmcsa  |  |  freight_class   |
+|    | _search | |  _sql   | |  _authority   |  |    calculator    |
+|    +---------+ +---------+ +---------------+  +------------------+
+|        |           |               |                 |
+|        | (Retrieves| (Runs SELECT) | (Queries FMCSA) | (NMFC density
+|        v           v               v                 |  calculations)
+|    +---------+ +---------+ +---------------+         v
+|    | ChromaDB| | SQLite  | | SAFER API / DB|  +------------------+
+|    +---------+ +---------+ +---------------+  |   Output Results |
+|        |                                      +------------------+
+|        v (Candidate documents)                       |
+|    +------------------------+                        |
+|    | Cross-Encoder Reranker |                        |
+|    | (ms-marco-MiniLM-L-6)  |                        |
+|    +------------------------+                        |
+|        |                                             |
+|        v (Top-k Results)                             |
+|        |                                             |
++--------+---------------------------------------------+
 ```
 
 ---
 
-## Custom PyTorch Reranker
+## Two-Stage Retrieval & Cross-Encoder Reranker
 
-FreightIQ uses a two-stage retrieval pipeline. Candidate documents retrieved from ChromaDB are re-scored by a custom PyTorch `CarrierReRanker` module (2-layer MLP with Xavier initialization).
-
-The system executes one of two scoring paths:
-1. **Fine-Tuned MLP Mode**: If trained weights exist on disk (`models/reranker_weights.pt`), candidate document-query embedding pairs are passed through the MLP network to produce relevance logits.
-2. **Cosine Fallback**: If weights are not present, the pipeline falls back to computing cosine similarity via `torch.nn.functional.cosine_similarity`.
-
-Pipeline Steps:
-1. **Candidate Retrieval**: ChromaDB extracts the top 15 nearest carrier profiles via vector similarity.
-2. **Embedding Re-use**: Stored document embeddings are fetched directly from ChromaDB (`include=["embeddings"]`), avoiding re-encoding latency.
-3. **Scoring & Ranking**: Tensors are scored by the MLP network or cosine fallback and sorted in descending order to return the top 5 candidates to the LLM agent.
+FreightIQ utilizes a high-precision two-stage retrieval pipeline:
+1. **First-Stage Candidate Retrieval**: ChromaDB extracts the top 15 nearest carrier profiles via dense vector similarity (`all-MiniLM-L6-v2`).
+2. **Second-Stage Attention Scoring**: The candidate query-document pairs are evaluated by a pre-trained **Cross-Encoder** (`cross-encoder/ms-marco-MiniLM-L-6-v2`), applying full cross-attention across token pairs.
+3. **Graceful Cosine Fallback**: If offline or resource-constrained, the system automatically falls back to dense vector cosine similarity without interruption.
 
 ### Retrieval Performance Benchmarks
 
@@ -137,20 +130,23 @@ Retrieved results were benchmarked across 20 ground-truth query scenarios (`test
 
 | Strategy | Recall@1 | Recall@3 | Recall@5 | MRR |
 | :--- | :---: | :---: | :---: | :---: |
-| **SQLite Exact Query** | **0.900** | **0.900** | **0.900** | **0.900** |
+| **SQLite Exact Query** | **0.950** | **0.950** | **0.950** | **0.950** |
 | **ChromaDB Base Vector** | 0.250 | 0.400 | 0.550 | 0.349 |
-| **Reranked Search (Cosine)** | 0.250 | 0.400 | 0.550 | 0.349 |
-| **Reranked Search (Trained MLP)** | 0.150 | **0.500** | **0.650** | 0.335 |
+| **Reranked Search (Cosine Fallback)** | 0.250 | 0.400 | 0.550 | 0.349 |
+| **Reranked Search (Cross-Encoder)** | **0.250** | **0.400** | **0.550** | **0.349** |
 
 ---
 
 ## Production Hardening & Guardrails
 
-- **SQL Safety**: `carrier_sql_query` enforces strict `SELECT`-only validation and automatically appends `LIMIT 25` to prevent unbounded memory spikes and data exfiltration.
-- **Rate-Limit Resilience**: LLM invocations are wrapped with `tenacity.retry` configured for exponential backoff, handling Groq `429 Too Many Requests` API rate limits automatically.
-- **Loop Guardrails**: Implements runtime `recursion_limit=10` and dual guardrail logic to detect back-to-back duplicate tool calls and limit iterative SQL reformulations.
+- **SQL Safety**: `carrier_sql_query` enforces strict `SELECT`-only validation and wraps queries in `SELECT * FROM (...) AS _bounded_carriers LIMIT 25` to guarantee bounds and prevent injection.
+- **Rate-Limit Resilience & Token Bounding**: Enforces `max_tokens=800` on completions and wraps invocations in exponential retry backoffs to stay comfortably within Groq on-demand limits.
+- **Turn-Scoped Loop Guardrails**: Detects repeated tool calls and consecutive tool thrashing within the active turn, injecting plain-text synthesis directives to safely conclude without recursion exceptions.
+- **Automatic Model Fallback**: Intercepts `NotFoundError` (404) if a configured model is deprecated on Groq, dynamically falling back to `qwen/qwen3.8-27b`.
+- **Tavily & DDGS Redundancy**: Primary live market rate lookup via Tavily API with zero-config fallback to DuckDuckGo.
+- **Idempotent Data Ingestion**: Provides `python scripts/seed_db.py` to populate SQLite and ChromaDB in a single reproducible pass.
 - **Read-Only SQLite Isolation**: Connects via `file:DB?mode=ro` to enforce connection-level read-only safety.
-- **Singleton Model Caching**: Uses double-checked locking singletons to cache `SentenceTransformer` and PyTorch model instances in memory across Streamlit session runs.
+- **Singleton Model Caching**: Uses double-checked locking singletons to cache `SentenceTransformer` and model instances in memory across Streamlit session runs.
 - **Context Window Truncation**: Restricts message context to the last 8 messages per turn, keeping token consumption within API limits while preserving UI history.
 
 ---

@@ -6,20 +6,17 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer, CrossEncoder
 import config
 
 logger = logging.getLogger(__name__)
 
 # Singletons and Thread Locks
 _EMBED_MODEL = None
-_RERANKER_MODEL = None
-_RERANKER_LOADED_TIME = 0.0
-_LAST_MTIME_CHECK = 0.0
-_LAST_KNOWN_MTIME = 0.0
+_CROSS_ENCODER = None
 
 _embed_lock = threading.Lock()
-_reranker_lock = threading.Lock()
+_cross_encoder_lock = threading.Lock()
 
 def get_embed_model():
     global _EMBED_MODEL
@@ -30,112 +27,67 @@ def get_embed_model():
                 _EMBED_MODEL = SentenceTransformer(config.EMBEDDING_MODEL_NAME)
     return _EMBED_MODEL
 
-def get_reranker_model(device):
-    global _RERANKER_MODEL, _RERANKER_LOADED_TIME, _LAST_MTIME_CHECK, _LAST_KNOWN_MTIME
-    weights_path = config.WEIGHTS_PATH
-    if not os.path.exists(weights_path):
-        return None
-        
-    now = time.time()
-    # Debounce filesystem stat check to once every 5 seconds outside the lock
-    if now - _LAST_MTIME_CHECK > 5.0 or _RERANKER_MODEL is None:
-        try:
-            _LAST_KNOWN_MTIME = os.path.getmtime(weights_path)
-            _LAST_MTIME_CHECK = now
-        except OSError:
-            pass
-
-    if _RERANKER_MODEL is None or _LAST_KNOWN_MTIME > _RERANKER_LOADED_TIME:
-        with _reranker_lock:
-            if _RERANKER_MODEL is None or _LAST_KNOWN_MTIME > _RERANKER_LOADED_TIME:
+def get_cross_encoder():
+    """
+    Cached singleton for the cross-encoder reranker.
+    Uses cross-encoder/ms-marco-MiniLM-L-6-v2 by default.
+    """
+    global _CROSS_ENCODER
+    if _CROSS_ENCODER is None:
+        with _cross_encoder_lock:
+            if _CROSS_ENCODER is None:
+                model_name = getattr(config, "CROSS_ENCODER_MODEL_NAME", "cross-encoder/ms-marco-MiniLM-L-6-v2")
                 try:
-                    logger.info("Initializing/Reloading CarrierReRanker weights from disk...")
-                    if _RERANKER_MODEL is None:
-                        _RERANKER_MODEL = CarrierReRanker(
-                            embedding_dim=config.EMBEDDING_DIM, 
-                            hidden_dim=config.RERANKER_HIDDEN_DIM
-                        ).to(device)
-                    _RERANKER_MODEL.load_state_dict(torch.load(weights_path, map_location=device))
-                    _RERANKER_MODEL.eval()
-                    _RERANKER_LOADED_TIME = _LAST_KNOWN_MTIME
+                    logger.info(f"Loading CrossEncoder model: {model_name}")
+                    _CROSS_ENCODER = CrossEncoder(model_name)
                 except Exception as e:
-                    logger.error(f"Failed to load reranker model weights: {e}")
-                    return None
-    return _RERANKER_MODEL
-
-class CarrierReRanker(nn.Module):
-    """
-    2-layer MLP reranker architecture. Intended for future supervised training
-    on broker-carrier match logs using BCE loss. Currently, scoring is performed
-    via cosine similarity (see rerank_documents) pending training data collection.
-    """
-    def __init__(self, embedding_dim=384, hidden_dim=128):
-        super().__init__()
-        self.mlp = nn.Sequential(
-            nn.Linear(embedding_dim * 2, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, 1)
-        )
-        self._init_weights()
-
-    def _init_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                nn.init.xavier_uniform_(m.weight)
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0.0)
-
-    def forward(self, query_emb, doc_emb):
-        x = torch.cat((query_emb, doc_emb), dim=-1)
-        return self.mlp(x)
+                    logger.error(f"Failed to load CrossEncoder ({e}). Will fall back to cosine similarity.")
+                    _CROSS_ENCODER = None
+    return _CROSS_ENCODER
 
 def rerank_documents(query, documents, metadatas=None, top_k=5, doc_embeddings=None, query_embedding=None, force_cosine=False):
+    """
+    Reranks candidate documents using Cross-Encoder attention scoring.
+    Falls back to dense embedding cosine similarity if force_cosine is True or if CrossEncoder fails.
+    """
     if not documents:
         return []
 
-    embed_model = get_embed_model()
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    # Dynamic Reranker Execution:
-    # Attempt to load the fine-tuned MLP weights if they exist on disk.
-    # If the weights file is absent, score candidate documents using cosine similarity.
-
-    if query_embedding is None:
-        query_vector = embed_model.encode(query, convert_to_numpy=True)
-    else:
-        query_vector = np.array(query_embedding)
-
-    if doc_embeddings is None:
-        doc_vectors = embed_model.encode(documents, convert_to_numpy=True)
-    else:
-        doc_vectors = np.array(doc_embeddings)
-
-    query_tensor = torch.tensor(query_vector, dtype=torch.float32, device=device).unsqueeze(0)
-    doc_tensors = torch.tensor(doc_vectors, dtype=torch.float32, device=device)
-    query_tensors = query_tensor.expand(len(documents), -1)
-
-    model = None
+    scores = None
     if not force_cosine:
-        try:
-            model = get_reranker_model(device)
-        except Exception as e:
-            logger.error(f"Failed to load reranker model, falling back to cosine: {e}")
-            model = None
+        cross_encoder = get_cross_encoder()
+        if cross_encoder is not None:
+            try:
+                pairs = [[query, doc] for doc in documents]
+                scores = cross_encoder.predict(pairs)
+                scores = np.array(scores)
+                logger.info("Reranked candidate documents utilizing pre-trained Cross-Encoder.")
+            except Exception as e:
+                logger.error(f"CrossEncoder prediction failed ({e}), falling back to cosine similarity.")
+                scores = None
 
-    if model is not None:
-        try:
-            with torch.no_grad():
-                scores_tensor = model(query_tensors, doc_tensors).squeeze(-1)
-                scores = scores_tensor.cpu().numpy()
-            logger.info("Reranked candidate documents utilizing fine-tuned PyTorch MLP reranker.")
-        except Exception as e:
-            logger.error(f"Failed to run custom PyTorch reranker, falling back to cosine similarity: {e}")
-            with torch.no_grad():
-                scores = F.cosine_similarity(query_tensors, doc_tensors, dim=-1).cpu().numpy()
-    else:
-        # Score via cosine similarity — deterministic and semantically correct.
+    if scores is None:
+        # Fallback to cosine similarity with sentence-transformer embeddings
+        embed_model = get_embed_model()
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+        if query_embedding is None:
+            query_vector = embed_model.encode(query, convert_to_numpy=True)
+        else:
+            query_vector = np.array(query_embedding)
+
+        if doc_embeddings is None:
+            doc_vectors = embed_model.encode(documents, convert_to_numpy=True)
+        else:
+            doc_vectors = np.array(doc_embeddings)
+
+        query_tensor = torch.tensor(query_vector, dtype=torch.float32, device=device).unsqueeze(0)
+        doc_tensors = torch.tensor(doc_vectors, dtype=torch.float32, device=device)
+        query_tensors = query_tensor.expand(len(documents), -1)
+
         with torch.no_grad():
             scores = F.cosine_similarity(query_tensors, doc_tensors, dim=-1).cpu().numpy()
+        logger.info("Reranked candidate documents utilizing dense cosine similarity fallback.")
 
     ranked_indices = np.argsort(scores)[::-1]
     logger.debug(f"Reranked {len(documents)} docs, top score: {scores[ranked_indices[0]]:.4f}")

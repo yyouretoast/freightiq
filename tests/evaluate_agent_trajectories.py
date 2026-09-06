@@ -109,6 +109,12 @@ TRAJECTORY_CASES = [
         "unexpected_tools": ["carrier_sql_query", "carrier_semantic_search"]
     },
     {
+        "type": "FMCSA",
+        "query": "Check the FMCSA operating authority and safety status for USDOT 3780770.",
+        "expected_tool": "check_fmcsa_authority",
+        "unexpected_tools": ["carrier_semantic_search", "web_search"]
+    },
+    {
         "type": "Adversarial Loop",
         "query": "Perform a carrier SQL query for carriers located in Ohio (OH). Then, perform the exact same carrier SQL query for Ohio carriers again to double-check, and then output the final answer.",
         "expected_tool": "carrier_sql_query",

@@ -19,6 +19,7 @@ Rules:
    - Qualitative carrier descriptions (reputation, service quality, specialized handling): use `carrier_semantic_search`. Do not follow up with SQL queries unless structured filtering is explicitly requested.
    - Live market rates and industry news: use `web_search`.
    - NMFC density and freight class lookups: use `freight_class_calculator`.
+   - USDOT safety compliance, operating authority, and FMCSA insurance checks: use `check_fmcsa_authority`.
 3. Single Tool Principle: Select the single most appropriate tool for the inquiry. Synthesize and present the final answer immediately once results are returned from that tool; do not chain or invoke secondary tools unless the user explicitly requested multiple distinct lookups.
 4. Presentation: Format carrier results cleanly using markdown tables or bullet points with key attributes (Name, DOT/MC, HQ, Equipment, Safety). For multi-part queries, address every component directly.
 """

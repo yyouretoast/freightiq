@@ -356,31 +356,58 @@ st.markdown("""
     <span class="fiq-logo">🚚</span>
     <div>
         <div class="fiq-title">FreightIQ</div>
-        <div class="fiq-subtitle">Agentic Carrier Intelligence · LangGraph · PyTorch · ChromaDB · SQLite</div>
+        <div class="fiq-subtitle">Agentic Carrier Intelligence · LangGraph · Cross-Encoder · ChromaDB · SQLite</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # Dynamic checks for reranker model configuration & feedback logs size
-weights_path = config.WEIGHTS_PATH
-has_weights = os.path.exists(weights_path)
-reranker_status = "PyTorch MLP (Fine-tuned)" if has_weights else "Cosine Similarity (Fallback)"
-reranker_class = "status-ok" if has_weights else "status-warning"
+cross_encoder_name = getattr(config, "CROSS_ENCODER_MODEL_NAME", "cross-encoder/ms-marco-MiniLM-L-6-v2").split("/")[-1]
+reranker_status = f"Cross-Encoder ({cross_encoder_name})"
+reranker_class = "status-ok"
 
 feedback_data = load_feedback()
 feedback_count = len(feedback_data)
 
-semantic_search_desc = "Vector DB + Fine-tuned PyTorch MLP" if has_weights else "Vector DB + Cosine Reranker fallback"
+semantic_search_desc = f"ChromaDB + {reranker_status}"
 
 TOOLS = [
     ("🔍", "Semantic Search", semantic_search_desc),
     ("🗄️", "SQL Database", "Structured carrier lookups via SQLite"),
-    ("🌐", "Web Search", "Live DuckDuckGo market research"),
-    ("🔢", "Freight Class", "NMFC density calculator"),
+    ("🌐", "Web Search", "Live Tavily & DuckDuckGo market research"),
+    ("🔢", "Freight Class", "NMFC density & exception calculator"),
+    ("🛡️", "FMCSA Safety", "USDOT authority & insurance verification"),
 ]
 
 with st.sidebar:
-    api_key_set = bool(os.getenv("GROQ_API_KEY"))
+    # Custom Key & Model Configuration
+    st.markdown('<div class="sidebar-section"><div class="sidebar-title">Configuration</div></div>', unsafe_allow_html=True)
+    
+    user_groq_key = st.text_input(
+        "🔑 Groq API Key (Optional)",
+        type="password",
+        value=st.session_state.get("custom_groq_key", ""),
+        help="Use your own key to bypass shared demo rate limits."
+    )
+    if user_groq_key and user_groq_key != st.session_state.get("custom_groq_key"):
+        st.session_state.custom_groq_key = user_groq_key
+        os.environ["GROQ_API_KEY"] = user_groq_key
+        config.GROQ_API_KEY = user_groq_key
+        st.rerun()
+
+    active_key = os.getenv("GROQ_API_KEY") or config.GROQ_API_KEY
+    api_key_set = bool(active_key and active_key != "mock_key_for_ci")
+    
+    selected_model = st.selectbox(
+        "🧠 Agent Model",
+        ["qwen/qwen3.8-27b", "qwen/qwen3.6-27b", "openai/gpt-oss-20b"],
+        index=0,
+        help="Select active LLM engine for agent reasoning."
+    )
+    if selected_model != config.AGENT_MODEL:
+        config.AGENT_MODEL = selected_model
+        os.environ["AGENT_MODEL"] = selected_model
+
     status_class = "status-ok" if api_key_set else "status-err"
     status_text = f"{config.AGENT_MODEL} · Connected" if api_key_set else "Groq API Key Missing"
 
@@ -411,7 +438,7 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     if not api_key_set:
-        st.warning("Set `GROQ_API_KEY` in your `.env` file to enable the agent.")
+        st.warning("Set `GROQ_API_KEY` in `.env` or paste your key above to enable the agent.")
 
     if st.button("🗑️ Reset Conversation", use_container_width=True):
         st.session_state.messages = []

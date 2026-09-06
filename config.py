@@ -22,11 +22,13 @@ CHROMA_COLLECTION_NAME = "freight_carriers"
 # Model Configuration
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 EMBEDDING_DIM = 384
+CROSS_ENCODER_MODEL_NAME = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 RERANKER_HIDDEN_DIM = 128
 
-# LLM Configuration (centralized env var reads)
+# LLM & Search Configuration (centralized env var reads)
 AGENT_MODEL = os.getenv("AGENT_MODEL", "qwen/qwen3.8-27b")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY") or "mock_key_for_ci"
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 MAX_OUTPUT_TOKENS = int(os.getenv("MAX_OUTPUT_TOKENS", "800"))
 
 # Retrieval Parameters
