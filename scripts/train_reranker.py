@@ -12,11 +12,35 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 import config
-from rag.reranker import CarrierReRanker, get_embed_model
+from rag.reranker import get_embed_model
 from rag.utils import format_carrier_document, load_feedback
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
+
+class CarrierReRanker(nn.Module):
+    """
+    2-layer MLP reranker architecture.
+    """
+    def __init__(self, embedding_dim=384, hidden_dim=128):
+        super().__init__()
+        self.mlp = nn.Sequential(
+            nn.Linear(embedding_dim * 2, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, 1)
+        )
+        self._init_weights()
+
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0.0)
+
+    def forward(self, query_emb, doc_emb):
+        x = torch.cat((query_emb, doc_emb), dim=-1)
+        return self.mlp(x)
 
 def generate_bootstrap_data(carriers):
     """
