@@ -3,7 +3,7 @@ from langchain_groq import ChatGroq
 from langgraph.prebuilt import ToolNode
 from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-from groq import RateLimitError, InternalServerError, APIConnectionError
+from groq import RateLimitError, InternalServerError, APIConnectionError, NotFoundError
 from agent.state import AgentState
 from agent.tools import tools
 import config
@@ -40,7 +40,20 @@ llm_with_tools = llm.bind_tools(tools, parallel_tool_calls=False)
     reraise=True
 )
 def _invoke_with_retry(model_obj, messages):
-    return model_obj.invoke(messages)
+    try:
+        return model_obj.invoke(messages)
+    except NotFoundError as e:
+        logger.warning(f"Configured model failed with 404 ({e}). Falling back to 'qwen/qwen3.8-27b'.")
+        fallback_llm = ChatGroq(
+            model="qwen/qwen3.8-27b",
+            groq_api_key=config.GROQ_API_KEY,
+            temperature=0.0,
+            max_tokens=config.MAX_OUTPUT_TOKENS,
+            streaming=True
+        )
+        is_tool_bound = hasattr(model_obj, "tools") or "bind_tools" in str(type(model_obj)) or hasattr(model_obj, "bound")
+        fallback_target = fallback_llm.bind_tools(tools, parallel_tool_calls=False) if is_tool_bound else fallback_llm
+        return fallback_target.invoke(messages)
 
 def agent_node(state: AgentState):
     logger.info(f"Agent invoked with {len(state['messages'])} messages in context.")
