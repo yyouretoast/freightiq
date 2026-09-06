@@ -16,14 +16,12 @@ DB_PATH = os.path.join(DATA_DIR, "carriers.db")
 CHROMA_PATH = os.path.join(DATA_DIR, "chroma_db")
 CARRIERS_JSON_PATH = os.path.join(DATA_DIR, "carriers.json")
 FEEDBACK_PATH = os.path.join(DATA_DIR, "feedback.json")
-WEIGHTS_PATH = os.path.join(MODELS_DIR, "reranker_weights.pt")
 CHROMA_COLLECTION_NAME = "freight_carriers"
 
 # Model Configuration
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 EMBEDDING_DIM = 384
 CROSS_ENCODER_MODEL_NAME = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-RERANKER_HIDDEN_DIM = 128
 
 # LLM & Search Configuration (centralized env var reads)
 AGENT_MODEL = os.getenv("AGENT_MODEL", "qwen/qwen3.8-27b")

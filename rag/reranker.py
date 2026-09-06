@@ -1,9 +1,6 @@
-import os
-import time
 import logging
 import threading
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from sentence_transformers import SentenceTransformer, CrossEncoder

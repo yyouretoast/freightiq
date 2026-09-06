@@ -1,6 +1,5 @@
 import os
 import sqlite3
-import numpy as np
 import sys
 
 # Ensure project root is in the path

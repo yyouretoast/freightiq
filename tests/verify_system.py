@@ -1,6 +1,5 @@
 import os
 import sys
-import logging
 from dotenv import load_dotenv
 
 # Load environment variables at the absolute top before importing local modules

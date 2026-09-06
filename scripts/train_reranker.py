@@ -192,8 +192,8 @@ def main():
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False)
     
-    # Initialize ReRanker model
-    model = CarrierReRanker(embedding_dim=config.EMBEDDING_DIM, hidden_dim=config.RERANKER_HIDDEN_DIM).to(device)
+    # Initialize ReRanker model (offline experimental MLP)
+    model = CarrierReRanker(embedding_dim=config.EMBEDDING_DIM, hidden_dim=128).to(device)
     
     criterion = nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
@@ -259,7 +259,7 @@ def main():
     if best_model_state is None:
         best_model_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
     
-    weights_path = config.WEIGHTS_PATH
+    weights_path = getattr(config, "WEIGHTS_PATH", os.path.join(config.MODELS_DIR, "reranker_weights.pt"))
     os.makedirs(os.path.dirname(weights_path), exist_ok=True)
     
     temp_weights_path = f"{weights_path}.tmp"
