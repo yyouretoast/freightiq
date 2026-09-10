@@ -10,22 +10,23 @@ def ingest_chroma():
     if not os.path.exists(json_path):
         raise FileNotFoundError(f"Source carriers.json not found at {json_path}. Run generate_carriers.py first.")
 
+    with open(json_path, "r") as f:
+        carriers = json.load(f)
+
     # Initialize a single client instance reused for both the idempotency check and the upsert
     chroma_client = chromadb.PersistentClient(path=config.CHROMA_PATH)
 
-    # Idempotency check: skip re-encoding if collection exists and is populated
+    # Idempotency check: skip re-encoding only if collection count matches source data
     try:
         collection = chroma_client.get_collection(name=config.CHROMA_COLLECTION_NAME)
-        if collection.count() > 0:
-            print("Chroma collection already populated. Skipping embedding ingestion...")
+        if collection.count() == len(carriers):
+            print(f"Chroma collection already populated with {len(carriers)} documents. Skipping embedding ingestion...")
             return
+        elif collection.count() > 0:
+            print(f"Chroma collection document count mismatch ({collection.count()} vs {len(carriers)}). Re-ingesting...")
+            chroma_client.delete_collection(name=config.CHROMA_COLLECTION_NAME)
     except Exception as e:
-        print(f"Collection not found or empty ({e}). Proceeding to ingest...")
-
-    print("Ingesting carrier profiles into ChromaDB...")
-
-    with open(json_path, "r") as f:
-        carriers = json.load(f)
+        print(f"Collection not found ({e}). Proceeding to ingest...")
 
     documents = [format_carrier_document(c) for c in carriers]
     ids = [c['dot_number'] for c in carriers]

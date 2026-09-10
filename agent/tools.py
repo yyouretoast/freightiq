@@ -1,4 +1,5 @@
 import logging
+import re
 from langchain_core.tools import tool
 from duckduckgo_search import DDGS
 from rag.retriever import retrieve_carriers_semantic, query_carriers_sql
@@ -53,7 +54,35 @@ def carrier_sql_query(query: str) -> str:
     # Guarantees limit enforcement regardless of inner clauses, aliases, or string content
     wrapped_query = f"SELECT * FROM ({clean}) AS _bounded_carriers LIMIT 25"
     
-    return query_carriers_sql(wrapped_query)
+    res = query_carriers_sql(wrapped_query)
+    if res == "No matching records found in the SQL database.":
+        # Check if query had multiple AND clauses in WHERE
+        where_match = re.search(r'\bWHERE\b\s+(.*)', clean, re.IGNORECASE)
+        if where_match:
+            where_clause = where_match.group(1)
+            where_clause_clean = re.split(r'\b(ORDER\s+BY|GROUP\s+BY|LIMIT)\b', where_clause, flags=re.IGNORECASE)[0].strip()
+            and_parts = re.split(r'\s+AND\s+', where_clause_clean, flags=re.IGNORECASE)
+            if len(and_parts) > 1:
+                # Try dropping the last condition to provide partial/relaxed matches
+                relaxed_where = " AND ".join(and_parts[:-1])
+                prefix = clean[:where_match.start()]
+                suffix_match = re.search(r'\b(ORDER\s+BY|GROUP\s+BY|LIMIT)\b.*', where_clause, re.IGNORECASE)
+                suffix = f" {suffix_match.group(0)}" if suffix_match else ""
+                relaxed_sql = f"{prefix}WHERE {relaxed_where}{suffix}"
+                relaxed_wrapped = f"SELECT * FROM ({relaxed_sql}) AS _bounded_carriers LIMIT 5"
+                relaxed_res = query_carriers_sql(relaxed_wrapped)
+                if relaxed_res and not relaxed_res.startswith("No matching") and not relaxed_res.startswith("SQLite Error"):
+                    return (
+                        "Notice: 0 carriers matched all strict query constraints. "
+                        f"Relaxed search (omitting '{and_parts[-1].strip()}'):\n\n{relaxed_res}\n\n"
+                        "Note: You may also invoke carrier_semantic_search if looking for broader similarity."
+                    )
+        return (
+            "No matching records found in the SQL database. "
+            "Tip: Consider relaxing filter constraints or calling carrier_semantic_search with a natural language query."
+        )
+    return res
+
 
 @tool
 def web_search(query: str) -> str:

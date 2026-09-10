@@ -12,6 +12,10 @@ def setup_sqlite():
         
     print("Setting up SQLite database...")
     
+    with open(json_path, "r") as f:
+        carriers = json.load(f)
+    target_count = len(carriers)
+
     # Check if table already exists and is populated to implement idempotency
     if os.path.exists(db_path):
         try:
@@ -22,7 +26,7 @@ def setup_sqlite():
                 count = cursor.fetchone()[0]
                 cursor.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='carriers_fts'")
                 fts_exists = cursor.fetchone()[0]
-                if count > 0 and fts_exists > 0:
+                if count == target_count and fts_exists > 0:
                     print(f"SQLite database and FTS5 index already populated with {count} records. Skipping ingestion.")
                     return
         except sqlite3.OperationalError:
@@ -53,9 +57,6 @@ def setup_sqlite():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_carriers_hq_state ON carriers (hq_state)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_carriers_safety_rating ON carriers (safety_rating)")
         
-        with open(json_path, "r") as f:
-            carriers = json.load(f)
-            
         batch_data = [
             (
                 c["carrier_name"],

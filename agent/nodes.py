@@ -1,9 +1,10 @@
+import time
 import logging
 from langchain_groq import ChatGroq
 from langgraph.prebuilt import ToolNode
-from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
+from langchain_core.messages import SystemMessage, AIMessage, HumanMessage, ToolMessage
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-from groq import RateLimitError, InternalServerError, APIConnectionError, NotFoundError
+from groq import RateLimitError, InternalServerError, APIConnectionError, NotFoundError, APIStatusError
 from agent.state import AgentState
 from agent.tools import tools
 import config
@@ -24,37 +25,80 @@ Rules:
 4. Presentation: Format carrier results cleanly using markdown tables or bullet points with key attributes (Name, DOT/MC, HQ, Equipment, Safety). For multi-part queries, address every component directly.
 """
 
-llm = ChatGroq(
-    model=config.AGENT_MODEL,
-    groq_api_key=config.GROQ_API_KEY,
-    temperature=0.0,
-    max_tokens=config.MAX_OUTPUT_TOKENS,
-    streaming=True
-)
+_active_llm = None
+_active_llm_with_tools = None
 
-llm_with_tools = llm.bind_tools(tools, parallel_tool_calls=False)
-
-@retry(
-    retry=retry_if_exception_type((RateLimitError, InternalServerError, APIConnectionError)),
-    wait=wait_exponential(multiplier=1, min=2, max=30),
-    stop=stop_after_attempt(3),
-    reraise=True
-)
-def _invoke_with_retry(model_obj, messages):
-    try:
-        return model_obj.invoke(messages)
-    except NotFoundError as e:
-        logger.warning(f"Configured model failed with 404 ({e}). Falling back to 'qwen/qwen3.8-27b'.")
-        fallback_llm = ChatGroq(
-            model="qwen/qwen3.8-27b",
+def get_active_models():
+    global _active_llm, _active_llm_with_tools
+    if _active_llm is None:
+        _active_llm = ChatGroq(
+            model=config.AGENT_MODEL,
             groq_api_key=config.GROQ_API_KEY,
             temperature=0.0,
             max_tokens=config.MAX_OUTPUT_TOKENS,
             streaming=True
         )
-        is_tool_bound = hasattr(model_obj, "tools") or "bind_tools" in str(type(model_obj)) or hasattr(model_obj, "bound")
-        fallback_target = fallback_llm.bind_tools(tools, parallel_tool_calls=False) if is_tool_bound else fallback_llm
-        return fallback_target.invoke(messages)
+        _active_llm_with_tools = _active_llm.bind_tools(tools, parallel_tool_calls=False)
+    return _active_llm, _active_llm_with_tools
+
+def switch_to_sibling():
+    global _active_llm, _active_llm_with_tools
+    current = getattr(_active_llm, "model_name", "") or getattr(config, "AGENT_MODEL", "")
+    alt_model = "qwen/qwen3.6-27b" if "3.8" in current else "qwen/qwen3.8-27b"
+    logger.warning(f"Switching active inference model to '{alt_model}'.")
+    _active_llm = ChatGroq(
+        model=alt_model,
+        groq_api_key=config.GROQ_API_KEY,
+        temperature=0.0,
+        max_tokens=config.MAX_OUTPUT_TOKENS,
+        streaming=True
+    )
+    _active_llm_with_tools = _active_llm.bind_tools(tools, parallel_tool_calls=False)
+    return _active_llm, _active_llm_with_tools
+
+llm, llm_with_tools = get_active_models()
+
+def _is_retryable_error(exc):
+    if isinstance(exc, (RateLimitError, InternalServerError, APIConnectionError)):
+        return True
+    if isinstance(exc, APIStatusError) and getattr(exc, "status_code", None) in (413, 429, 500, 502, 503, 504):
+        return True
+    return False
+
+@retry(
+    retry=_is_retryable_error,
+    wait=wait_exponential(multiplier=2, min=3, max=45),
+    stop=stop_after_attempt(4),
+    reraise=True
+)
+def _invoke_with_retry(is_tool_bound, messages):
+    base_llm, tool_llm = get_active_models()
+    target = tool_llm if is_tool_bound else base_llm
+    try:
+        return target.invoke(messages)
+    except (NotFoundError, RateLimitError) as e:
+        logger.warning(f"Model failed with {type(e).__name__} ({e}). Switching to sibling model.")
+        base_alt, tool_alt = switch_to_sibling()
+        target_alt = tool_alt if is_tool_bound else base_alt
+        return target_alt.invoke(messages)
+
+
+
+def _prepare_context_messages(messages):
+    """
+    Enforces context truncation to the last 8 messages and bounds individual tool outputs
+    to stay within model token quotas and avoid 413 Payload Too Large errors.
+    """
+    truncated = messages[-8:] if len(messages) > 8 else list(messages)
+    cleaned = []
+    for m in truncated:
+        if isinstance(m, ToolMessage) and len(str(m.content)) > 2000:
+            bounded_text = str(m.content)[:2000] + "\n\n... [Output truncated to stay within model token quota]"
+            cleaned.append(ToolMessage(content=bounded_text, tool_call_id=m.tool_call_id, name=m.name))
+        else:
+            cleaned.append(m)
+    return cleaned
+
 
 def agent_node(state: AgentState):
     logger.info(f"Agent invoked with {len(state['messages'])} messages in context.")
@@ -80,8 +124,8 @@ def agent_node(state: AgentState):
                         f"Repeat tool call detected for '{last_call['name']}'. "
                         "Do not invoke this tool again. Synthesize your final answer directly in plain text using the results already retrieved."
                     )
-                    messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + messages + [HumanMessage(content=loop_break_directive)]
-                    response = _invoke_with_retry(llm, messages_with_warning)
+                    messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + _prepare_context_messages(messages) + [HumanMessage(content=loop_break_directive)]
+                    response = _invoke_with_retry(False, messages_with_warning)
                     return {"messages": [response]}
 
         # Check for excessive consecutive calls to ANY single tool (e.g. 3 consecutive calls)
@@ -106,12 +150,14 @@ def agent_node(state: AgentState):
                 f"Multiple repeated calls executed for tool '{last_tool_name}'. "
                 "Do not invoke any tools again. Synthesize your final answer now in plain text using the results retrieved so far, or state that data is unavailable."
             )
-            messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + messages + [HumanMessage(content=loop_break_directive)]
-            response = _invoke_with_retry(llm, messages_with_warning)
+            messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + _prepare_context_messages(messages) + [HumanMessage(content=loop_break_directive)]
+            response = _invoke_with_retry(False, messages_with_warning)
             return {"messages": [response]}
                 
-    messages_with_system = [SystemMessage(content=SYSTEM_PROMPT)] + messages
-    response = _invoke_with_retry(llm_with_tools, messages_with_system)
+    messages_with_system = [SystemMessage(content=SYSTEM_PROMPT)] + _prepare_context_messages(messages)
+    response = _invoke_with_retry(True, messages_with_system)
     return {"messages": [response]}
+
+
 
 tool_node = ToolNode(tools)

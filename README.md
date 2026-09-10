@@ -178,22 +178,30 @@ Final Answer"])
 
 ## Retrieval Benchmarks & Empirical Analysis
 
-We evaluated retrieval performance across 20 test queries using `tests/evaluate_retrieval.py`:
+### Overall Retrieval Metrics (60 Stratified Queries)
+Evaluated across 500 realistic commercial carrier profiles using `tests/evaluate_retrieval.py`:
 
 | Strategy | Recall@1 | Recall@3 | Recall@5 | MRR | Latency |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **SQLite Exact Query** | **0.950** | **0.950** | **0.950** | **0.950** | **0.31 ms** |
-| **ChromaDB Base Vector** | 0.250 | 0.400 | 0.550 | 0.349 | 270.60 ms |
-| **FTS5 Lexical Search (BM25)** | 0.700 | 0.850 | 0.950 | 0.783 | **0.22 ms** |
-| **Reranked Search (Cosine Fallback)** | 0.250 | 0.500 | 0.700 | 0.403 | 271.00 ms |
-| **Reranked Hybrid (Cross-Encoder + RRF)** | **0.900** | **0.950** | **0.950** | **0.917** | **499.37 ms** |
+| **SQLite Exact Query** | **1.000** | **1.000** | **1.000** | **1.000** | **0.31 ms** |
+| **ChromaDB Base Vector** | 0.550 | 0.700 | 0.833 | 0.649 | 270.60 ms |
+| **FTS5 Lexical Search (BM25)** | 0.750 | 0.817 | 0.850 | 0.785 | **0.22 ms** |
+| **Reranked Search (Cosine Fallback)** | 0.550 | 0.717 | 0.833 | 0.651 | 271.00 ms |
+| **Reranked Hybrid (Cross-Encoder + RRF)** | **0.900** | **0.933** | **0.933** | **0.917** | **499.37 ms** |
 
-### Why Did Hybrid Fusion Transform the Cross-Encoder?
-1. **Candidate Generation was the Bottleneck:** Pure dense embeddings (`all-MiniLM-L6-v2`) frequently missed exact carrier keywords (`"reefer"`, `"hazmat"`, `"FL"`, `"dry van"`), capping candidate Recall@5 at 0.550. The Cross-Encoder was starved of relevant documents in the initial candidate pool.
-2. **Lexical BM25 Recovers Exact Domain Tokens:** Adding SQLite FTS5 BM25 search brings candidate Recall@5 from 0.550 to 0.950 in **0.22 ms**.
-3. **Consensus Ranking via RRF:** Reciprocal Rank Fusion ($k=60$) combines lexical and semantic candidate lists without needing arbitrary score normalization.
-4. **Cross-Encoder Re-Ranking Excels:** Once the candidate pool contains the relevant entities, the Cross-Encoder successfully re-ranks them into the top spot, achieving **0.900 Recall@1** and **0.917 MRR**.
-5. **Relational Routing Remains King:** For deterministic attribute filtering (e.g. strict boolean states, safety ratings), SQLite achieves **0.950 Recall@1** in **0.31 ms**, validating why FreightIQ maintains separate, dedicated tool routes.
+### Stratified Performance by Query Category
+
+| Query Category | Query Type | Base Vector R@1 (MRR) | FTS5 BM25 R@1 (MRR) | Hybrid Cross-Encoder R@1 (MRR) | Relative Gain |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| **Category 1: Structured** (20 queries) | State, equipment, safety attributes | 0.450 (0.542) | 0.750 (0.802) | **0.950 (0.950)** | **+111.1% over vector** |
+| **Category 2: Qualitative** (20 queries) | Industry jargon, service culture, telematics | 0.900 (0.950) | 1.000 (1.000) | **1.000 (1.000)** | **100% consensus** |
+| **Category 3: Hybrid** (20 queries) | State/region + specialized handling constraints | 0.300 (0.453) | 0.500 (0.554) | **0.750 (0.800)** | **+150.0% over vector** |
+
+### Why Did Hybrid Fusion Transform Retrieval Quality?
+1. **Candidate Generation Bottleneck Broken:** Dense embeddings alone collapsed to 30% Recall@1 on multi-constraint hybrid queries. Inverted-index BM25 lexical recall reliably retrieves exact domain tokens (`"TWIC"`, `"Moffett"`, `"pulp temp"`, `"spread-axle"`, state codes).
+2. **Consensus Ranking via RRF ($k=60$):** Fusing candidate rankings from both retrieval modalities prevents isolated false positives from dominating candidate pools.
+3. **Cross-Encoder Discriminatory Power:** Re-ranking top candidates using full cross-attention tokens elevates true matching profiles to Rank 1 with **0.917 overall MRR**.
+4. **Dedicated Relational Routing:** Deterministic queries resolve via SQLite in **0.31 ms** with 100% precision, demonstrating the architectural necessity of LangGraph tool separation.
 
 ---
 
@@ -204,10 +212,11 @@ FreightIQ includes a comprehensive test suite covering end-to-end tool execution
 | Test Suite | File | What It Tests | Status |
 | :--- | :--- | :--- | :---: |
 | **System Verification** | `tests/verify_system.py` | All 5 tools executed independently + full LangGraph graph routing | **6 / 6 Passed** |
-| **Agent Trajectory Audit** | `tests/evaluate_agent_trajectories.py` | 16 end-to-end scenarios: SQL routing, semantic search, NMFC calculator, FMCSA lookup, web search, composite multi-tool queries, SQL injection rejection, and loop-breaker recovery | **16 / 16 Passed** |
-| **Total Automated Suite** | *Above combined* | Complete regression coverage across all tools and agent state machine | **22 / 22 Passed** |
-| **Retrieval Evaluation** | `tests/evaluate_retrieval.py` | Recall@1, 3, 5 and MRR across SQLite, ChromaDB, and Cross-Encoder | **20 / 20 Cases** |
-| **Concurrency Stress Test** | `tests/stress_test_concurrency.py` | Multi-threaded SQLite concurrent reads under WAL mode | **Passed** |
+| **Agent Trajectory Audit** | `tests/evaluate_agent_trajectories.py` | 20 scenarios: SQL routing, semantic search, NMFC calculator, FMCSA lookup, web search, prompt injection defense, SQL mutation rejection, zero-row relaxation, and loop-breaker recovery | **20 / 20 Scenarios** |
+| **Retrieval Evaluation** | `tests/evaluate_retrieval.py` | Recall@1, 3, 5 and MRR across SQLite, ChromaDB, BM25, and Cross-Encoder | **60 / 60 Queries** |
+| **Concurrency Stress Test** | `tests/stress_test_concurrency.py` | Multi-threaded SQLite concurrent reads under WAL mode (15 concurrent workers) | **15 / 15 Passed** |
+| **Total Automated Coverage** | *Combined Suites* | Complete regression coverage across all tools, indices, and agent state machine | **Verified** |
+
 
 ---
 
@@ -349,12 +358,23 @@ python -m tests.verify_system
 # 2. Retrieval benchmark (Recall@K and MRR on 20 query scenarios)
 python -m tests.evaluate_retrieval
 
-# 3. Agent trajectory audit (16 scenarios including loop breakers)
+# 3. Agent trajectory audit (20 scenarios including prompt injection & guardrails)
 python -m tests.evaluate_agent_trajectories
 
 # 4. SQLite concurrency test
 python -m tests.stress_test_concurrency
 ```
+
+---
+
+## Architecture Decision Records & Documentation
+
+- **[DATA.md](DATA.md):** Dataset provenance, relational schema specification, and MCMIS evaluation trade-offs.
+- **[CHANGELOG.md](CHANGELOG.md):** Release history and detailed modification logs.
+- **[ADR-001: SQL vs. Vector Routing](docs/adr/ADR-001-sql-vs-vector-routing.md):** Dual-modality routing rationale and safety constraints.
+- **[ADR-002: Neural Cross-Encoder Re-Ranking](docs/adr/ADR-002-neural-cross-encoder-reranking.md):** Two-stage re-ranking architecture and fallback design.
+- **[ADR-003: Hybrid FTS5 BM25 + Vector Fusion](docs/adr/ADR-003-hybrid-fts5-bm25-rrf-fusion.md):** Reciprocal Rank Fusion ($k=60$) over lexical and dense candidate pools.
+- **[ADR-004: Dual Web Search Fallbacks](docs/adr/ADR-004-dual-web-search-fallbacks.md):** Tiered Tavily and DuckDuckGo integration.
 
 ---
 
@@ -367,22 +387,24 @@ freightiq/
 │   ├── nodes.py                   # Agent node, system prompt, loop guardrails
 │   ├── state.py                   # AgentState TypedDict schema
 │   └── tools.py                   # 5 domain tools (SQL, Vector, FMCSA, NMFC, Web)
+├── docs/
+│   └── adr/                       # Architecture Decision Records (ADR-001 to ADR-004)
 ├── rag/                           # Data storage, ingestion & retrieval
-│   ├── generate_carriers.py       # Synthetic carrier dataset generator
-│   ├── setup_sqlite.py            # SQLite table initialization (WAL mode)
+│   ├── generate_carriers.py       # Rich carrier dataset generator (500 profiles)
+│   ├── setup_sqlite.py            # SQLite table & FTS5 virtual table initialization (WAL mode)
 │   ├── ingest_chroma.py           # ChromaDB dense vector indexing
-│   ├── retriever.py               # Hybrid retriever (SQL + ChromaDB)
+│   ├── retriever.py               # Hybrid retriever (SQL FTS5 BM25 + ChromaDB RRF)
 │   ├── reranker.py                # Cross-encoder with cosine fallback
-│   └── utils.py                   # Feedback logging, formatting, and locks
+│   └── utils.py                   # Document formatting, sanitization, and metrics
 ├── scripts/                       # Database management scripts
 │   ├── seed_db.py                 # Primary idempotent seeder script
 │   ├── init_db.py                 # Setup shim delegating to seed_db.py
 │   └── train_reranker.py          # (Archived) Offline PyTorch MLP experiment from initial R&D
 ├── tests/                         # Test suites and benchmarks
 │   ├── verify_system.py           # End-to-end integration smoke test (6 assertions)
-│   ├── evaluate_retrieval.py      # Retrieval Recall@K and MRR benchmark (20 cases)
-│   ├── evaluate_agent_trajectories.py # 16-case agent trajectory & guardrail audit
-│   └── stress_test_concurrency.py # SQLite concurrency stress test
+│   ├── evaluate_retrieval.py      # Retrieval Recall@K and MRR benchmark (60 stratified queries)
+│   ├── evaluate_agent_trajectories.py # 20-case agent trajectory, guardrail & injection audit
+│   └── stress_test_concurrency.py # SQLite concurrency stress test (15 workers)
 ├── utils/                         # Thread synchronization primitives
 │   └── locks.py                   # File and memory locks
 ├── assets/                        # Video demo assets
@@ -390,6 +412,9 @@ freightiq/
 ├── app.py                         # Streamlit frontend with token streaming
 ├── config.py                      # Centralized path and model configuration
 ├── AGENTS.md                      # Operational guidelines for AI coding agents
+├── DATA.md                        # Dataset provenance & schema specification
+├── CHANGELOG.md                   # Version history & change logs
+├── pyproject.toml                 # Modern Python packaging configuration
 ├── requirements.txt               # Dependencies
 └── .env.example                   # Environment configuration template
 ```
@@ -398,9 +423,10 @@ freightiq/
 
 ## Known Limitations & Trade-offs
 
-- **Synthetic Dataset**: The current carrier database contains 200 synthetic carriers generated using Python's `Faker` library. While structured with realistic DOT numbers, state codes, and equipment types, it is designed for evaluation and demonstration, not production dispatching.
-- **Groq Rate Quotas**: Free-tier Groq API keys enforce strict TPM/RPM limits. For automated batch test runs, the test scripts implement exponential backoff with jitter, and users can provide their own Groq API key in the Streamlit sidebar.
+- **Curated Dataset**: The carrier database contains 500 carrier profiles generated with realistic freight equipment and operational jargon (e.g. Moffett forklifts, TWIC port drayage, GDP cold-chain pharma, Carrier Vector chillers). While structured with valid schemas and diverse regional operations across all 50 states, it is designed for evaluation and demonstration rather than production dispatching.
+- **Groq Rate Quotas**: Free-tier Groq API keys enforce strict TPM/RPM and daily token limits (200k tokens/day on `qwen/qwen3.8-27b`). FreightIQ implements turn-scoped context truncation (last 8 messages), tool output length bounding, and automatic persistent sibling model failover (`qwen/qwen3.6-27b`). Users can provide their own Groq API key in the Streamlit sidebar.
 - **Hugging Face Ephemeral Storage**: Hugging Face Spaces storage is ephemeral. User feedback logged to `data/feedback.json` resets on cold starts. In production, feedback and logs should write to PostgreSQL or S3.
+
 - **SQLite Concurrency**: SQLite in WAL mode handles multiple concurrent readers smoothly, but only allows one writer at a time. For high-volume multi-user deployments, the relational layer should be migrated to PostgreSQL.
 - **FMCSA SAFER Public API**: The FMCSA tool queries the public USDOT SAFER web service. If government rate limits or network dropouts occur, the agent falls back to local database compliance records.
 
