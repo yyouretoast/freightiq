@@ -10,7 +10,7 @@ pinned: false
 
 # FreightIQ
 
-Freight carrier search and logistics query engine using LangGraph, SQLite, ChromaDB, and Groq LLM inference.
+Freight carrier intelligence system featuring dual-modality query routing, hybrid retrieval (FTS5 BM25 + dense ChromaDB RRF), neural cross-encoder re-ranking, and LangGraph agent orchestration.
 
 [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue?style=flat-square)](https://huggingface.co/spaces/yyouretoast/freightiq)
 [![FreightIQ Verification CI](https://github.com/yyouretoast/freightiq/actions/workflows/verify.yml/badge.svg)](https://github.com/yyouretoast/freightiq/actions/workflows/verify.yml)
@@ -36,14 +36,14 @@ https://github.com/user-attachments/assets/dbf58565-39ee-4d17-a434-6a321c8afed4
 - [Architecture](#architecture)
 - [Query Routing Rationale](#query-routing-rationale)
 - [Tools](#tools)
-- [Representative Query Examples](#representative-query-examples)
-- [Guardrails & Reliability Controls](#guardrails--reliability-controls)
 - [Retrieval Benchmarks](#retrieval-benchmarks)
+- [Engineering Trade-offs & Limitations](#engineering-trade-offs--limitations)
+- [Guardrails & Reliability Controls](#guardrails--reliability-controls)
+- [Representative Routing Examples](#representative-routing-examples)
 - [Verification Test Suite](#verification-test-suite)
 - [Setup & Execution](#setup--execution)
 - [Project Structure](#project-structure)
 - [Design Documents](#design-documents)
-- [Limitations](#limitations)
 - [License](#license)
 
 ---
@@ -162,38 +162,6 @@ For detailed design rationale, see [ADR-001: SQL vs. Vector Routing](docs/adr/AD
 
 ---
 
-## Representative Query Examples
-
-| Scenario | Example Prompt | Active Tool | Execution & Result Mechanism |
-| :--- | :--- | :--- | :--- |
-| **Structured Relational Query** | *"Find flatbed carriers in Ohio with a satisfactory safety rating."* | `carrier_sql_query` | SQL `SELECT` filtering `hq_state = 'OH'`, `equipment_types`, and `safety_rating` with $<1\text{ ms}$ latency. |
-| **Qualitative Cold Chain** | *"Carriers specializing in perishable pharmaceutical cold chain with continuous temp monitoring."* | `carrier_semantic_search` | FTS5 BM25 + dense vector retrieval fused via RRF ($k=60$) and re-ranked with `cross-encoder/ms-marco-MiniLM-L-6-v2`. |
-| **Density & NMFC Calculation** | *"What is the freight class for a 1,200 lbs pallet measuring 48x48x48 inches?"* | `freight_class_calculator` | Computes density ($18.75\text{ lb/ft}^3$) and maps standard NMFC Class 70. |
-| **LTL Commodity Exception** | *"What is the freight class for a 220 lbs crate of insulation foam measuring 36x36x36?"* | `freight_class_calculator` | Calculates base density ($8.15\text{ lb/ft}^3$), matches insulation keyword exception, and overrides to fixed Class 150. |
-| **USDOT SAFER Verification** | *"Verify operating authority and safety status for USDOT 3681950."* | `check_fmcsa_authority` | Queries federal registry / local compliance records for active operating authority, BIPD insurance, and safety rating. |
-| **Spot Market Rate Lookup** | *"What are current average national dry van spot rates per mile?"* | `web_search` | Queries Tavily API (with DuckDuckGo fallback) for real-time freight corridor rates and market intelligence. |
-| **Zero-Row SQL Relaxation** | *"Find carriers headquartered in Alaska with refrigerated units handling hazmat."* | `carrier_sql_query` | 0 rows match strict `WHERE` constraints; engine automatically drops the most restrictive condition and returns partial matches. |
-
----
-
-## Guardrails & Reliability Controls
-
-| Failure Mode | Control | Implementation |
-| :--- | :--- | :--- |
-| **SQL Mutation / Data Corruption** | Engine-level read-only URI + AST check | `file:DB?mode=ro`; queries must start with `SELECT` or `WITH` |
-| **FTS5 Syntax Crash on Special Characters** | Tokenizer & query sanitizer | `sanitize_fts5_query()` strips hyphens, colons, slashes, and quotes |
-| **Tool Loops & Thrashing** | Turn-scoped loop breaker | Detects duplicate consecutive calls; forces final text synthesis |
-| **Context Window Exhaustion** | History sliding window & turn alignment | Truncates context to last 8 messages while walking back to ensure valid conversation turns (preventing orphaned ToolMessages) |
-| **Groq 413 Payload Too Large** | Tool output length bounding | Capped at 2,000 characters per tool response before context injection |
-| **Groq 429 Daily Quota Exhaustion** | Sibling model failover | Automatically switches active inference between `qwen3.8-27b` and `qwen3.6-27b` |
-| **Zero-Row Relational Miss** | Constraint relaxation | Drops the most restrictive `WHERE` clause and retrieves partial matches |
-| **Prompt Injection / Jailbreak** | Grounding prompt & safety refusal | Rejects system prompt leaks; refuses hazardous cargo override directives |
-| **Search API Unavailability** | Provider fallback | Tavily fails over to DuckDuckGo without throwing unhandled exceptions |
-| **Cross-Encoder Weights Missing** | Metric fallback | Falls back to dense cosine similarity if model fails to load |
-| **Database Concurrency** | SQLite WAL mode + file lock | Supports concurrent readers; serialization on initialization |
-
----
-
 ## Retrieval Benchmarks
 
 Evaluated against 500 commercial carrier profiles using 60 test queries in `tests/evaluate_retrieval.py`:
@@ -227,7 +195,46 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 ### Key Findings
 1. **Lexical Retrieval Impact:** FTS5 BM25 retrieves exact domain tokens with sub-millisecond latency (0.22ms), eliminating the false-negative drops of pure vector search on industry terms (`TWIC`, `Moffett`, `RGN`, `Class 3`).
 2. **Consensus Ranking:** RRF ($k=60$) successfully balances lexical keyword recall with dense semantic breadth.
-3. **Neural Precision:** Joint query-document attention boosts **Overall MRR from 0.596 (dense baseline) to 0.872 (+46.3%)**, while achieving perfect **1.000 Recall@1 and 1.000 MRR on qualitative queries**.
+3. **Cross-Encoder Re-Ranking Impact:** Joint query-document attention boosts **Overall MRR from 0.596 (dense baseline) to 0.872 (+46.3%)**, while achieving perfect **1.000 Recall@1 and 1.000 MRR on qualitative queries**.
+
+---
+
+## Engineering Trade-offs & Limitations
+
+- **Cross-Encoder Compute Latency (~500ms)**: Neural cross-attention over the top-15 fused candidate pool costs ~400–500ms on CPU (compared to 0.3ms for SQLite relational queries and 0.2ms for FTS5 BM25). For conversational interaction, this is within normal turn thresholds, but high-throughput batch retrieval would require GPU acceleration or vector-only pruning.
+- **Multi-Constraint Semantic Falloff (0.650 Recall@1)**: When queries mix hard relational constraints with qualitative needs (e.g., *"California flatbed carriers specializing in semiconductors"*), pure semantic search drops to 0.650 Recall@1. This empirically demonstrates why FreightIQ implements a dual-modality architecture: discrete constraints must be routed to SQLite, reserving vector search for unstructured domain language.
+- **Synthetic Dataset**: 500 fictional carrier profiles are deterministically generated to avoid real-carrier compliance or data-quality misrepresentation while preserving authentic freight domain complexity (TWIC badges, GDP cold chain, Moffett forklifts, RGN lowboys, Carrier Vector chillers).
+- **Groq Free-Tier Token Budgets (200k TPD)**: Free-tier Groq API accounts enforce daily token limits. FreightIQ mitigates this via automatic sibling failover (`qwen/qwen3.8-27b` $\leftrightarrow$ `qwen/qwen3.6-27b`), tool output length bounding (2,000 characters), and turn-aligned 8-message context truncation.
+- **SQLite Write Serialization**: SQLite in WAL mode provides lock-free concurrent reads, but writes are serialized. High-volume multi-user writes in enterprise production would necessitate PostgreSQL.
+- **FMCSA Web Scraping**: The SAFER tool queries the public USDOT web portal. External network outages or CAPTCHA updates fall back gracefully to local verified database records.
+
+---
+
+## Guardrails & Reliability Controls
+
+| Failure Mode | Control | Implementation |
+| :--- | :--- | :--- |
+| **SQL Mutation / Data Corruption** | Engine-level read-only URI + AST check | `file:DB?mode=ro`; queries must start with `SELECT` or `WITH` |
+| **FTS5 Syntax Crash on Special Characters** | Tokenizer & query sanitizer | `sanitize_fts5_query()` strips hyphens, colons, slashes, and quotes |
+| **Tool Loops & Thrashing** | Turn-scoped loop breaker | Detects duplicate consecutive calls; forces final text synthesis |
+| **Context Window Exhaustion** | History sliding window & turn alignment | Truncates context to last 8 messages while walking back to ensure valid conversation turns (preventing orphaned ToolMessages) |
+| **Groq 413 Payload Too Large** | Tool output length bounding | Capped at 2,000 characters per tool response before context injection |
+| **Groq 429 Daily Quota Exhaustion** | Sibling model failover | Automatically switches active inference between `qwen3.8-27b` and `qwen3.6-27b` |
+| **Zero-Row Relational Miss** | Constraint relaxation | Drops the most restrictive `WHERE` clause and retrieves partial matches |
+| **Prompt Injection / Jailbreak** | Grounding prompt & safety refusal | Rejects system prompt leaks; refuses hazardous cargo override directives |
+| **Search API Unavailability** | Provider fallback | Tavily fails over to DuckDuckGo without throwing unhandled exceptions |
+| **Cross-Encoder Weights Missing** | Metric fallback | Falls back to dense cosine similarity if model fails to load |
+| **Database Concurrency** | SQLite WAL mode + file lock | Supports concurrent readers; serialization on initialization |
+
+---
+
+## Representative Routing Examples
+
+| Routing Modality | Example Query | Active Path | Execution & Precision Rationale |
+| :--- | :--- | :--- | :--- |
+| **Deterministic Relational Filter** | *"Find flatbed carriers in Ohio with a satisfactory safety rating."* | `carrier_sql_query` | Evaluates discrete constraints (`hq_state = 'OH'`, `equipment_types`, `safety_rating`) in $<1\text{ ms}$ with 100% precision, avoiding vector hallucinations. |
+| **Unstructured Domain Jargon** | *"Carriers specializing in perishable pharmaceutical cold chain with continuous temp monitoring."* | `carrier_semantic_search` | FTS5 BM25 + dense ChromaDB embeddings fused via RRF ($k=60$) and re-ranked with `cross-encoder/ms-marco-MiniLM-L-6-v2` (1.000 MRR). |
+| **Automated Zero-Row Relaxation** | *"Find carriers headquartered in Alaska with refrigerated units handling hazmat."* | `carrier_sql_query` | Zero rows match strict multi-clause conditions; tool automatically drops the most restrictive constraint and returns alternative candidates. |
 
 ---
 
@@ -353,17 +360,6 @@ freightiq/
 - [ADR-002: Neural Cross-Encoder Re-Ranking](docs/adr/ADR-002-neural-cross-encoder-reranking.md): Re-ranking candidate pool design and fallbacks.
 - [ADR-003: Hybrid FTS5 BM25 + Vector Fusion](docs/adr/ADR-003-hybrid-fts5-bm25-rrf-fusion.md): Lexical-dense fusion mechanics.
 - [ADR-004: Dual Web Search Fallbacks](docs/adr/ADR-004-dual-web-search-fallbacks.md): Multi-tier search engine integration.
-
----
-
-## Engineering Trade-offs & Limitations
-
-- **Cross-Encoder Compute Latency (~500ms)**: Neural cross-attention over the top-15 fused candidate pool costs ~400–500ms on CPU (compared to 0.3ms for SQLite relational queries and 0.2ms for FTS5 BM25). For conversational interaction, this is within normal turn thresholds, but high-throughput batch retrieval would require GPU acceleration or vector-only pruning.
-- **Multi-Constraint Semantic Falloff (0.650 Recall@1)**: When queries mix hard relational constraints with qualitative needs (e.g., *"California flatbed carriers specializing in semiconductors"*), pure semantic search drops to 0.650 Recall@1. This empirically demonstrates why FreightIQ implements a dual-modality architecture: discrete constraints must be routed to SQLite, reserving vector search for unstructured domain language.
-- **Synthetic Dataset**: 500 fictional carrier profiles are deterministically generated to avoid real-carrier compliance or data-quality misrepresentation while preserving authentic freight domain complexity (TWIC badges, GDP cold chain, Moffett forklifts, RGN lowboys, Carrier Vector chillers).
-- **Groq Free-Tier Token Budgets (200k TPD)**: Free-tier Groq API accounts enforce daily token limits. FreightIQ mitigates this via automatic sibling failover (`qwen/qwen3.8-27b` $\leftrightarrow$ `qwen/qwen3.6-27b`), tool output length bounding (2,000 characters), and turn-aligned 8-message context truncation.
-- **SQLite Write Serialization**: SQLite in WAL mode provides lock-free concurrent reads, but writes are serialized. High-volume multi-user writes in enterprise production would necessitate PostgreSQL.
-- **FMCSA Web Scraping**: The SAFER tool queries the public USDOT web portal. External network outages or CAPTCHA updates fall back gracefully to local verified database records.
 
 ---
 
