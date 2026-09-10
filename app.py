@@ -132,9 +132,6 @@ html, body, [class*="css"] {
 }
 
 .tool-card {
-    background: linear-gradient(135deg, rgba(0,212,255,0.05) 0%, rgba(123,97,255,0.05) 100%);
-    border: 1px solid rgba(0, 212, 255, 0.2);
-    border-left: 3px solid #00d4ff;
     border-radius: 10px;
     padding: 12px 16px;
     margin: 8px 0;
@@ -147,8 +144,58 @@ html, body, [class*="css"] {
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 1px;
-    background: linear-gradient(90deg, #00d4ff, transparent);
 }
+
+/* Modality 1: SQL (Electric Blue) */
+.tool-card.tool-sql {
+    background: linear-gradient(135deg, rgba(0, 132, 255, 0.08) 0%, rgba(0, 132, 255, 0.02) 100%);
+    border: 1px solid rgba(0, 132, 255, 0.28);
+    border-left: 4px solid #0084ff;
+}
+.tool-card.tool-sql::before { background: linear-gradient(90deg, #0084ff, transparent); }
+.tool-card.tool-sql .tool-badge { background: rgba(0, 132, 255, 0.20); color: #00a2ff; }
+.tool-card.tool-sql .tool-name { color: #00a2ff; }
+
+/* Modality 2: Hybrid Semantic (Neon Purple) */
+.tool-card.tool-semantic {
+    background: linear-gradient(135deg, rgba(179, 71, 255, 0.08) 0%, rgba(179, 71, 255, 0.02) 100%);
+    border: 1px solid rgba(179, 71, 255, 0.28);
+    border-left: 4px solid #b347ff;
+}
+.tool-card.tool-semantic::before { background: linear-gradient(90deg, #b347ff, transparent); }
+.tool-card.tool-semantic .tool-badge { background: rgba(179, 71, 255, 0.20); color: #ca75ff; }
+.tool-card.tool-semantic .tool-name { color: #ca75ff; }
+
+/* Modality 3: FMCSA SAFER (Emerald Green) */
+.tool-card.tool-fmcsa {
+    background: linear-gradient(135deg, rgba(0, 230, 118, 0.08) 0%, rgba(0, 230, 118, 0.02) 100%);
+    border: 1px solid rgba(0, 230, 118, 0.28);
+    border-left: 4px solid #00e676;
+}
+.tool-card.tool-fmcsa::before { background: linear-gradient(90deg, #00e676, transparent); }
+.tool-card.tool-fmcsa .tool-badge { background: rgba(0, 230, 118, 0.20); color: #00e676; }
+.tool-card.tool-fmcsa .tool-name { color: #00e676; }
+
+/* Modality 4: Calculator (Amber Orange) */
+.tool-card.tool-calc {
+    background: linear-gradient(135deg, rgba(255, 145, 0, 0.08) 0%, rgba(255, 145, 0, 0.02) 100%);
+    border: 1px solid rgba(255, 145, 0, 0.28);
+    border-left: 4px solid #ff9100;
+}
+.tool-card.tool-calc::before { background: linear-gradient(90deg, #ff9100, transparent); }
+.tool-card.tool-calc .tool-badge { background: rgba(255, 145, 0, 0.20); color: #ffaa33; }
+.tool-card.tool-calc .tool-name { color: #ffaa33; }
+
+/* Modality 5: Web API (Cyan) */
+.tool-card.tool-web {
+    background: linear-gradient(135deg, rgba(0, 229, 255, 0.08) 0%, rgba(0, 229, 255, 0.02) 100%);
+    border: 1px solid rgba(0, 229, 255, 0.28);
+    border-left: 4px solid #00e5ff;
+}
+.tool-card.tool-web::before { background: linear-gradient(90deg, #00e5ff, transparent); }
+.tool-card.tool-web .tool-badge { background: rgba(0, 229, 255, 0.20); color: #00e5ff; }
+.tool-card.tool-web .tool-name { color: #00e5ff; }
+
 .tool-card-header {
     display: flex;
     align-items: center;
@@ -156,9 +203,7 @@ html, body, [class*="css"] {
     margin-bottom: 6px;
 }
 .tool-badge {
-    background: rgba(0, 212, 255, 0.15);
-    color: #00d4ff;
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 700;
     padding: 2px 8px;
     border-radius: 4px;
@@ -166,19 +211,36 @@ html, body, [class*="css"] {
     text-transform: uppercase;
 }
 .tool-name {
-    color: #00d4ff;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-weight: 700;
 }
 .tool-output {
-    color: rgba(255,255,255,0.45);
-    font-size: 0.75rem;
+    color: rgba(255,255,255,0.55);
+    font-size: 0.74rem;
     line-height: 1.5;
     white-space: pre-wrap;
     margin-top: 4px;
     font-family: 'Space Mono', monospace;
     max-height: 180px;
     overflow-y: auto;
+}
+
+.fiq-telemetry {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: -14px 0 20px 0;
+    padding-bottom: 12px;
+}
+.telemetry-pill {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(0, 212, 255, 0.15);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 0.70rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.2px;
 }
 
 [data-testid="stSidebar"] {
@@ -329,13 +391,73 @@ div[data-testid="stButton"] button:active {
 
 st.markdown("""
 <div class="fiq-header">
-    <span class="fiq-logo">🚚</span>
+    <svg width="46" height="46" viewBox="0 0 46 46" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 14px rgba(0, 212, 255, 0.6)); flex-shrink: 0;">
+        <rect width="46" height="46" rx="12" fill="url(#fiq_bg)" fill-opacity="0.2" stroke="url(#fiq_border)" stroke-width="1.6"/>
+        <path d="M14 23L23 14L32 23L23 32L14 23Z" stroke="#00d4ff" stroke-width="2.2" stroke-linejoin="round"/>
+        <circle cx="23" cy="23" r="4" fill="#7b61ff"/>
+        <path d="M23 8V14M23 32V38M8 23H14M32 23H38" stroke="rgba(0, 212, 255, 0.7)" stroke-width="1.5" stroke-linecap="round"/>
+        <defs>
+            <linearGradient id="fiq_bg" x1="0" y1="0" x2="46" y2="46" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#00d4ff"/>
+                <stop offset="1" stop-color="#7b61ff"/>
+            </linearGradient>
+            <linearGradient id="fiq_border" x1="0" y1="0" x2="46" y2="46" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#00d4ff"/>
+                <stop offset="1" stop-color="#7b61ff" stop-opacity="0.3"/>
+            </linearGradient>
+        </defs>
+    </svg>
     <div>
         <div class="fiq-title">FreightIQ</div>
-        <div class="fiq-subtitle">Agentic Carrier Intelligence · LangGraph · Cross-Encoder · ChromaDB · SQLite</div>
+        <div class="fiq-subtitle">Agentic Carrier Intelligence · Dual-Modality Router · Hybrid RAG · Groq</div>
     </div>
 </div>
+<div class="fiq-telemetry">
+    <span class="telemetry-pill">● 500 Fictional Carriers</span>
+    <span class="telemetry-pill">● Sub-ms SQLite WAL</span>
+    <span class="telemetry-pill">● FTS5 BM25 + ChromaDB</span>
+    <span class="telemetry-pill">● Neural Cross-Encoder</span>
+    <span class="telemetry-pill">● Groq qwen3.8-27b</span>
+</div>
 """, unsafe_allow_html=True)
+
+TOOL_META = {
+    "carrier_sql_query": {
+        "label": "SQL DATABASE",
+        "icon": "🗄️",
+        "class": "tool-sql",
+        "accent": "#0084ff",
+        "desc": "Executing deterministic relational query on SQLite (WAL)"
+    },
+    "carrier_semantic_search": {
+        "label": "HYBRID SEARCH",
+        "icon": "🔍",
+        "class": "tool-semantic",
+        "accent": "#b347ff",
+        "desc": "Fusing FTS5 BM25 + dense ChromaDB via RRF (k=60) & Cross-Encoder"
+    },
+    "check_fmcsa_authority": {
+        "label": "FMCSA SAFER",
+        "icon": "🛡️",
+        "class": "tool-fmcsa",
+        "accent": "#00e676",
+        "desc": "Verifying USDOT safety compliance & operating authority"
+    },
+    "freight_class_calculator": {
+        "label": "NMFC CALCULATOR",
+        "icon": "🔢",
+        "class": "tool-calc",
+        "accent": "#ff9100",
+        "desc": "Calculating volume, density, and exception class tiers"
+    },
+    "web_search": {
+        "label": "WEB MARKET API",
+        "icon": "🌐",
+        "class": "tool-web",
+        "accent": "#00e5ff",
+        "desc": "Querying spot rate benchmarks & freight corridor intelligence"
+    }
+}
 
 # Dynamic checks for reranker model configuration & feedback logs size
 cross_encoder_name = getattr(config, "CROSS_ENCODER_MODEL_NAME", "cross-encoder/ms-marco-MiniLM-L-6-v2").split("/")[-1]
@@ -431,11 +553,20 @@ for idx, message in enumerate(st.session_state.messages):
         with st.chat_message("assistant"):
             tool_cards = message.additional_kwargs.get("tool_executions", [])
             for tool_call in tool_cards:
+                t_name = tool_call.get("name", "")
+                t_meta = TOOL_META.get(t_name, {
+                    "label": "TOOL",
+                    "icon": "🔧",
+                    "class": "tool-default"
+                })
+                card_class = tool_call.get("class", t_meta["class"])
+                badge_label = tool_call.get("label", t_meta["label"])
+                tool_icon = tool_call.get("icon", t_meta["icon"])
                 st.markdown(f"""
-                <div class="tool-card">
+                <div class="tool-card {card_class}">
                     <div class="tool-card-header">
-                        <span class="tool-badge">TOOL</span>
-                        <span class="tool-name">{tool_call["name"]}</span>
+                        <span class="tool-badge">{badge_label}</span>
+                        <span class="tool-name">{tool_icon} {t_name}</span>
                     </div>
                     <div class="tool-output">{tool_call["output"]}</div>
                 </div>""", unsafe_allow_html=True)
@@ -490,7 +621,7 @@ if user_query:
             accumulated_responses = []
             final_answer = ""
 
-            with st.spinner("Reasoning…"):
+            with st.status("Agent Reasoning & Tool Routing...", expanded=True) as status_box:
                 for event in graph.stream(
                     {"messages": windowed_messages}, 
                     config={"callbacks": [stream_handler], "recursion_limit": 10}, 
@@ -500,6 +631,15 @@ if user_query:
                         if node_name == "tools":
                             for msg in node_output.get("messages", []):
                                 safe_name = escape(str(msg.name))
+                                t_meta = TOOL_META.get(msg.name, {
+                                    "label": "TOOL",
+                                    "icon": "🔧",
+                                    "class": "tool-default",
+                                    "accent": "#00d4ff",
+                                    "desc": "Executing tool action"
+                                })
+                                status_box.write(f"{t_meta['icon']} **{t_meta['label']}**: {t_meta['desc']}")
+                                
                                 # Clean mid-word truncation using textwrap.shorten
                                 raw_output = str(msg.content)
                                 if len(raw_output) > config.TOOL_TRUNCATION_LIMIT:
@@ -514,15 +654,18 @@ if user_query:
                                 safe_output = escape(truncated_output)
                                 turn_tool_cards.append({
                                     "name": safe_name,
+                                    "label": t_meta["label"],
+                                    "icon": t_meta["icon"],
+                                    "class": t_meta["class"],
                                     "output": safe_output
                                 })
 
                                 with step_container:
                                     st.markdown(f"""
-                                    <div class="tool-card">
+                                    <div class="tool-card {t_meta['class']}">
                                         <div class="tool-card-header">
-                                            <span class="tool-badge">TOOL</span>
-                                            <span class="tool-name">{safe_name}</span>
+                                            <span class="tool-badge">{t_meta['label']}</span>
+                                            <span class="tool-name">{t_meta['icon']} {safe_name}</span>
                                         </div>
                                         <div class="tool-output">{safe_output}</div>
                                     </div>""", unsafe_allow_html=True)
@@ -533,6 +676,8 @@ if user_query:
                                 final_answer = format_message_content(messages[-1].content)
                                 # Force final write to make sure text formatting is clean
                                 response_container.write(final_answer)
+
+                status_box.update(label="✓ Tool Routing & Synthesis Complete", state="complete", expanded=False)
 
             if final_answer:
                 st.session_state.messages.append(AIMessage(

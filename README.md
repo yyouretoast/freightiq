@@ -196,6 +196,10 @@ For detailed design rationale, see [ADR-001: SQL vs. Vector Routing](docs/adr/AD
 
 Evaluated against 500 commercial carrier profiles using 60 test queries in `tests/evaluate_retrieval.py`:
 
+<p align="center">
+  <img src="docs/assets/retrieval_benchmark.png" alt="FreightIQ Multi-Strategy Retrieval Benchmark" width="100%">
+</p>
+
 ### Overall Metrics (60 Queries)
 
 | Retrieval Strategy | Recall@1 | Recall@3 | Recall@5 | MRR | Latency |
