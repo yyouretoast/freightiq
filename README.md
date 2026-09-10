@@ -140,9 +140,11 @@ Final Answer"])
    - Wraps every query in `SELECT * FROM (...) AS _bounded_carriers LIMIT 25` to prevent context-window blowups.
 
 2. **`carrier_semantic_search`**:
-   - Queries `data/chroma_db` using `all-MiniLM-L6-v2` embeddings for the top 15 nearest candidate carriers.
-   - Passes candidates through `cross-encoder/ms-marco-MiniLM-L-6-v2` for cross-attention scoring.
-   - Automatically falls back to dense cosine similarity if the cross-encoder model cannot be loaded.
+   - Two-stage hybrid retrieval engine:
+     1. Lexical retrieval via SQLite FTS5 inverted index (BM25 keyword match).
+     2. Dense vector retrieval via ChromaDB (`all-MiniLM-L6-v2` embeddings).
+     3. Candidate fusion via Reciprocal Rank Fusion (RRF with $k=60$) over the top 25 candidates from each modality.
+     4. Neural re-ranking via `cross-encoder/ms-marco-MiniLM-L-6-v2` over the top 15 fused candidates (with dense cosine fallback).
 
 3. **`check_fmcsa_authority`**:
    - Scrapes the official FMCSA SAFER web portal (`safersys.org`) using the carrier's USDOT number.
@@ -164,6 +166,7 @@ Final Answer"])
 | Risk | Mitigation Mechanism | Implementation |
 | :--- | :--- | :--- |
 | **SQL Injection / Table Drops** | Read-only connection + regex validation + bounded limit | `file:DB?mode=ro`, rejects non-SELECT, wraps in `LIMIT 25` subquery |
+| **FTS5 Syntax Crash on Punctuation** | Query sanitizer & tokenizer | `sanitize_fts5_query` strips punctuation, quotes tokens with `OR` |
 | **Infinite LLM Tool Loops** | Turn-scoped loop detection | Tracks tool calls per turn; if identical calls or tool thrashing occurs, injects a directive forcing final answer synthesis |
 | **Context Window Overflow** | Sliding message window | Limits history sent to the LLM to the last 8 messages (`messages[-8:]`) |
 | **Groq API Rate Limits / Deprecation** | Model fallback + exponential backoff | Catches Groq 404 (`NotFoundError`) and automatically falls back to `qwen/qwen3.8-27b`; applies backoff with jitter |
@@ -173,22 +176,24 @@ Final Answer"])
 
 ---
 
-## Retrieval Benchmarks & Honest Analysis
+## Retrieval Benchmarks & Empirical Analysis
 
 We evaluated retrieval performance across 20 test queries using `tests/evaluate_retrieval.py`:
 
-| Strategy | Recall@1 | Recall@3 | Recall@5 | MRR |
-| :--- | :---: | :---: | :---: | :---: |
-| **SQLite Exact Query** | **0.950** | **0.950** | **0.950** | **0.950** |
-| **ChromaDB Base Vector** | 0.250 | 0.400 | 0.550 | 0.349 |
-| **Reranked Search (Cosine Fallback)** | 0.250 | 0.400 | 0.550 | 0.349 |
-| **Reranked Search (Cross-Encoder)** | **0.250** | **0.400** | **0.550** | **0.349** |
+| Strategy | Recall@1 | Recall@3 | Recall@5 | MRR | Latency |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **SQLite Exact Query** | **0.950** | **0.950** | **0.950** | **0.950** | **0.31 ms** |
+| **ChromaDB Base Vector** | 0.250 | 0.400 | 0.550 | 0.349 | 270.60 ms |
+| **FTS5 Lexical Search (BM25)** | 0.700 | 0.850 | 0.950 | 0.783 | **0.22 ms** |
+| **Reranked Search (Cosine Fallback)** | 0.250 | 0.500 | 0.700 | 0.403 | 271.00 ms |
+| **Reranked Hybrid (Cross-Encoder + RRF)** | **0.900** | **0.950** | **0.950** | **0.917** | **499.37 ms** |
 
-### Why Did the Cross-Encoder Not Improve the Benchmark Score?
-An honest technical explanation:
-1. **The test queries are structured**: The 20 benchmark queries test real freight requirements like *"Carriers in Ohio with flatbeds"* or *"Carriers handling hazmat in the Midwest"*.
-2. **Dense bi-encoders extract candidates based on semantic text**: Chroma retrieves candidates based on vector similarity of carrier overview strings. If the right carrier isn't in the top 15 candidates retrieved by Chroma, the cross-encoder cannot re-rank it into the top spot.
-3. **Takeaway**: This empirical result is the exact proof of why **pure Vector RAG is the wrong tool for relational logistics queries**. On top-1 retrieval (Recall@1), SQLite achieves 95.0% accuracy vs. Vector search's 25.0% (with or without reranking). This 70% gap confirms why FreightIQ routes hard relational constraints directly to SQLite, reserving vector search for qualitative attributes (handling reputation, notes).
+### Why Did Hybrid Fusion Transform the Cross-Encoder?
+1. **Candidate Generation was the Bottleneck:** Pure dense embeddings (`all-MiniLM-L6-v2`) frequently missed exact carrier keywords (`"reefer"`, `"hazmat"`, `"FL"`, `"dry van"`), capping candidate Recall@5 at 0.550. The Cross-Encoder was starved of relevant documents in the initial candidate pool.
+2. **Lexical BM25 Recovers Exact Domain Tokens:** Adding SQLite FTS5 BM25 search brings candidate Recall@5 from 0.550 to 0.950 in **0.22 ms**.
+3. **Consensus Ranking via RRF:** Reciprocal Rank Fusion ($k=60$) combines lexical and semantic candidate lists without needing arbitrary score normalization.
+4. **Cross-Encoder Re-Ranking Excels:** Once the candidate pool contains the relevant entities, the Cross-Encoder successfully re-ranks them into the top spot, achieving **0.900 Recall@1** and **0.917 MRR**.
+5. **Relational Routing Remains King:** For deterministic attribute filtering (e.g. strict boolean states, safety ratings), SQLite achieves **0.950 Recall@1** in **0.31 ms**, validating why FreightIQ maintains separate, dedicated tool routes.
 
 ---
 

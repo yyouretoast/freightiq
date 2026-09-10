@@ -5,6 +5,13 @@ from dotenv import load_dotenv
 # Load environment variables at the absolute top before importing local modules
 load_dotenv()
 
+# Ensure stdout handles UTF-8 on Windows console
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 # Ensure project root is in path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 

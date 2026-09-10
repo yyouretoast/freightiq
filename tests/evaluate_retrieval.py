@@ -6,7 +6,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import config
-from rag.retriever import get_chroma_collection, query_carriers_sql
+from rag.retriever import get_chroma_collection, query_carriers_sql, retrieve_carriers_bm25, reciprocal_rank_fusion
 from rag.reranker import rerank_documents, get_embed_model
 
 # Ground truth test cases: (query, SQL query used to resolve targets dynamically)
@@ -136,27 +136,46 @@ def run_chroma_vector_search(query, k=5):
         return []
     return [str(m["dot_number"]) for m in results["metadatas"][0]]
 
+def run_bm25_search(query, k=5):
+    candidates = retrieve_carriers_bm25(query, limit=k)
+    return [c["dot_number"] for c in candidates]
+
 def run_reranked_hybrid_search(query, k=5, force_cosine=False):
+    bm25_cands = retrieve_carriers_bm25(query, limit=25)
+    
     collection = get_chroma_collection()
     embed_model = get_embed_model()
     query_vector = embed_model.encode(query, convert_to_numpy=True).tolist()
     
-    pool_size = config.SEMANTIC_POOL_SIZE
-    results = collection.query(
-        query_embeddings=[query_vector],
-        n_results=pool_size,
-        include=["documents", "metadatas", "embeddings"]
-    )
-    if not results or not results["documents"] or not results["documents"][0]:
+    total_docs = collection.count()
+    dense_cands = []
+    if total_docs > 0:
+        results = collection.query(
+            query_embeddings=[query_vector],
+            n_results=min(config.SEMANTIC_POOL_SIZE * 2, total_docs),
+            include=["documents", "metadatas"]
+        )
+        if results and results["documents"] and results["documents"][0]:
+            for doc, meta in zip(results["documents"][0], results["metadatas"][0]):
+                dense_cands.append({
+                    "dot_number": str(meta["dot_number"]),
+                    "carrier_name": meta.get("carrier_name", ""),
+                    "hq_state": meta.get("hq_state", ""),
+                    "safety_rating": meta.get("safety_rating", ""),
+                    "document": doc,
+                    "metadata": meta
+                })
+                
+    fused = reciprocal_rank_fusion(bm25_cands, dense_cands, k=60, top_n=config.SEMANTIC_POOL_SIZE)
+    if not fused:
         return []
         
-    docs = results["documents"][0]
-    metadatas = results["metadatas"][0]
-    embeddings = results["embeddings"][0]
+    docs = [c["document"] for c in fused]
+    metadatas = [c["metadata"] for c in fused]
     
     ranked = rerank_documents(
         query, docs, metadatas, top_k=k,
-        doc_embeddings=embeddings, query_embedding=query_vector,
+        query_embedding=query_vector,
         force_cosine=force_cosine
     )
         
@@ -186,8 +205,9 @@ def main():
     strategies = {
         "SQLite Exact Query": lambda case: run_sqlite_retrieval(case["sql"]),
         "ChromaDB Base Vector": lambda case: run_chroma_vector_search(case["query"]),
+        "FTS5 Lexical Search (BM25)": lambda case: run_bm25_search(case["query"]),
         "Reranked Search (Cosine)": lambda case: run_reranked_hybrid_search(case["query"], force_cosine=True),
-        "Reranked Search (Cross-Encoder)": lambda case: run_reranked_hybrid_search(case["query"], force_cosine=False)
+        "Reranked Hybrid (Cross-Encoder)": lambda case: run_reranked_hybrid_search(case["query"], force_cosine=False)
     }
     
     results = {}
@@ -205,21 +225,21 @@ def main():
             results[name]["r@5"].append(r5)
             results[name]["mrr"].append(mrr)
             
-            print(f"  - {name:<30} | Retrieved: {len(retrieved):<2} | Recall@5: {r5:.1f} | MRR: {mrr:.3f}")
+            print(f"  - {name:<32} | Retrieved: {len(retrieved):<2} | Recall@5: {r5:.1f} | MRR: {mrr:.3f}")
             
     # Print Summary Table
     print("\n\n=== OVERALL RETRIEVAL METRICS SUMMARY ===")
-    print(f"| {'Strategy':<30} | {'Recall@1':<10} | {'Recall@3':<10} | {'Recall@5':<10} | {'MRR':<8} |")
-    print(f"| {'-'*30} | {'-'*10} | {'-'*10} | {'-'*10} | {'-'*8} |")
+    print(f"| {'Strategy':<32} | {'Recall@1':<10} | {'Recall@3':<10} | {'Recall@5':<10} | {'MRR':<8} |")
+    print(f"| {'-'*32} | {'-'*10} | {'-'*10} | {'-'*10} | {'-'*8} |")
     
     for name, metrics in results.items():
         if not metrics["r@1"]: # Skip if empty
             continue
-        avg_r1 = np.mean(metrics["r@1"])
-        avg_r3 = np.mean(metrics["r@3"])
-        avg_r5 = np.mean(metrics["r@5"])
-        avg_mrr = np.mean(metrics["mrr"])
-        print(f"| {name:<30} | {avg_r1:<10.3f} | {avg_r3:<10.3f} | {avg_r5:<10.3f} | {avg_mrr:<8.3f} |")
+        avg_r1 = sum(metrics["r@1"]) / len(metrics["r@1"])
+        avg_r3 = sum(metrics["r@3"]) / len(metrics["r@3"])
+        avg_r5 = sum(metrics["r@5"]) / len(metrics["r@5"])
+        avg_mrr = sum(metrics["mrr"]) / len(metrics["mrr"])
+        print(f"| {name:<32} | {avg_r1:<10.3f} | {avg_r3:<10.3f} | {avg_r5:<10.3f} | {avg_mrr:<8.3f} |")
         
     print("\n=== Evaluation Harness Complete ===")
 

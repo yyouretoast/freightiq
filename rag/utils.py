@@ -8,18 +8,32 @@ from utils.locks import feedback_lock
 logger = logging.getLogger(__name__)
 
 def format_carrier_document(c):
+    def _parse_list(val):
+        if isinstance(val, list):
+            return ", ".join(val)
+        if isinstance(val, str):
+            if val.startswith("["):
+                try:
+                    parsed = json.loads(val)
+                    if isinstance(parsed, list):
+                        return ", ".join(parsed)
+                except Exception:
+                    pass
+            return val
+        return ""
+
     return (
-        f"Carrier Name: {c['carrier_name']}\n"
-        f"DOT Number: {c['dot_number']}\n"
-        f"MC Number: {c['mc_number']}\n"
-        f"HQ State: {c['hq_state']}\n"
-        f"Service Regions: {', '.join(c['service_regions'])}\n"
-        f"Equipment: {', '.join(c['equipment_types'])}\n"
-        f"Specializations: {', '.join(c['cargo_specializations'])}\n"
-        f"Safety Rating: {c['safety_rating']}\n"
-        f"Years Operating: {c['years_operating']} years\n"
-        f"Contact: {c['contact_email']}\n"
-        f"Notes: {c['notes']}"
+        f"Carrier Name: {c.get('carrier_name', '')}\n"
+        f"DOT Number: {c.get('dot_number', '')}\n"
+        f"MC Number: {c.get('mc_number', '')}\n"
+        f"HQ State: {c.get('hq_state', '')}\n"
+        f"Service Regions: {_parse_list(c.get('service_regions'))}\n"
+        f"Equipment: {_parse_list(c.get('equipment_types'))}\n"
+        f"Specializations: {_parse_list(c.get('cargo_specializations'))}\n"
+        f"Safety Rating: {c.get('safety_rating', '')}\n"
+        f"Years Operating: {c.get('years_operating', '')} years\n"
+        f"Contact: {c.get('contact_email', '')}\n"
+        f"Notes: {c.get('notes', '')}"
     )
 
 def format_message_content(content):

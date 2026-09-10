@@ -20,16 +20,18 @@ def setup_sqlite():
                 cursor.execute("PRAGMA journal_mode=WAL;")
                 cursor.execute("SELECT COUNT(*) FROM carriers")
                 count = cursor.fetchone()[0]
-                if count > 0:
-                    print(f"SQLite database table 'carriers' already populated with {count} records. Skipping ingestion.")
+                cursor.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='carriers_fts'")
+                fts_exists = cursor.fetchone()[0]
+                if count > 0 and fts_exists > 0:
+                    print(f"SQLite database and FTS5 index already populated with {count} records. Skipping ingestion.")
                     return
         except sqlite3.OperationalError:
-            # Table doesn't exist, proceed with creation
             pass
             
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
         cursor.execute("PRAGMA journal_mode=WAL;")
+        cursor.execute("DROP TABLE IF EXISTS carriers_fts")
         cursor.execute("DROP TABLE IF EXISTS carriers")
         cursor.execute("""
         CREATE TABLE carriers (
@@ -78,8 +80,18 @@ def setup_sqlite():
             safety_rating, years_operating, contact_email, notes
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, batch_data)
+
+        # Create FTS5 external content table and populate inverted index
+        cursor.execute("""
+        CREATE VIRTUAL TABLE carriers_fts USING fts5(
+            carrier_name, dot_number, mc_number, hq_state, 
+            service_regions, equipment_types, cargo_specializations, notes,
+            content=carriers, content_rowid=id
+        )
+        """)
+        cursor.execute("INSERT INTO carriers_fts(carriers_fts) VALUES('rebuild')")
         
-    print(f"Successfully populated SQLite database with {len(carriers)} carrier profiles and indexes at {db_path}.")
+    print(f"Successfully populated SQLite database and FTS5 index with {len(carriers)} records at {db_path}.")
 
 if __name__ == "__main__":
     setup_sqlite()
