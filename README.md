@@ -20,10 +20,12 @@ Freight carrier search and logistics query engine using LangGraph, SQLite, Chrom
 > **Live Demo:** [huggingface.co/spaces/yyouretoast/freightiq](https://huggingface.co/spaces/yyouretoast/freightiq)  
 > **Repository:** [github.com/yyouretoast/freightiq](https://github.com/yyouretoast/freightiq)
 
+https://github.com/user-attachments/assets/dbf58565-39ee-4d17-a434-6a321c8afed4
+
 <p align="center">
-  <video src="https://github.com/user-attachments/assets/dbf58565-39ee-4d17-a434-6a321c8afed4" width="100%" controls></video>
-  <br>
   <em>Demo: Query routing across SQLite, hybrid search, freight class calculator, and FMCSA registry lookup.</em>
+  <br>
+  <sub><em>If video does not play inline, <a href="https://github.com/user-attachments/assets/dbf58565-39ee-4d17-a434-6a321c8afed4">click here to watch the direct demo recording</a> or try the <a href="https://huggingface.co/spaces/yyouretoast/freightiq">live interactive demo</a>.</em></sub>
 </p>
 
 ---
@@ -197,7 +199,7 @@ For detailed design rationale, see [ADR-001: SQL vs. Vector Routing](docs/adr/AD
 Evaluated against 500 commercial carrier profiles using 60 test queries in `tests/evaluate_retrieval.py`:
 
 <p align="center">
-  <img src="docs/assets/retrieval_benchmark.png" alt="FreightIQ Multi-Strategy Retrieval Benchmark" width="100%">
+  <img src="https://media.githubusercontent.com/media/yyouretoast/freightiq/main/docs/assets/retrieval_benchmark.png" alt="FreightIQ Multi-Strategy Retrieval Benchmark" width="100%">
 </p>
 
 ### Overall Metrics (60 Queries)
