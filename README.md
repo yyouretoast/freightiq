@@ -310,7 +310,6 @@ freightiq/
 ├── config.py                      # Global configuration
 ├── AGENTS.md                      # Operational guidelines for AI coding agents
 ├── DATA.md                        # Dataset schema & provenance
-├── CHANGELOG.md                   # Version changelog
 ├── pyproject.toml                 # Package configuration
 └── requirements.txt               # Dependencies
 ```
@@ -320,7 +319,6 @@ freightiq/
 ## Design Documents
 
 - [DATA.md](DATA.md): Relational schema, JSON array types, and data generation details.
-- [CHANGELOG.md](CHANGELOG.md): Version history and release notes.
 - [ADR-001: SQL vs. Vector Routing](docs/adr/ADR-001-sql-vs-vector-routing.md): Rationale for dual-modality query separation.
 - [ADR-002: Neural Cross-Encoder Re-Ranking](docs/adr/ADR-002-neural-cross-encoder-reranking.md): Re-ranking candidate pool design and fallbacks.
 - [ADR-003: Hybrid FTS5 BM25 + Vector Fusion](docs/adr/ADR-003-hybrid-fts5-bm25-rrf-fusion.md): Lexical-dense fusion mechanics.
