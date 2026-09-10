@@ -71,7 +71,7 @@ if not os.path.exists(init_sentinel) or not os.path.exists(config.DB_PATH) or no
         if not os.path.exists(init_sentinel) or not os.path.exists(config.DB_PATH) or not os.path.exists(config.CHROMA_PATH):
             logger.info("Database or vector index missing. Triggering auto-setup...")
             try:
-                from scripts.init_db import main as run_setup
+                from scripts.seed_db import main as run_setup
                 run_setup()
                 with open(init_sentinel, "w", encoding="utf-8") as f:
                     f.write("OK")
@@ -86,9 +86,6 @@ if "query_count" not in st.session_state:
 
 if "voted_message_index" not in st.session_state:
     st.session_state.voted_message_index = -1
-
-if "tool_executions" not in st.session_state:
-    st.session_state.tool_executions = {}
 
 st.set_page_config(
     page_title="FreightIQ | Carrier Intelligence",
@@ -442,7 +439,6 @@ with st.sidebar:
         st.session_state.messages = []
         st.session_state.query_count = 0
         st.session_state.voted_message_index = -1
-        st.session_state.tool_executions = {}
         st.rerun()
 
 for idx, message in enumerate(st.session_state.messages):
@@ -470,14 +466,14 @@ if not st.session_state.messages:
     col1, col2, col3 = st.columns([1, 1, 1])
     clicked_query = None
     with col1:
-        if st.button("🚛 FL produce & class", key="chip_fl", use_container_width=True):
+        if st.button("🚛 FL Produce & Freight Class", key="chip_fl", use_container_width=True):
             clicked_query = "Find a carrier located in Florida (FL) that handles fresh produce. What are their DOT and MC numbers, and how many years have they been operating? Also, what is the freight class for a 220 lbs crate of fresh produce measuring 36x36x36 inches? Be detailed."
     with col2:
-        if st.button("🗄️ Midwest Hazmat Flatbeds", key="chip_midwest", use_container_width=True):
-            clicked_query = "We need flatbed carriers that handle hazardous materials in the Midwest."
+        if st.button("🛡️ FMCSA Authority Verification", key="chip_fmcsa", use_container_width=True):
+            clicked_query = "Verify the FMCSA operating authority, active insurance, and safety rating for USDOT 2942444."
     with col3:
-        if st.button("🧭 OH safety check & class", key="chip_ohio", use_container_width=True):
-            clicked_query = "Find a carrier headquartered in Ohio with a satisfactory safety rating. Also, what would the freight class be for a 150 lbs crate measuring 24x24x24 inches?"
+        if st.button("🌐 Reefer Rates & GA Capacity", key="chip_market", use_container_width=True):
+            clicked_query = "What are current refrigerated spot freight rates from Atlanta to Chicago, and do we have active refrigerated carriers in Georgia in our database?"
 else:
     clicked_query = None
 
@@ -587,7 +583,7 @@ if st.session_state.messages and isinstance(st.session_state.messages[-1], AIMes
         st.write("---")
         last_msg_idx = len(st.session_state.messages) - 1
         if st.session_state.voted_message_index != last_msg_idx:
-            st.caption("Was this response helpful? Saves feedback to improve future reranker training:")
+            st.caption("Was this response helpful? Logs feedback for quality audits and retrieval evaluation:")
             fb_col1, fb_col2, fb_col3 = st.columns([1, 1, 10])
             with fb_col1:
                 if st.button("👍 Yes", key="thumbs_up", use_container_width=True):
@@ -602,4 +598,4 @@ if st.session_state.messages and isinstance(st.session_state.messages[-1], AIMes
                     st.toast("Thank you! Feedback saved to feedback.json.")
                     st.rerun()
         else:
-            st.success("Feedback logged successfully! Thank you for helping train the re-ranker.")
+            st.success("Feedback logged successfully! Thank you for helping improve FreightIQ.")
