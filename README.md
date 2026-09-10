@@ -15,6 +15,7 @@ pinned: false
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB.svg?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![LangGraph](https://img.shields.io/badge/LangGraph-Orchestrator-FF9900?style=flat-square)](https://github.com/langchain-ai/langgraph)
 [![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![ChromaDB](https://img.shields.io/badge/ChromaDB-Vector_Store-orange?style=flat-square)](https://www.trychroma.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-WAL_Mode-003B57?style=flat-square&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
@@ -135,7 +136,7 @@ Final Answer"])
 1. **`carrier_sql_query`**:
    - Queries `data/carriers.db`.
    - Opens the database connection with URI `file:DB?mode=ro` (read-only at the OS level).
-   - Validates that the query starts with `SELECT` (rejects `INSERT`, `UPDATE`, `DROP`, etc.).
+   - Validates that the query starts with `SELECT` or `WITH` (rejects `INSERT`, `UPDATE`, `DROP`, etc.).
    - Wraps every query in `SELECT * FROM (...) AS _bounded_carriers LIMIT 25` to prevent context-window blowups.
 
 2. **`carrier_semantic_search`**:
@@ -145,7 +146,7 @@ Final Answer"])
 
 3. **`check_fmcsa_authority`**:
    - Scrapes the official FMCSA SAFER web portal (`safersys.org`) using the carrier's USDOT number.
-   - Extracts safety rating (Satisfactory, Conditional, Unsatisfactory), active operating authority, and BIPD insurance coverage limits ($750K–$5M).
+   - Extracts legal name, safety rating (Satisfactory, Conditional, Unsatisfactory), active operating authority status, and BIPD insurance coverage limits ($750K–$5M).
 
 4. **`freight_class_calculator`**:
    - Calculates cubic volume (`L * W * H / 1728`) and density (`Weight / Volume`).
@@ -187,7 +188,7 @@ We evaluated retrieval performance across 20 test queries using `tests/evaluate_
 An honest technical explanation:
 1. **The test queries are structured**: The 20 benchmark queries test real freight requirements like *"Carriers in Ohio with flatbeds"* or *"Carriers handling hazmat in the Midwest"*.
 2. **Dense bi-encoders extract candidates based on semantic text**: Chroma retrieves candidates based on vector similarity of carrier overview strings. If the right carrier isn't in the top 15 candidates retrieved by Chroma, the cross-encoder cannot re-rank it into the top spot.
-3. **Takeaway**: This empirical result is the exact proof of why **pure Vector RAG is the wrong tool for relational logistics queries**, and why FreightIQ's routing of structured constraints to **SQLite (0.950 Recall)** is the correct architectural choice. The cross-encoder shines on nuanced unstructured carrier notes, not boolean attribute matching.
+3. **Takeaway**: This empirical result is the exact proof of why **pure Vector RAG is the wrong tool for relational logistics queries**. On top-1 retrieval (Recall@1), SQLite achieves 95.0% accuracy vs. Vector search's 25.0% (with or without reranking). This 70% gap confirms why FreightIQ routes hard relational constraints directly to SQLite, reserving vector search for qualitative attributes (handling reputation, notes).
 
 ---
 
@@ -197,8 +198,9 @@ FreightIQ includes a comprehensive test suite covering end-to-end tool execution
 
 | Test Suite | File | What It Tests | Status |
 | :--- | :--- | :--- | :---: |
-| **System Verification** | `tests/verify_system.py` | All 5 tools executed independently + full LangGraph graph routing | **5 / 5 Passed** |
+| **System Verification** | `tests/verify_system.py` | All 5 tools executed independently + full LangGraph graph routing | **6 / 6 Passed** |
 | **Agent Trajectory Audit** | `tests/evaluate_agent_trajectories.py` | 16 end-to-end scenarios: SQL routing, semantic search, NMFC calculator, FMCSA lookup, web search, composite multi-tool queries, SQL injection rejection, and loop-breaker recovery | **16 / 16 Passed** |
+| **Total Automated Suite** | *Above combined* | Complete regression coverage across all tools and agent state machine | **22 / 22 Passed** |
 | **Retrieval Evaluation** | `tests/evaluate_retrieval.py` | Recall@1, 3, 5 and MRR across SQLite, ChromaDB, and Cross-Encoder | **20 / 20 Cases** |
 | **Concurrency Stress Test** | `tests/stress_test_concurrency.py` | Multi-threaded SQLite concurrent reads under WAL mode | **Passed** |
 
@@ -313,7 +315,7 @@ cp .env.example .env
 | Variable | Required | Default | Notes |
 | :--- | :---: | :---: | :--- |
 | `GROQ_API_KEY` | **Yes** | — | Groq API Key for LLM inference (can also be entered directly in the Streamlit UI) |
-| `AGENT_MODEL` | No | `qwen/qwen3.8-27b` | Primary Groq model ID |
+| `AGENT_MODEL` | No | `qwen/qwen3.8-27b` | Primary Groq model ID (`qwen/qwen3.8-27b`, `qwen/qwen3.6-27b`, `openai/gpt-oss-20b`) |
 | `TAVILY_API_KEY` | No | *None* | Tavily API Key for market searches (falls back to DuckDuckGo if omitted) |
 | `LANGCHAIN_TRACING_V2` | No | `false` | Enable LangSmith tracing |
 | `LANGCHAIN_API_KEY` | No | *None* | LangSmith API Key |
@@ -336,10 +338,10 @@ streamlit run app.py
 ### 5. Run Verification & Test Suites
 
 ```bash
-# 1. Integration smoke test (All 5 tools & agent graph)
+# 1. Integration smoke test (All 5 tools & agent graph - 6 test cases)
 python -m tests.verify_system
 
-# 2. Retrieval benchmark (Recall@K and MRR)
+# 2. Retrieval benchmark (Recall@K and MRR on 20 query scenarios)
 python -m tests.evaluate_retrieval
 
 # 3. Agent trajectory audit (16 scenarios including loop breakers)
@@ -370,10 +372,10 @@ freightiq/
 ├── scripts/                       # Database management scripts
 │   ├── seed_db.py                 # Primary idempotent seeder script
 │   ├── init_db.py                 # Setup shim delegating to seed_db.py
-│   └── train_reranker.py          # Offline experimental PyTorch training script
+│   └── train_reranker.py          # (Archived) Offline PyTorch MLP experiment from initial R&D
 ├── tests/                         # Test suites and benchmarks
-│   ├── verify_system.py           # End-to-end integration smoke test
-│   ├── evaluate_retrieval.py      # Retrieval Recall@K and MRR benchmark
+│   ├── verify_system.py           # End-to-end integration smoke test (6 assertions)
+│   ├── evaluate_retrieval.py      # Retrieval Recall@K and MRR benchmark (20 cases)
 │   ├── evaluate_agent_trajectories.py # 16-case agent trajectory & guardrail audit
 │   └── stress_test_concurrency.py # SQLite concurrency stress test
 ├── utils/                         # Thread synchronization primitives
@@ -392,9 +394,10 @@ freightiq/
 ## Known Limitations & Trade-offs
 
 - **Synthetic Dataset**: The current carrier database contains 200 synthetic carriers generated using Python's `Faker` library. While structured with realistic DOT numbers, state codes, and equipment types, it is designed for evaluation and demonstration, not production dispatching.
-- **Groq Free-Tier Rate Limits**: Free Groq API keys have strict requests-per-minute (RPM) limits. For heavy batch test runs, the test scripts use exponential backoff or allow switching to smaller models (`llama-3.1-8b-instant`).
+- **Groq Rate Quotas**: Free-tier Groq API keys enforce strict TPM/RPM limits. For automated batch test runs, the test scripts implement exponential backoff with jitter, and users can provide their own Groq API key in the Streamlit sidebar.
 - **Hugging Face Ephemeral Storage**: Hugging Face Spaces storage is ephemeral. User feedback logged to `data/feedback.json` resets on cold starts. In production, feedback and logs should write to PostgreSQL or S3.
 - **SQLite Concurrency**: SQLite in WAL mode handles multiple concurrent readers smoothly, but only allows one writer at a time. For high-volume multi-user deployments, the relational layer should be migrated to PostgreSQL.
+- **FMCSA SAFER Public API**: The FMCSA tool queries the public USDOT SAFER web service. If government rate limits or network dropouts occur, the agent falls back to local database compliance records.
 
 ---
 

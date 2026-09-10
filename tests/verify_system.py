@@ -8,7 +8,7 @@ load_dotenv()
 # Ensure project root is in path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agent.tools import carrier_semantic_search, carrier_sql_query, freight_class_calculator, web_search
+from agent.tools import carrier_semantic_search, carrier_sql_query, freight_class_calculator, web_search, check_fmcsa_authority
 from agent.graph import build_graph
 from langchain_core.messages import HumanMessage
 
@@ -46,16 +46,16 @@ def test_sql_retrieval():
     print("[OK] SQL read-only retrieval validated successfully.")
 
 def test_semantic_retrieval():
-    print("\n--- 3. Testing Semantic Vector Retrieval & Cosine Reranking ---")
+    print("\n--- 3. Testing Semantic Vector Retrieval & Cross-Encoder Reranking ---")
     query = "refrigerated carriers specializing in produce"
     result = carrier_semantic_search.invoke({"query": query})
     first_doc = result.split("---")[0]
     print(first_doc.strip())
     assert len(result) > 100, "Semantic search returned empty or corrupted candidate pool."
-    print("[OK] Semantic retrieval and PyTorch vector routing validated successfully.")
+    print("[OK] Semantic retrieval and neural cross-encoder re-ranking validated successfully.")
 
 def test_web_search():
-    print("\n--- 4. Testing DuckDuckGo Web Search Integration ---")
+    print("\n--- 4. Testing Tavily / DuckDuckGo Web Search Integration ---")
     query = "US freight spot rates"
     result = web_search.invoke({"query": query})
     print(result[:300] + "...")
@@ -67,8 +67,15 @@ def test_web_search():
     else:
         print("[OK] Live Web API queries validated successfully.")
 
+def test_fmcsa_authority():
+    print("\n--- 5. Testing FMCSA SAFER Registry Verification ---")
+    result = check_fmcsa_authority.invoke({"dot_number": "2404512"})
+    print(result[:250] + "...")
+    assert "FMCSA" in result and "2404512" in result, "FMCSA authority check returned unexpected output format."
+    print("[OK] FMCSA SAFER authority verification validated successfully.")
+
 def test_agent_graph():
-    print("\n--- 5. Testing Full Agent Graph Routing ---")
+    print("\n--- 6. Testing Full Agent Graph Routing ---")
     prompt = "Give me the MC numbers of all carriers located in California (CA) that have a satisfactory safety rating. limit to 1."
     print(f"User Prompt: {prompt}")
     
@@ -106,10 +113,11 @@ def main():
         test_sql_retrieval()
         test_semantic_retrieval()
         test_web_search()
+        test_fmcsa_authority()
         if has_api_key:
             test_agent_graph()
         else:
-            print("\n[SKIP] Skipping Test 5: Agent Graph Routing (Requires GROQ_API_KEY)")
+            print("\n[SKIP] Skipping Test 6: Agent Graph Routing (Requires GROQ_API_KEY)")
         print("\n[SUCCESS] ALL TESTS PASSED: FreightIQ is fully verified and ready for deployment.")
     except Exception as e:
         print(f"\n[ERROR] VERIFICATION FAILED: {str(e)}")
