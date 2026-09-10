@@ -34,6 +34,7 @@ Freight carrier search and logistics query engine using LangGraph, SQLite, Chrom
 - [Architecture](#architecture)
 - [Query Routing Rationale](#query-routing-rationale)
 - [Tools](#tools)
+- [Representative Query Examples](#representative-query-examples)
 - [Guardrails & Reliability Controls](#guardrails--reliability-controls)
 - [Retrieval Benchmarks](#retrieval-benchmarks)
 - [Verification Test Suite](#verification-test-suite)
@@ -159,6 +160,20 @@ For detailed design rationale, see [ADR-001: SQL vs. Vector Routing](docs/adr/AD
 
 ---
 
+## Representative Query Examples
+
+| Scenario | Example Prompt | Active Tool | Execution & Result Mechanism |
+| :--- | :--- | :--- | :--- |
+| **Structured Relational Query** | *"Find flatbed carriers in Ohio with a satisfactory safety rating."* | `carrier_sql_query` | SQL `SELECT` filtering `hq_state = 'OH'`, `equipment_types`, and `safety_rating` with $<1\text{ ms}$ latency. |
+| **Qualitative Cold Chain** | *"Carriers specializing in perishable pharmaceutical cold chain with continuous temp monitoring."* | `carrier_semantic_search` | FTS5 BM25 + dense vector retrieval fused via RRF ($k=60$) and re-ranked with `cross-encoder/ms-marco-MiniLM-L-6-v2`. |
+| **Density & NMFC Calculation** | *"What is the freight class for a 1,200 lbs pallet measuring 48x48x48 inches?"* | `freight_class_calculator` | Computes density ($18.75\text{ lb/ft}^3$) and maps standard NMFC Class 70. |
+| **LTL Commodity Exception** | *"What is the freight class for a 220 lbs crate of insulation foam measuring 36x36x36?"* | `freight_class_calculator` | Calculates base density ($8.15\text{ lb/ft}^3$), matches insulation keyword exception, and overrides to fixed Class 150. |
+| **USDOT SAFER Verification** | *"Verify operating authority and safety status for USDOT 3681950."* | `check_fmcsa_authority` | Queries federal registry / local compliance records for active operating authority, BIPD insurance, and safety rating. |
+| **Spot Market Rate Lookup** | *"What are current average national dry van spot rates per mile?"* | `web_search` | Queries Tavily API (with DuckDuckGo fallback) for real-time freight corridor rates and market intelligence. |
+| **Zero-Row SQL Relaxation** | *"Find carriers headquartered in Alaska with refrigerated units handling hazmat."* | `carrier_sql_query` | 0 rows match strict `WHERE` constraints; engine automatically drops the most restrictive condition and returns partial matches. |
+
+---
+
 ## Guardrails & Reliability Controls
 
 | Failure Mode | Control | Implementation |
@@ -240,11 +255,15 @@ Create a `.env` file from the template:
 ```bash
 cp .env.example .env
 ```
-- `GROQ_API_KEY`: Required for cloud LLM inference.
-- `TAVILY_API_KEY`: Optional; enables real-time spot market rate searches (falls back to DuckDuckGo if omitted).
-- `LANGCHAIN_TRACING_V2`: Set to `true` to enable LangSmith execution tracing.
-- `LANGCHAIN_API_KEY`: LangSmith API key for trace ingestion.
-- `LANGCHAIN_PROJECT`: Target LangSmith project name (e.g. `FreightIQ-Agent`).
+
+| Variable | Required | Description | Default / Fallback |
+| :--- | :---: | :--- | :--- |
+| `GROQ_API_KEY` | **Yes** | Groq API key for LLM inference | — |
+| `AGENT_MODEL` | No | Active Groq model ID | `qwen/qwen3.8-27b` (fallback: `qwen/qwen3.6-27b`) |
+| `TAVILY_API_KEY` | No | Tavily Search API key for freight market intelligence | Falls back to DuckDuckGo (`ddgs`) |
+| `LANGCHAIN_TRACING_V2` | No | Enable LangSmith distributed execution tracing | `false` |
+| `LANGCHAIN_API_KEY` | No | LangSmith API key for trace ingestion | — |
+| `LANGCHAIN_PROJECT` | No | Target LangSmith project workspace | `FreightIQ-Agent` |
 
 ### 4. Database Seeding
 ```bash
