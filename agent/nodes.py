@@ -84,16 +84,39 @@ def _invoke_with_retry(is_tool_bound, messages):
 
 
 
+def get_windowed_messages(messages, max_messages=None):
+    """
+    Returns a sliding window of conversation messages aligned to a user turn (HumanMessage)
+    without splitting tool calls from their corresponding tool outputs.
+    """
+    max_msgs = max_messages or getattr(config, "CONVERSATION_WINDOW", 8)
+    if len(messages) <= max_msgs:
+        return list(messages)
+    slice_idx = -max_msgs
+    while abs(slice_idx) < len(messages):
+        first_msg = messages[slice_idx]
+        if isinstance(first_msg, ToolMessage):
+            slice_idx -= 1
+        elif isinstance(first_msg, AIMessage) and getattr(first_msg, "tool_calls", None):
+            slice_idx -= 1
+        else:
+            break
+    while abs(slice_idx) < len(messages) and not isinstance(messages[slice_idx], HumanMessage):
+        slice_idx -= 1
+    return list(messages[slice_idx:])
+
 def _prepare_context_messages(messages):
     """
-    Enforces context truncation to the last 8 messages and bounds individual tool outputs
-    to stay within model token quotas and avoid 413 Payload Too Large errors.
+    Enforces context truncation to config.CONVERSATION_WINDOW without splitting
+    tool calls from tool messages, and bounds individual tool outputs to stay
+    within model token quotas.
     """
-    truncated = messages[-8:] if len(messages) > 8 else list(messages)
+    truncated = get_windowed_messages(messages, getattr(config, "CONVERSATION_WINDOW", 8))
+    truncation_limit = getattr(config, "TOOL_TRUNCATION_LIMIT", 2000)
     cleaned = []
     for m in truncated:
-        if isinstance(m, ToolMessage) and len(str(m.content)) > 2000:
-            bounded_text = str(m.content)[:2000] + "\n\n... [Output truncated to stay within model token quota]"
+        if isinstance(m, ToolMessage) and len(str(m.content)) > truncation_limit:
+            bounded_text = str(m.content)[:truncation_limit] + "\n\n... [Output truncated to stay within model token quota]"
             cleaned.append(ToolMessage(content=bounded_text, tool_call_id=m.tool_call_id, name=m.name))
         else:
             cleaned.append(m)

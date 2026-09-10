@@ -7,6 +7,7 @@ import os
 import textwrap
 from html import escape
 from agent.graph import build_graph
+from agent.nodes import get_windowed_messages
 from utils.locks import setup_lock
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from langchain_core.callbacks import BaseCallbackHandler
@@ -39,26 +40,6 @@ class StreamlitTokenCallbackHandler(BaseCallbackHandler):
         
         self.tokens.append(token)
         self.placeholder.write("".join(self.tokens))
-
-def get_windowed_messages(messages, max_messages=8):
-    if len(messages) <= max_messages:
-        return messages
-    
-    slice_idx = -max_messages
-    
-    while abs(slice_idx) < len(messages):
-        first_msg = messages[slice_idx]
-        if isinstance(first_msg, ToolMessage):
-            slice_idx -= 1
-        elif isinstance(first_msg, AIMessage) and first_msg.tool_calls:
-            slice_idx -= 1
-        else:
-            break
-            
-    while abs(slice_idx) < len(messages) and not isinstance(messages[slice_idx], HumanMessage):
-        slice_idx -= 1
-        
-    return messages[slice_idx:]
 
 @st.cache_resource
 def get_graph():

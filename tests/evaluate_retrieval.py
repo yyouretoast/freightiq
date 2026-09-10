@@ -321,7 +321,7 @@ EVAL_CASES = [
 def resolve_ground_truth_targets():
     db_path = config.DB_PATH
     if not os.path.exists(db_path):
-        print("Warning: carriers.db not found. Run setup.py first.")
+        print("Warning: carriers.db not found. Run scripts/seed_db.py first.")
         return
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()

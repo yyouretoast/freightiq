@@ -240,7 +240,11 @@ Create a `.env` file from the template:
 ```bash
 cp .env.example .env
 ```
-Set `GROQ_API_KEY`. `TAVILY_API_KEY` is optional (falls back to DuckDuckGo).
+- `GROQ_API_KEY`: Required for cloud LLM inference.
+- `TAVILY_API_KEY`: Optional; enables real-time spot market rate searches (falls back to DuckDuckGo if omitted).
+- `LANGCHAIN_TRACING_V2`: Set to `true` to enable LangSmith execution tracing.
+- `LANGCHAIN_API_KEY`: LangSmith API key for trace ingestion.
+- `LANGCHAIN_PROJECT`: Target LangSmith project name (e.g. `FreightIQ-Agent`).
 
 ### 4. Database Seeding
 ```bash
@@ -268,6 +272,13 @@ python -m tests.evaluate_agent_trajectories
 python -m tests.stress_test_concurrency
 ```
 
+### 7. Observability & Tracing (LangSmith)
+FreightIQ has native LangSmith distributed tracing pre-integrated via LangGraph. When `LANGCHAIN_TRACING_V2=true` and `LANGCHAIN_API_KEY` are present in your environment, execution traces are automatically streamed to LangSmith:
+- Complete LangGraph ReAct trajectories (agent $\leftrightarrow$ tool state loops).
+- Tool inputs, serialized outputs, and execution latencies.
+- Token counts, prompt formatting, and sibling model failover events.
+- Zero-code activation: runs directly via standard LangChain telemetry handlers.
+
 ---
 
 ## Project Structure
@@ -289,8 +300,7 @@ freightiq/
 │   ├── reranker.py                # Cross-Encoder with cosine fallback
 │   └── utils.py                   # Text formatting & sanitization
 ├── scripts/
-│   ├── seed_db.py                 # Primary database seeder
-│   └── init_db.py                 # Backwards-compatible setup wrapper
+│   └── seed_db.py                 # Primary database seeder
 ├── tests/
 │   ├── verify_system.py           # Integration smoke test
 │   ├── evaluate_retrieval.py      # 60-query retrieval benchmark

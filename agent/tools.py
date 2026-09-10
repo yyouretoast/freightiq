@@ -16,6 +16,45 @@ def carrier_semantic_search(query: str) -> str:
     results = retrieve_carriers_semantic(query, k=config.SEMANTIC_RETRIEVAL_K)
     return "\n\n---\n\n".join(results) if results else "No carrier profiles matched your semantic query."
 
+def _split_sql_and_conditions(where_clause: str) -> list[str]:
+    """
+    Splits WHERE clause on top-level 'AND' keywords without splitting inside
+    single-quoted string literals or parenthesis-grouped expressions.
+    """
+    parts = []
+    current = []
+    in_quotes = False
+    paren_depth = 0
+    i = 0
+    n = len(where_clause)
+    while i < n:
+        ch = where_clause[i]
+        if ch == "'" and (i == 0 or where_clause[i-1] != "\\"):
+            in_quotes = not in_quotes
+            current.append(ch)
+            i += 1
+        elif not in_quotes and ch == '(':
+            paren_depth += 1
+            current.append(ch)
+            i += 1
+        elif not in_quotes and ch == ')':
+            paren_depth = max(0, paren_depth - 1)
+            current.append(ch)
+            i += 1
+        elif not in_quotes and paren_depth == 0 and where_clause[i:i+5].upper() in (" AND ", "\nAND ", "\tAND "):
+            part_str = "".join(current).strip()
+            if part_str:
+                parts.append(part_str)
+            current = []
+            i += 4
+        else:
+            current.append(ch)
+            i += 1
+    last_str = "".join(current).strip()
+    if last_str:
+        parts.append(last_str)
+    return parts
+
 @tool
 def carrier_sql_query(query: str) -> str:
     """
@@ -53,7 +92,7 @@ def carrier_sql_query(query: str) -> str:
     # Enforce an upper bound of 25 rows via subquery wrapping
     # Guarantees limit enforcement regardless of inner clauses, aliases, or string content
     wrapped_query = f"SELECT * FROM ({clean}) AS _bounded_carriers LIMIT 25"
-    
+
     res = query_carriers_sql(wrapped_query)
     if res == "No matching records found in the SQL database.":
         # Check if query had multiple AND clauses in WHERE
@@ -61,7 +100,7 @@ def carrier_sql_query(query: str) -> str:
         if where_match:
             where_clause = where_match.group(1)
             where_clause_clean = re.split(r'\b(ORDER\s+BY|GROUP\s+BY|LIMIT)\b', where_clause, flags=re.IGNORECASE)[0].strip()
-            and_parts = re.split(r'\s+AND\s+', where_clause_clean, flags=re.IGNORECASE)
+            and_parts = _split_sql_and_conditions(where_clause_clean)
             if len(and_parts) > 1:
                 # Try dropping the last condition to provide partial/relaxed matches
                 relaxed_where = " AND ".join(and_parts[:-1])
@@ -260,20 +299,23 @@ def check_fmcsa_authority(dot_number: str) -> str:
         logger.debug(f"Live FMCSA request fallback: {e}")
 
     # Fallback to local verified database record
-    if "No carriers found" not in sql_check and "Error" not in sql_check:
+    has_local_record = sql_check and not sql_check.startswith("No matching records") and not sql_check.startswith("Error") and not sql_check.startswith("SQLite Error")
+    if has_local_record:
         return (
-            f"=== FMCSA SAFER VERIFICATION RECORD FOR USDOT #{clean_dot} ===\n"
-            f"Carrier Registry Profile: {sql_check}\n"
+            f"=== FMCSA SAFER RECORD FOR USDOT #{clean_dot} (LOCAL REGISTRY) ===\n"
+            f"Carrier Registry Profile:\n{sql_check}\n"
             f"Operating Authority Status: ACTIVE (Authorized for Property & Interstate Operations)\n"
             f"Federal Safety Audit: Satisfactory Compliance\n"
             f"BIPD Insurance Status: Active & Filed on Federal Register\n"
-            f"FreightIQ Verification: PASS"
+            f"FreightIQ Verification: PASS (Verified in internal database)"
         )
     else:
         return (
-            f"=== FMCSA SAFER AUDIT FOR USDOT #{clean_dot} ===\n"
-            f"Verification Status: No active suspensions or revocation flags found for USDOT #{clean_dot}.\n"
-            "Carrier is in good standing under Federal Motor Carrier Safety regulations."
+            f"=== FMCSA SAFER VERIFICATION FOR USDOT #{clean_dot} ===\n"
+            f"Verification Status: UNVERIFIED / RECORD NOT FOUND\n"
+            f"Details: USDOT #{clean_dot} was not found in local verified carrier records, "
+            f"and the external FMCSA SAFER registry service is currently unreachable.\n"
+            f"FreightIQ Verification: UNVERIFIED (Verify operating authority directly on safer.fmcsa.dot.gov before dispatch)"
         )
 
 tools = [carrier_semantic_search, carrier_sql_query, web_search, freight_class_calculator, check_fmcsa_authority]

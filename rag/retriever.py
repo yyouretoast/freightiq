@@ -127,7 +127,7 @@ def retrieve_carriers_semantic(query, k=config.SEMANTIC_RETRIEVAL_K):
     4. Neural re-ranking via Hugging Face Cross-Encoder
     """
     if not os.path.exists(config.CHROMA_PATH) or not os.path.exists(config.DB_PATH):
-        return ["Error: Databases not initialized. Run setup.py first."]
+        return ["Error: Databases not initialized. Run scripts/seed_db.py first."]
 
     try:
         # 1. Lexical candidate retrieval
@@ -183,7 +183,7 @@ def retrieve_carriers_semantic(query, k=config.SEMANTIC_RETRIEVAL_K):
 
 def query_carriers_sql(sql_query):
     if not os.path.exists(config.DB_PATH):
-        return "Error: SQL database not initialized. Run setup.py first."
+        return "Error: SQL database not initialized. Run scripts/seed_db.py first."
 
     # SQLite read-only connection limits are enforced at the connection level (?mode=ro).
     # This renders manual string/keyword matching redundant, as the engine rejects any writes or mutations.

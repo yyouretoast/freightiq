@@ -2,6 +2,21 @@
 
 All notable changes to the FreightIQ codebase are documented in this file.
 
+## [2.2.0] - 2026-09-10
+
+### Fixed
+- **FMCSA Authority False-Positive Elimination:** Fixed string-comparison bug in `check_fmcsa_authority` that caused unverified USDOT numbers to return a clean `PASS`. The tool now strictly reports `UNVERIFIED / RECORD NOT FOUND` when neither local records nor the live registry confirm authority.
+- **Orphaned ToolMessage API Crash Prevention:** Hardened `_prepare_context_messages()` in `agent/nodes.py` with turn-aligned walk-back to prevent slicing off parent assistant messages and triggering HTTP 400 errors from LLM providers.
+- **Quote-Aware SQL Constraint Splitter:** Replaced naive regex splitting on `\s+AND\s+` in `carrier_sql_query` with a character scanner that ignores `AND` keywords inside single quotes and parentheses, preventing SQL corruption on queries matching multi-word carrier names or notes.
+
+### Changed
+- **Dead Code Pruning:** Removed obsolete PyTorch MLP training script (`scripts/train_reranker.py`), redundant middle shim (`scripts/init_db.py`), and non-standard root `setup.py`.
+- **Config Cleanliness:** Pruned unused directory constants (`MODELS_DIR`, `SCRIPTS_DIR`) and dead embedding parameters from `config.py`.
+- **Context Window Consolidation:** Consolidated `get_windowed_messages()` into `agent/nodes.py` and eliminated duplicate implementation in `app.py`.
+- **LangSmith Observability Documentation:** Restored explicit LangSmith environment variable configuration and distributed tracing documentation in `README.md`.
+
+---
+
 ## [2.1.0] - 2026-09-10
 
 ### Added
