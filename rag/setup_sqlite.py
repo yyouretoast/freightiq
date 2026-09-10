@@ -3,7 +3,7 @@ import json
 import os
 import config
 
-def setup_sqlite():
+def setup_sqlite(force=False):
     json_path = config.CARRIERS_JSON_PATH
     db_path = config.DB_PATH
     
@@ -17,7 +17,7 @@ def setup_sqlite():
     target_count = len(carriers)
 
     # Check if table already exists and is populated to implement idempotency
-    if os.path.exists(db_path):
+    if not force and os.path.exists(db_path):
         try:
             with sqlite3.connect(db_path) as conn:
                 cursor = conn.cursor()

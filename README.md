@@ -347,7 +347,7 @@ freightiq/
 
 ## Limitations
 
-- **Synthetic Dataset**: The 500 carrier profiles are deterministically generated with realistic industry equipment and certifications for evaluation and testing. It is not a replacement for production dispatch databases.
+- **Synthetic Dataset**: The 500 carrier profiles are 100% fictional simulations deterministically generated with authentic freight terminology (TWIC badges, GDP cold chain, Moffett forklifts, RGN lowboys) and randomized compliance ratings for benchmark evaluation. All carrier names, USDOT numbers, and MC numbers are synthetic to ensure zero misrepresentation of real commercial motor carriers.
 - **Groq Free-Tier Rate Limits**: Free-tier Groq API accounts have daily token caps (200,000 tokens/day on `qwen/qwen3.8-27b`). FreightIQ mitigates this via sibling failover to `qwen/qwen3.6-27b`, tool response length bounding, and 8-message context truncation.
 - **SQLite Concurrency**: SQLite in WAL mode permits concurrent reads but serializes writes. High-throughput multi-user writing requires PostgreSQL.
 - **FMCSA Web Scraping**: The SAFER tool queries the public USDOT web portal. External network outages or CAPTCHA updates will fall back to local database records.

@@ -22,7 +22,7 @@ def worker_task(worker_id):
     try:
         # 1. Stress concurrent feedback writes
         query_text = f"Test Query from worker {worker_id}"
-        response_text = f"Carrier Name: Swift Freight 80 #143 | DOT: 5942938 (logged by worker {worker_id})"
+        response_text = f"Carrier Name: Apex Freight 80 #143 | DOT: 5942938 (logged by worker {worker_id})"
         feedback_type = "up" if worker_id % 2 == 0 else "down"
         
         save_feedback(query_text, response_text, feedback_type, filepath=TEST_FEEDBACK_PATH)
@@ -30,7 +30,7 @@ def worker_task(worker_id):
         
         # 2. Stress concurrent reranking loading & scoring
         mock_docs = [
-            "Carrier Name: Swift Freight 80 #143\nDOT: 5942938\nHQ State: OH\nEquipment: dry van",
+            "Carrier Name: Apex Freight 80 #143\nDOT: 5942938\nHQ State: OH\nEquipment: dry van",
             "Carrier Name: NextGen Haulers 80 #101\nDOT: 6725944\nHQ State: OH\nEquipment: flatbed",
             "Carrier Name: titan Systems #114\nDOT: 9088677\nHQ State: FL\nEquipment: reefer"
         ]

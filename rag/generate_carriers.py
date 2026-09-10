@@ -9,43 +9,38 @@ EQUIPMENT = ["dry van", "flatbed", "reefer", "tanker", "LTL", "intermodal"]
 SPECIALIZATIONS = ["hazardous materials", "oversized loads", "fresh produce", "automotive parts", "pharmaceuticals", "retail goods", "building materials", "electronics", "machinery", "general freight"]
 SAFETY_RATINGS = ["satisfactory", "satisfactory", "satisfactory", "conditional", "unsatisfactory"]
 
-COMPANY_NAMES = [
-    ("Swift Transportation Services", "DBA Swift Intermodal"),
-    ("Knight Carrier Systems", "DBA Knight Cold Chain"),
-    ("Schneider National Dedicated", "DBA Schneider Bulk"),
-    ("J.B. Hunt Transport Solutions", "DBA J.B. Hunt Final Mile"),
-    ("Werner Logistics & Transport", "DBA Werner Enterprises"),
-    ("Old Dominion Freight Line", None),
-    ("Estes Express Lines Regional", None),
-    ("R+L Carriers Dedicated", None),
-    ("Saia Motor Freight Line", None),
-    ("Landstar Ranger Fleet", "DBA Landstar Inway"),
-    ("Marten Transport Cold Chain", None),
-    ("Stevens Transport Reefer Fleet", None),
-    ("Prime Inc. Refrigerated & Flatbed", None),
-    ("Covenant Logistics Group", None),
-    ("Heartland Express Dedicated", None),
-    ("A. Duie Pyle LTL & Custom", None),
-    ("Southeastern Freight Lines", None),
-    ("Hub Group Dedicated Drayage", None),
-    ("Forward Air Truckload", None),
-    ("KLLM Transport Services", None),
-]
-
 NAME_PREFIXES = [
     "Apex", "Blue Ribbon", "Crossroads", "Falcon", "Ironclad", "Golden Gate",
     "Red Line", "Titan", "Pioneer", "Liberty", "Voyager", "Interstate",
     "NextGen", "Summit", "FreightRunner", "Atlas", "Canyon", "Echo", "Express",
     "Allegheny", "Sunbelt", "Buckeye", "Keystone", "Lone Star", "Palmetto",
     "Great Lakes", "Cascade", "Piedmont", "Shenandoah", "Ozark", "Prairie",
-    "Empire", "Bay State", "Frontier", "Badger", "Wolverine", "Hoosier"
+    "Empire", "Bay State", "Frontier", "Badger", "Wolverine", "Hoosier",
+    "Bluegrass", "Granite", "Magnolia", "North Star", "Silver State", "Evergreen",
+    "Apache", "Sequoia", "Highland", "Tidewater", "Vanguard", "Pathfinder",
+    "Trident", "Blackstone", "Horizon", "Centennial", "Cobalt", "Cardinal",
+    "Ironwood", "Starlight", "Timberline", "Meridian", "Pacifica", "Arrowhead",
+    "Blue Ridge", "Cumberland", "Prairie Wind", "Maverick", "Redwood", "Thunderbird",
+    "Orion", "Heritage", "Sentry", "Garrison", "Valor", "Bison", "Silverline",
+    "Crestview", "TrueNorth", "IronHorse", "Frontline", "Vantage", "Endeavor",
+    "Stratos", "Apex Point", "Summit Ridge", "Silver Creek", "Copperhead",
+    "Wind River", "Blackhawk", "Redhawk", "Timberland", "Northline", "Highline",
+    "Trans-Horizon", "Benchmark", "Iron Gate", "Steadfast", "Reliant"
+]
+
+NAME_MODIFIERS = [
+    "", "National", "Regional", "Continental", "Overland", "Interstate",
+    "Trans-American", "Express", "Direct", "Specialized", "Integrated",
+    "Premier", "Allied", "Priority", "United", "Precision"
 ]
 
 NAME_SUFFIXES = [
     "Logistics LLC", "Transport Inc.", "Freight Corp.", "Trucking Co.",
     "Carriers LLC", "Lines Inc.", "Express Logistics LLC", "Systems Inc.",
     "Haulers LLC", "Solutions Corp.", "Intermodal Services LLC",
-    "Supply Chain Fleet LLC", "Dedicated Freight Lines Inc."
+    "Supply Chain Fleet LLC", "Dedicated Freight Lines Inc.", "Transit LLC",
+    "Freightways Inc.", "Cartage Corp.", "Motor Freight LLC",
+    "Transport Solutions Inc.", "Logistics Group LLC", "Expedited Services Inc."
 ]
 
 SPEC_DETAILS = {
@@ -110,18 +105,40 @@ EQUIP_DETAILS = {
     "intermodal": "intermodal chassis fleet equipped for 20ft, 40ft, and 53ft ISO container drayage with port TWIC badges"
 }
 
-def generate_random_carrier(i):
-    if i < len(COMPANY_NAMES):
-        base_name, dba = COMPANY_NAMES[i]
-        name = f"{base_name} ({dba})" if dba else base_name
-    else:
-        prefix = random.choice(NAME_PREFIXES)
-        suffix = random.choice(NAME_SUFFIXES)
-        dba_opt = f" (DBA {prefix} Freight Solutions)" if random.random() < 0.25 else ""
-        name = f"{prefix} {suffix}{dba_opt}"
+def generate_random_carrier(i, used_names=None, used_dots=None, used_mcs=None):
+    if used_names is None:
+        used_names = set()
+    if used_dots is None:
+        used_dots = set()
+    if used_mcs is None:
+        used_mcs = set()
 
-    dot = str(random.randint(1000000, 3999999))
-    mc = str(random.randint(100000, 999999))
+    while True:
+        prefix = random.choice(NAME_PREFIXES)
+        modifier = random.choice(NAME_MODIFIERS)
+        suffix = random.choice(NAME_SUFFIXES)
+        if modifier:
+            full_base = f"{prefix} {modifier} {suffix}"
+        else:
+            full_base = f"{prefix} {suffix}"
+        dba_opt = f" (DBA {prefix} Freight Solutions)" if random.random() < 0.20 else ""
+        name = f"{full_base}{dba_opt}"
+        if name not in used_names:
+            used_names.add(name)
+            break
+
+    while True:
+        dot = str(random.randint(1000000, 3999999))
+        if dot not in used_dots:
+            used_dots.add(dot)
+            break
+
+    while True:
+        mc = str(random.randint(100000, 999999))
+        if mc not in used_mcs:
+            used_mcs.add(mc)
+            break
+
     hq = random.choice(STATES)
 
     num_regions = random.randint(1, 3)
@@ -172,12 +189,15 @@ def generate_random_carrier(i):
 
 def main():
     random.seed(42)
-    carriers = [generate_random_carrier(i) for i in range(500)]
+    used_names = set()
+    used_dots = set()
+    used_mcs = set()
+    carriers = [generate_random_carrier(i, used_names, used_dots, used_mcs) for i in range(500)]
     out_path = config.CARRIERS_JSON_PATH
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(carriers, f, indent=4)
-    print(f"Generated 500 carrier profiles at {out_path}")
+    print(f"Generated 500 synthetic fictional carrier profiles at {out_path}")
 
 if __name__ == "__main__":
     main()

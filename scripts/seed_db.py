@@ -9,11 +9,14 @@ import config
 
 def main():
     start_time = time.time()
+    force = "--force" in sys.argv
     print("=== FREIGHTIQ DATABASE & VECTOR INDEX SEEDER ===")
+    if force:
+        print("[INFO] Force re-seeding enabled via --force.")
     
     json_path = config.CARRIERS_JSON_PATH
-    if not os.path.exists(json_path):
-        print(f"Carrier dataset not found at {json_path}. Generating dataset...")
+    if force or not os.path.exists(json_path):
+        print(f"Generating synthetic carrier dataset at {json_path}...")
         from rag.generate_carriers import main as generate_data
         generate_data()
     else:
@@ -22,7 +25,7 @@ def main():
     print("\n[1/2] Seeding SQLite database (carriers.db)...")
     try:
         from rag.setup_sqlite import setup_sqlite
-        setup_sqlite()
+        setup_sqlite(force=force)
         print("[OK] SQLite database seeded successfully.")
     except Exception as e:
         print(f"[ERROR] SQLite setup failed: {e}", file=sys.stderr)
@@ -31,7 +34,7 @@ def main():
     print("\n[2/2] Ingesting dense vector embeddings into ChromaDB...")
     try:
         from rag.ingest_chroma import ingest_chroma
-        ingest_chroma()
+        ingest_chroma(force=force)
         print("[OK] ChromaDB vector index seeded successfully.")
     except Exception as e:
         print(f"[ERROR] ChromaDB ingestion failed: {e}", file=sys.stderr)

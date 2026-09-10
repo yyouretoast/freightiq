@@ -5,7 +5,7 @@ from sentence_transformers import SentenceTransformer
 import config
 from rag.utils import format_carrier_document
 
-def ingest_chroma():
+def ingest_chroma(force=False):
     json_path = config.CARRIERS_JSON_PATH
     if not os.path.exists(json_path):
         raise FileNotFoundError(f"Source carriers.json not found at {json_path}. Run generate_carriers.py first.")
@@ -16,17 +16,24 @@ def ingest_chroma():
     # Initialize a single client instance reused for both the idempotency check and the upsert
     chroma_client = chromadb.PersistentClient(path=config.CHROMA_PATH)
 
-    # Idempotency check: skip re-encoding only if collection count matches source data
-    try:
-        collection = chroma_client.get_collection(name=config.CHROMA_COLLECTION_NAME)
-        if collection.count() == len(carriers):
-            print(f"Chroma collection already populated with {len(carriers)} documents. Skipping embedding ingestion...")
-            return
-        elif collection.count() > 0:
-            print(f"Chroma collection document count mismatch ({collection.count()} vs {len(carriers)}). Re-ingesting...")
+    # Idempotency check: skip re-encoding only if collection count matches source data (unless force=True)
+    if force:
+        try:
             chroma_client.delete_collection(name=config.CHROMA_COLLECTION_NAME)
-    except Exception as e:
-        print(f"Collection not found ({e}). Proceeding to ingest...")
+            print(f"Force re-ingest: deleted existing Chroma collection '{config.CHROMA_COLLECTION_NAME}'.")
+        except Exception:
+            pass
+    else:
+        try:
+            collection = chroma_client.get_collection(name=config.CHROMA_COLLECTION_NAME)
+            if collection.count() == len(carriers):
+                print(f"Chroma collection already populated with {len(carriers)} documents. Skipping embedding ingestion...")
+                return
+            elif collection.count() > 0:
+                print(f"Chroma collection document count mismatch ({collection.count()} vs {len(carriers)}). Re-ingesting...")
+                chroma_client.delete_collection(name=config.CHROMA_COLLECTION_NAME)
+        except Exception as e:
+            print(f"Collection not found ({e}). Proceeding to ingest...")
 
     documents = [format_carrier_document(c) for c in carriers]
     ids = [c['dot_number'] for c in carriers]

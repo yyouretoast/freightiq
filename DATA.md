@@ -36,9 +36,10 @@ python scripts/seed_db.py
 ```
 
 ### Architectural Details:
-1. **Realistic Jargon & Specifications:** Carrier notes are built from authentic freight equipment terminology (e.g., *Carrier Vector multi-temp chillers capable of -20°F to 70°F*, *aluminum spread-axle flatbeds with 4-inch heavy-duty straps*, *DOT 407/412 sanitary stainless steel chemical tankers with rear pump-off*, *Moffett forklift offloading*, *port TWIC badges*).
-2. **Idempotent Ingestion:** Both `rag/setup_sqlite.py` and `rag/ingest_chroma.py` inspect existing row counts against `len(carriers)`. Re-running `seed_db.py` does not duplicate records or cause primary key collisions.
-3. **FTS5 Synchronization:** SQLite external content table `carriers_fts` mirrors text columns directly from the `carriers` table, providing sub-millisecond BM25 keyword matching with zero data redundancy.
+1. **Simulation & Synthetic Provenance Disclosure:** All carrier entity names, USDOT numbers, and compliance ratings are 100% fictional simulations generated for benchmark evaluation, ensuring zero misrepresentation of real motor carriers. Carrier profiles simulate real-world logistics nomenclature and FMCSA compliance structures without incorporating any proprietary or copyrighted corporate trademarks.
+2. **Realistic Jargon & Specifications:** Carrier notes are built from authentic freight equipment terminology (e.g., *Carrier Vector multi-temp chillers capable of -20°F to 70°F*, *aluminum spread-axle flatbeds with 4-inch heavy-duty straps*, *DOT 407/412 sanitary stainless steel chemical tankers with rear pump-off*, *Moffett forklift offloading*, *port TWIC badges*).
+3. **Idempotent Ingestion:** Both `rag/setup_sqlite.py` and `rag/ingest_chroma.py` inspect existing row counts against `len(carriers)`. Re-running `seed_db.py` does not duplicate records or cause primary key collisions.
+4. **FTS5 Synchronization:** SQLite external content table `carriers_fts` mirrors text columns directly from the `carriers` table, providing sub-millisecond BM25 keyword matching with zero data redundancy.
 
 ---
 
