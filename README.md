@@ -305,6 +305,9 @@ FreightIQ has native LangSmith distributed tracing pre-integrated via LangGraph.
 
 ```text
 freightiq/
+├── .github/workflows/             # CI/CD & Automated Mirroring
+│   ├── verify.yml                 # Test verification suite
+│   └── sync_to_hf.yml             # Automated Hugging Face Spaces sync
 ├── agent/                         # Agent orchestration
 │   ├── graph.py                   # LangGraph definition & conditional edges
 │   ├── nodes.py                   # Reasoning node, guardrails, model failover
