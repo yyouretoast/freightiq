@@ -13,7 +13,7 @@ We implement a unified hybrid retrieval layer fusing SQLite FTS5 (BM25) and Chro
 
 ## Consequences
 ### Positive
-- **High Recall Across All Query Modalities:** On 60 stratified benchmark queries (Structured, Qualitative, and Multi-Constraint Hybrid), hybrid fusion achieved 100% Recall@1 on qualitative queries and 95.0% Recall@1 on structured queries.
+- **High Recall Across All Query Modalities:** On 60 stratified benchmark queries (Structured, Qualitative, and Multi-Constraint Hybrid), hybrid fusion with Cross-Encoder re-ranking achieved 100% Recall@1 on qualitative queries, 90.0% Recall@1 on structured queries (1.000 Recall@3), and 0.872 overall MRR.
 - **Zero External Search Engine Dependency:** Purely embedded within SQLite and ChromaDB—no ElasticSearch, OpenSearch, or external Java services required.
 
 ### Trade-offs & Mitigations

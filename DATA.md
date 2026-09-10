@@ -32,7 +32,8 @@ FreightIQ operates on a curated, high-fidelity relational and vector dataset rep
 ## 3. Data Generation & Ingestion Methodology
 All database records are deterministically generated and seeded via:
 ```bash
-python scripts/seed_db.py
+python scripts/seed_db.py          # Seed if not already populated
+python scripts/seed_db.py --force  # Force rebuild and re-index
 ```
 
 ### Architectural Details:

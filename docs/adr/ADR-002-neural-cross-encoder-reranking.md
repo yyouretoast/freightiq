@@ -13,7 +13,7 @@ We implement a two-stage retrieval pipeline:
 
 ## Consequences
 ### Positive
-- **Drastic Metric Gains:** Empirical benchmarks across 60 queries demonstrated a leap in Recall@1 from 0.550 (dense alone) to **0.900** (+63.6%) and Overall MRR from 0.649 to **0.917** (+41.3%).
+- **Drastic Metric Gains:** Empirical benchmarks across 60 queries demonstrated a leap in Recall@1 from 0.500 (dense alone) to **0.850** (+70.0%) and Overall MRR from 0.596 to **0.872** (+46.3%), with perfect 1.000 Recall@1 and 1.000 MRR on qualitative domain jargon queries.
 - **Bounded Latency:** Scoring only 15 candidate pairs takes ~12–25ms on CPU, staying well below typical conversational turn SLAs (<100ms retrieval overhead).
 
 ### Trade-offs & Mitigations

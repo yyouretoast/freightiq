@@ -9,10 +9,10 @@ When inspecting, refactoring, or extending FreightIQ:
 2. **Preserve Fallbacks**:
    - `rag/reranker.py` must maintain the dense embedding cosine fallback if the CrossEncoder fails to load.
    - `agent/tools.py::web_search` must maintain the DuckDuckGo (`ddgs`) fallback if `TAVILY_API_KEY` is not provided.
-   - `agent/nodes.py` must maintain the `qwen/qwen3.8-27b` fallback if Groq returns 404 for an older model.
+   - `agent/nodes.py` must maintain the `qwen/qwen3.6-27b` sibling model fallback if Groq encounters rate limits or errors with `qwen/qwen3.8-27b`.
 3. **Guardrails**:
    - Do not remove turn-scoped loop detection in `agent/nodes.py`.
-   - Keep context truncation to the last 8 messages to stay within LLM token quotas.
+   - Keep context truncation to the last 8 messages (aligned to `HumanMessage`) to stay within LLM token quotas.
 4. **Idempotency**: All database population must go through `scripts/seed_db.py`. Do not create non-standard sqlite initialization routines.
 
 ## 3. Standard Verification Commands
@@ -24,7 +24,7 @@ python -m tests.verify_system
 # Retrieval benchmark evaluation (Recall@1, Recall@3, Recall@5, MRR)
 python -m tests.evaluate_retrieval
 
-# Trajectory & guardrail evaluation (16 scenarios, 100% target accuracy)
+# Trajectory & guardrail evaluation (20 scenarios, 100% target accuracy)
 python -m tests.evaluate_agent_trajectories
 
 # Concurrency & thread safety test

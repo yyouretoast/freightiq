@@ -181,7 +181,7 @@ For detailed design rationale, see [ADR-001: SQL vs. Vector Routing](docs/adr/AD
 | **SQL Mutation / Data Corruption** | Engine-level read-only URI + AST check | `file:DB?mode=ro`; queries must start with `SELECT` or `WITH` |
 | **FTS5 Syntax Crash on Special Characters** | Tokenizer & query sanitizer | `sanitize_fts5_query()` strips hyphens, colons, slashes, and quotes |
 | **Tool Loops & Thrashing** | Turn-scoped loop breaker | Detects duplicate consecutive calls; forces final text synthesis |
-| **Context Window Exhaustion** | History sliding window | Limits LLM context to the last 8 messages (`messages[-8:]`) |
+| **Context Window Exhaustion** | History sliding window & turn alignment | Truncates context to last 8 messages while walking back to ensure valid conversation turns (preventing orphaned ToolMessages) |
 | **Groq 413 Payload Too Large** | Tool output length bounding | Capped at 2,000 characters per tool response before context injection |
 | **Groq 429 Daily Quota Exhaustion** | Sibling model failover | Automatically switches active inference between `qwen3.8-27b` and `qwen3.6-27b` |
 | **Zero-Row Relational Miss** | Constraint relaxation | Drops the most restrictive `WHERE` clause and retrieves partial matches |
@@ -200,25 +200,25 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 
 | Retrieval Strategy | Recall@1 | Recall@3 | Recall@5 | MRR | Latency |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **SQLite Exact Query** | **1.000** | **1.000** | **1.000** | **1.000** | **0.31 ms** |
-| **ChromaDB Base Vector** | 0.550 | 0.700 | 0.833 | 0.649 | 270.60 ms |
-| **FTS5 Lexical Search (BM25)** | 0.750 | 0.817 | 0.850 | 0.785 | **0.22 ms** |
-| **Reranked Search (Cosine Fallback)** | 0.550 | 0.717 | 0.833 | 0.651 | 271.00 ms |
-| **Reranked Hybrid (Cross-Encoder + RRF)** | **0.900** | **0.933** | **0.933** | **0.917** | **499.37 ms** |
+| **SQLite Exact Query** | **0.967** | **0.967** | **0.967** | **0.967** | **0.31 ms** |
+| **ChromaDB Base Vector** | 0.500 | 0.683 | 0.733 | 0.596 | 270.60 ms |
+| **FTS5 Lexical Search (BM25)** | 0.633 | 0.767 | 0.817 | 0.701 | **0.22 ms** |
+| **Reranked Search (Cosine Fallback)** | 0.500 | 0.683 | 0.733 | 0.595 | 271.00 ms |
+| **Reranked Hybrid (Cross-Encoder + RRF)** | **0.850** | **0.900** | **0.900** | **0.872** | **499.37 ms** |
 
 ### Stratified Breakdown by Query Category
 
 | Category | Description | Base Vector R@1 (MRR) | FTS5 BM25 R@1 (MRR) | Hybrid Cross-Encoder R@1 (MRR) |
 | :--- | :--- | :---: | :---: | :---: |
-| **Structured (20 queries)** | Hard attributes (state, safety rating, equipment) | 0.450 (0.542) | 0.750 (0.802) | **0.950 (0.950)** |
-| **Qualitative (20 queries)** | Freight jargon, certifications, service reputation | 0.900 (0.950) | 1.000 (1.000) | **1.000 (1.000)** |
-| **Multi-Constraint Hybrid (20 queries)** | Geographic/equipment filter + qualitative need | 0.300 (0.453) | 0.500 (0.554) | **0.750 (0.800)** |
+| **Structured (20 queries)** | Hard attributes (state, safety rating, equipment) | 0.350 (0.508) | 0.650 (0.756) | **0.900 (0.942)** |
+| **Qualitative (20 queries)** | Freight jargon, certifications, service reputation | 0.900 (0.925) | 0.950 (0.967) | **1.000 (1.000)** |
+| **Multi-Constraint Hybrid (20 queries)** | Geographic/equipment filter + qualitative need | 0.250 (0.354) | 0.300 (0.379) | **0.650 (0.675)** |
 
 ### Observations
-1. **Dense Vector Limitations on Specific Jargon:** Queries containing specialized terminology (`TWIC`, `Moffett`, `RGN`, `Class 3`) frequently missed candidates in pure vector space, dropping dense Recall@1 to 0.300 on hybrid queries.
+1. **Dense Vector Limitations on Specific Jargon:** Queries containing specialized terminology (`TWIC`, `Moffett`, `RGN`, `Class 3`) frequently missed candidates in pure vector space, dropping dense Recall@1 to 0.250 on multi-constraint queries.
 2. **Lexical Retrieval Impact:** FTS5 BM25 retrieves exact domain tokens with sub-millisecond latency (0.22ms), providing high-recall candidate sets.
 3. **Consensus Ranking:** RRF ($k=60$) successfully balances lexical and vector candidate distributions.
-4. **Cross-Encoder Accuracy:** Joint query-document attention ranks the most relevant candidate first, bringing overall MRR to 0.917.
+4. **Cross-Encoder Accuracy:** Joint query-document attention ranks the most relevant candidate first, achieving **1.000 Recall@1 and 1.000 MRR on qualitative queries** and bringing overall benchmark MRR to 0.872.
 
 ---
 
@@ -267,7 +267,8 @@ cp .env.example .env
 
 ### 4. Database Seeding
 ```bash
-python scripts/seed_db.py
+python scripts/seed_db.py          # Seed if not already populated
+python scripts/seed_db.py --force  # Force regenerate synthetic profiles & re-index
 ```
 Generates 500 carrier profiles in `data/carriers.db` and populates `data/chroma_db`.
 

@@ -345,10 +345,10 @@ reranker_class = "status-ok"
 feedback_data = load_feedback()
 feedback_count = len(feedback_data)
 
-semantic_search_desc = f"ChromaDB + {reranker_status}"
+semantic_search_desc = f"FTS5 BM25 + ChromaDB + {reranker_status}"
 
 TOOLS = [
-    ("🔍", "Semantic Search", semantic_search_desc),
+    ("🔍", "Hybrid Search", semantic_search_desc),
     ("🗄️", "SQL Database", "Structured carrier lookups via SQLite"),
     ("🌐", "Web Search", "Live Tavily & DuckDuckGo market research"),
     ("🔢", "Freight Class", "NMFC density & exception calculator"),
@@ -570,13 +570,13 @@ if st.session_state.messages and isinstance(st.session_state.messages[-1], AIMes
                 if st.button("👍 Yes", key="thumbs_up", use_container_width=True):
                     save_feedback(last_query, last_response, "up")
                     st.session_state.voted_message_index = last_msg_idx
-                    st.toast("Thank you! Feedback saved to feedback.json.")
+                    st.toast("Thank you! Feedback saved to feedback.jsonl.")
                     st.rerun()
             with fb_col2:
                 if st.button("👎 No", key="thumbs_down", use_container_width=True):
                     save_feedback(last_query, last_response, "down")
                     st.session_state.voted_message_index = last_msg_idx
-                    st.toast("Thank you! Feedback saved to feedback.json.")
+                    st.toast("Thank you! Feedback saved to feedback.jsonl.")
                     st.rerun()
         else:
             st.success("Feedback logged successfully! Thank you for helping improve FreightIQ.")
