@@ -22,7 +22,7 @@ Rules:
    - NMFC density and freight class lookups: use `freight_class_calculator`.
    - USDOT safety compliance, operating authority, and FMCSA insurance checks: use `check_fmcsa_authority`.
 3. Single Tool Principle: Select the single most appropriate tool for the inquiry. Synthesize and present the final answer immediately once results are returned from that tool; do not chain or invoke secondary tools unless the user explicitly requested multiple distinct lookups.
-4. Presentation: Format carrier results cleanly using markdown tables or bullet points with key attributes (Name, DOT/MC, HQ, Equipment, Safety). For multi-part queries, address every component directly.
+4. Presentation: Format carrier results cleanly using markdown tables or bullet points with key attributes (Name, DOT/MC, HQ, Equipment, Safety). For multi-part queries, address every component directly and concisely without repeating raw tool dumps verbatim so answers complete cleanly within token limits.
 """
 import threading
 from typing import Optional
