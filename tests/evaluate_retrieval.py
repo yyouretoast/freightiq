@@ -218,102 +218,102 @@ EVAL_CASES = [
     # --- Category 3: Multi-Constraint Hybrid Queries (20 cases) ---
     {
         "category": "Hybrid",
-        "query": "Midwest carriers specializing in sequenced automotive assembly parts.",
+        "query": "Motor carriers covering the Midwest experienced in synchronized parts logistics for automobile assembly plants.",
         "sql": "SELECT dot_number FROM carriers WHERE EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Midwest') AND notes LIKE '%automotive%'"
     },
     {
         "category": "Hybrid",
-        "query": "Southeast reefer carriers with automated pulp temperature logging.",
+        "query": "Refrigerated freight haulers in the Southeast offering continuous produce probe readings and precooling for berry shipments.",
         "sql": "SELECT dot_number FROM carriers WHERE EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Southeast') AND EXISTS (SELECT 1 FROM json_each(equipment_types) WHERE value = 'reefer') AND notes LIKE '%pulp temp%'"
     },
     {
         "category": "Hybrid",
-        "query": "Pacific Northwest carriers handling high-security semiconductor transport.",
+        "query": "Pacific Northwest trucking providers equipped for secure locked-door transit of microchips and delicate processor components.",
         "sql": "SELECT dot_number FROM carriers WHERE EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Pacific Northwest') AND notes LIKE '%semiconductor%'"
     },
     {
         "category": "Hybrid",
-        "query": "North Carolina carriers equipped for permitted heavy-haul superloads.",
+        "query": "North Carolina trucking companies capable of transporting permitted massive infrastructure pieces with police escorts.",
         "sql": "SELECT dot_number FROM carriers WHERE hq_state = 'NC' AND notes LIKE '%heavy-haul%'"
     },
     {
         "category": "Hybrid",
-        "query": "Northeast carriers with hydraulic liftgates for urban retail deliveries.",
+        "query": "Northeast freight carriers operating straight trucks with power tailgates for tight downtown storefront deliveries without a loading dock.",
         "sql": "SELECT dot_number FROM carriers WHERE EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Northeast') AND notes LIKE '%liftgate%'"
     },
     {
         "category": "Hybrid",
-        "query": "Mountain region carriers certified for Class 3 flammable liquids transport.",
+        "query": "Mountain state freight companies authorized to carry placarded combustible and flammable fluids with onboard containment kits.",
         "sql": "SELECT dot_number FROM carriers WHERE EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Mountain') AND notes LIKE '%Class 3%'"
     },
     {
         "category": "Hybrid",
-        "query": "Ohio carriers with multi-temp reefers capable of sub-zero chilling.",
+        "query": "Ohio cold storage haulers running dual-compartment trailers capable of sustaining deep-freeze conditions below zero.",
         "sql": "SELECT dot_number FROM carriers WHERE hq_state = 'OH' AND notes LIKE '%multi-temp%'"
     },
     {
         "category": "Hybrid",
-        "query": "California carriers with TWIC credentials for port container drayage.",
+        "query": "California container drayage fleets holding maritime terminal identification cards for ocean pier pickup.",
         "sql": "SELECT dot_number FROM carriers WHERE hq_state = 'CA' AND notes LIKE '%TWIC%'"
     },
     {
         "category": "Hybrid",
-        "query": "Midwest flatbed carriers with Moffett forklifts for construction sites.",
+        "query": "Midwest flatbed trucking providers equipped with truck-mounted piggyback forklifts for direct offloading at active building sites.",
         "sql": "SELECT dot_number FROM carriers WHERE EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Midwest') AND notes LIKE '%Moffett%'"
     },
     {
         "category": "Hybrid",
-        "query": "Ohio carriers with GDP-compliant cold chain for pharmaceutical products.",
+        "query": "Ohio refrigerated carriers maintaining validated temperature records under good distribution practice standards for pharmaceuticals.",
         "sql": "SELECT dot_number FROM carriers WHERE hq_state = 'OH' AND notes LIKE '%GDP-compliant%'"
     },
     {
         "category": "Hybrid",
-        "query": "Southeast carriers with insulated stainless steel tankers for chemical liquids.",
+        "query": "Southeast bulk haulers with thermal-jacketed non-corrosive alloy tank trailers for industrial liquid chemicals.",
         "sql": "SELECT dot_number FROM carriers WHERE EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Southeast') AND notes LIKE '%stainless steel%'"
     },
     {
         "category": "Hybrid",
-        "query": "Southwest dry van carriers operating drop-and-hook retail networks.",
+        "query": "Southwest dry van logistics operators supporting rapid preloaded trailer swaps at high-throughput distribution hubs.",
         "sql": "SELECT dot_number FROM carriers WHERE EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Southwest') AND notes LIKE '%drop-and-hook%'"
     },
     {
         "category": "Hybrid",
-        "query": "Florida carriers handling farm-to-cooler transport for seasonal citrus.",
+        "query": "Florida refrigerated fleets providing direct orchard-to-packing-house distribution for fresh orange and grapefruit harvests.",
         "sql": "SELECT dot_number FROM carriers WHERE hq_state = 'FL' AND notes LIKE '%citrus%'"
     },
     {
         "category": "Hybrid",
-        "query": "Midwest heavy equipment carriers utilizing RGN lowboy trailers.",
+        "query": "Midwest specialized heavy haulers utilizing detachable gooseneck lowbed trailers for moving yellow-iron excavators.",
         "sql": "SELECT dot_number FROM carriers WHERE EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Midwest') AND notes LIKE '%RGN lowboy%'"
     },
     {
         "category": "Hybrid",
-        "query": "Pennsylvania carriers offering food-grade van transport with satellite tracking.",
+        "query": "Pennsylvania carriers providing sanitary dry box trailers monitored via real-time satellite telemetry for grocery distribution.",
         "sql": "SELECT dot_number FROM carriers WHERE hq_state = 'PA' AND notes LIKE '%food-grade%'"
     },
     {
         "category": "Hybrid",
-        "query": "Pacific Northwest carriers certified for hazardous materials with Chemtrec monitoring.",
+        "query": "Pacific Northwest hazmat haulers linked to around-the-clock chemical emergency dispatch and incident management support.",
         "sql": "SELECT dot_number FROM carriers WHERE EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Pacific Northwest') AND notes LIKE '%Chemtrec%'"
     },
     {
         "category": "Hybrid",
-        "query": "Georgia carriers offering expedited retail store delivery with pallet jacks.",
+        "query": "Georgia freight companies providing rush commercial store delivery equipped with manual pump trucks to move skids inside.",
         "sql": "SELECT dot_number FROM carriers WHERE hq_state = 'GA' AND notes LIKE '%pallet jacks%'"
     },
     {
         "category": "Hybrid",
-        "query": "Northeast carriers specializing in high-value electronic server racks.",
+        "query": "Northeast freight lines providing high-security locked transport for enterprise datacenter computing cabinets.",
         "sql": "SELECT dot_number FROM carriers WHERE EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Northeast') AND notes LIKE '%server racks%'"
     },
     {
         "category": "Hybrid",
-        "query": "Texas flatbed haulers with aluminum spread-axles and heavy-duty straps.",
+        "query": "Texas flatbed trucking companies utilizing lightweight split-tandem trailers and heavy ratchet tie-downs for securing cargo.",
         "sql": "SELECT dot_number FROM carriers WHERE hq_state = 'TX' AND notes LIKE '%spread-axle%'"
     },
     {
         "category": "Hybrid",
-        "query": "Midwest carriers transporting precision CNC machinery with air-ride.",
+        "query": "Midwest air-cushioned freight haulers specialized in shock-sensitive computer numerical control milling equipment.",
         "sql": "SELECT dot_number FROM carriers WHERE EXISTS (SELECT 1 FROM json_each(service_regions) WHERE value = 'Midwest') AND notes LIKE '%CNC%'"
     }
 ]

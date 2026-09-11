@@ -19,8 +19,12 @@ EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 CROSS_ENCODER_MODEL_NAME = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
 # LLM & Search Configuration (centralized env var reads)
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower()
 AGENT_MODEL = os.getenv("AGENT_MODEL", "qwen/qwen3.8-27b")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", os.getenv("GEMINI_API_KEY"))
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 FMCSA_WEB_KEY = os.getenv("FMCSA_WEB_KEY", "4f03a62f4fb2a690e0e01da1eef67664c39846b0")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 MAX_OUTPUT_TOKENS = int(os.getenv("MAX_OUTPUT_TOKENS", "800"))

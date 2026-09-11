@@ -178,10 +178,10 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 | Retrieval Strategy | Recall@1 | Recall@3 | Recall@5 | MRR | Latency |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **SQLite Exact Query** | **0.967** | **0.967** | **0.967** | **0.967** | **0.31 ms** |
-| **ChromaDB Base Vector** | 0.350 | 0.583 | 0.700 | 0.477 | 270.60 ms |
-| **FTS5 Lexical Search (BM25)** | 0.500 | 0.633 | 0.700 | 0.573 | **0.22 ms** |
-| **Reranked Search (Cosine Fallback)** | 0.350 | 0.583 | 0.700 | 0.477 | 271.00 ms |
-| **Reranked Hybrid (Cross-Encoder + RRF)** | **0.733** | **0.833** | **0.850** | **0.781** | **499.37 ms** |
+| **ChromaDB Base Vector** | 0.300 | 0.550 | 0.667 | 0.429 | 270.60 ms |
+| **FTS5 Lexical Search (BM25)** | 0.450 | 0.583 | 0.667 | 0.527 | **0.22 ms** |
+| **Reranked Search (Cosine Fallback)** | 0.300 | 0.550 | 0.683 | 0.433 | 271.00 ms |
+| **Reranked Hybrid (Cross-Encoder + RRF)** | **0.700** | **0.817** | **0.867** | **0.764** | **499.37 ms** |
 
 <details>
 <summary><strong>View Stratified Breakdown by Query Category (Click to expand)</strong></summary>
@@ -191,21 +191,21 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 | :--- | :--- | :---: | :---: | :---: |
 | **Structured (20 queries)** | Hard attributes (state, safety rating, equipment) | 0.350 (0.508) | 0.650 (0.756) | **0.900 (0.942)** |
 | **Qualitative (20 queries)** | Freight jargon, certifications, service capabilities (natural language) | 0.450 (0.568) | 0.550 (0.585) | **0.650 (0.727)** |
-| **Multi-Constraint Hybrid (20 queries)** | Geographic/equipment filter + qualitative need | 0.250 (0.354) | 0.300 (0.379) | **0.650 (0.675)** |
+| **Multi-Constraint Hybrid (20 queries)** | Geographic/equipment filter + qualitative need | 0.100 (0.210) | 0.150 (0.239) | **0.550 (0.625)** |
 
 </details>
 
 ### Key Findings
 1. **Lexical Retrieval Impact:** FTS5 BM25 retrieves exact domain tokens with sub-millisecond latency (0.22ms), outperforming dense vector search on structured constraint terms.
 2. **Consensus Ranking:** RRF ($k=60$) successfully balances lexical keyword recall with dense semantic breadth.
-3. **Cross-Encoder Re-Ranking Impact:** Joint query-document neural attention more than doubles dense baseline accuracy, boosting **Overall Recall@1 from 0.350 to 0.733 (+109.4%)** and **MRR from 0.477 to 0.781 (+63.7%)** across realistic, un-leaked evaluation queries.
+3. **Cross-Encoder Re-Ranking Impact:** Joint query-document neural attention more than doubles dense baseline accuracy, boosting **Overall Recall@1 from 0.300 to 0.700 (+133.3%)** and **MRR from 0.429 to 0.764 (+78.1%)** across 100% de-leaked, authentic paraphrased queries.
 
 ---
 
 ## Engineering Trade-offs & Limitations
 
 - **Cross-Encoder Compute Latency (~500ms)**: Neural cross-attention over the top-15 fused candidate pool costs ~400–500ms on CPU (compared to 0.3ms for SQLite relational queries and 0.2ms for FTS5 BM25). For conversational interaction, this is within normal turn thresholds, but high-throughput batch retrieval would require GPU acceleration or vector-only pruning.
-- **Multi-Constraint Semantic Falloff (0.650 Recall@1)**: When queries mix hard relational constraints with qualitative needs (e.g., *"California flatbed carriers specializing in semiconductors"*), pure semantic search drops to 0.650 Recall@1. This empirically demonstrates why FreightIQ implements a dual-modality architecture: discrete constraints must be routed to SQLite, reserving vector search for unstructured domain language.
+- **Multi-Constraint Semantic Falloff (0.550 Recall@1)**: When queries mix hard relational constraints with qualitative needs (e.g., *"California flatbed carriers specializing in semiconductors"*), unranked dense and lexical search collapse to 0.100–0.150 R@1, while the neural cross-encoder recovers 0.550 R@1 (0.750 Recall@5). This empirically demonstrates why FreightIQ implements a dual-modality architecture: discrete constraints must be routed to SQLite, reserving vector search for unstructured domain language.
 - **Single-Vendor Sibling Failover**: Intra-provider failover switches between `qwen/qwen3.8-27b` and `qwen/qwen3.6-27b` on Groq. While this protects against per-model rate limits and transient 503s with sub-second inference speeds and identical tool-binding semantics, an upstream platform outage or account-level quota exhaustion on Groq affects both siblings simultaneously. Production enterprise systems would implement cross-provider failover (e.g. Groq $\rightarrow$ Anthropic/OpenAI).
 - **Single-Turn Single-Tool Principle (`parallel_tool_calls=False`)**: To prevent tool hallucination, redundant API calls, and context token explosion within the 800-token budget, the model is bound with `parallel_tool_calls=False`. For composite inquiries requiring multiple distinct tools (e.g., freight class calculation + flatbed carrier lookup), the agent addresses the primary intent first and relies on multi-turn user conversation rather than parallel execution.
 - **Synthetic Dataset**: 500 fictional carrier profiles are deterministically generated to avoid real-carrier compliance or data-quality misrepresentation while preserving authentic freight domain complexity (TWIC badges, GDP cold chain, Moffett forklifts, RGN lowboys, Carrier Vector chillers).

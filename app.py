@@ -479,39 +479,65 @@ TOOLS = [
 
 with st.sidebar:
     # Custom Key & Model Configuration
-    st.markdown('<div class="sidebar-section"><div class="sidebar-title">Configuration</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-section"><div class="sidebar-title">Model & Provider Configuration</div></div>', unsafe_allow_html=True)
     
-    user_groq_key = st.text_input(
-        "🔑 Groq API Key (Optional)",
-        type="password",
-        value=st.session_state.get("custom_groq_key", ""),
-        help="Use your own key to bypass shared demo rate limits."
+    selected_provider_label = st.selectbox(
+        "⚡ LLM Provider",
+        ["Groq (Ultra-Fast LPUs)", "Google Gemini (1M Context)", "OpenAI", "Anthropic Claude", "Ollama / Local"],
+        index=0,
+        help="Select inference provider engine for your session."
     )
-    if user_groq_key and user_groq_key != st.session_state.get("custom_groq_key"):
-        st.session_state.custom_groq_key = user_groq_key
-        os.environ["GROQ_API_KEY"] = user_groq_key
-        config.GROQ_API_KEY = user_groq_key
-        from agent.nodes import reset_active_models
-        reset_active_models()
-        st.rerun()
+    provider_map = {
+        "Groq (Ultra-Fast LPUs)": "groq",
+        "Google Gemini (1M Context)": "gemini",
+        "OpenAI": "openai",
+        "Anthropic Claude": "anthropic",
+        "Ollama / Local": "ollama"
+    }
+    current_provider = provider_map[selected_provider_label]
+    st.session_state["session_provider"] = current_provider
 
-    active_key = os.getenv("GROQ_API_KEY") or config.GROQ_API_KEY
-    api_key_set = bool(active_key)
-    
+    if current_provider == "groq":
+        model_options = ["qwen/qwen3.8-27b", "qwen/qwen3.6-27b", "openai/gpt-oss-120b", "openai/gpt-oss-20b"]
+        key_label = "🔑 Groq API Key (Optional Override)"
+        default_key_exists = bool(os.getenv("GROQ_API_KEY") or config.GROQ_API_KEY)
+    elif current_provider == "gemini":
+        model_options = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]
+        key_label = "🔑 Google / Gemini API Key"
+        default_key_exists = bool(os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or getattr(config, "GOOGLE_API_KEY", None))
+    elif current_provider == "openai":
+        model_options = ["gpt-4o-mini", "gpt-4o"]
+        key_label = "🔑 OpenAI API Key"
+        default_key_exists = bool(os.getenv("OPENAI_API_KEY") or getattr(config, "OPENAI_API_KEY", None))
+    elif current_provider == "anthropic":
+        model_options = ["claude-3-5-haiku-latest", "claude-3-5-sonnet-latest"]
+        key_label = "🔑 Anthropic API Key"
+        default_key_exists = bool(os.getenv("ANTHROPIC_API_KEY") or getattr(config, "ANTHROPIC_API_KEY", None))
+    else:
+        model_options = ["qwen2.5:14b", "llama3.2:latest", "deepseek-r1:14b", "mistral:latest"]
+        key_label = "🔑 API Key (Optional for Local)"
+        default_key_exists = True
+
+    user_api_key = st.text_input(
+        key_label,
+        type="password",
+        value=st.session_state.get(f"custom_key_{current_provider}", ""),
+        help="Session-isolated key. Stored only in your browser session."
+    )
+    if user_api_key != st.session_state.get(f"custom_key_{current_provider}"):
+        st.session_state[f"custom_key_{current_provider}"] = user_api_key
+
     selected_model = st.selectbox(
         "🧠 Agent Model",
-        ["qwen/qwen3.8-27b", "qwen/qwen3.6-27b", "openai/gpt-oss-20b"],
+        model_options,
         index=0,
-        help="Select active LLM engine for agent reasoning."
+        help="Select active model for your session."
     )
-    if selected_model != config.AGENT_MODEL:
-        config.AGENT_MODEL = selected_model
-        os.environ["AGENT_MODEL"] = selected_model
-        from agent.nodes import reset_active_models
-        reset_active_models()
+    st.session_state["session_model"] = selected_model
 
-    status_class = "status-ok" if api_key_set else "status-err"
-    status_text = f"{config.AGENT_MODEL} · Connected" if api_key_set else "Groq API Key Missing"
+    has_active_key = default_key_exists or bool(user_api_key)
+    status_class = "status-ok" if has_active_key else "status-err"
+    status_text = f"{selected_model} · Connected" if has_active_key else f"{selected_provider_label.split()[0]} Key Missing"
 
     tool_items_html = "".join([
         f'<div class="tool-item"><span class="tool-icon">{icon}</span>'
@@ -625,10 +651,21 @@ if user_query:
             accumulated_responses = []
             final_answer = ""
 
+            session_provider = st.session_state.get("session_provider", "groq")
+            session_config = {
+                "callbacks": [stream_handler],
+                "recursion_limit": 10,
+                "configurable": {
+                    "provider": session_provider,
+                    "model": st.session_state.get("session_model", "qwen/qwen3.8-27b"),
+                    "api_key": st.session_state.get(f"custom_key_{session_provider}") or None
+                }
+            }
+
             with st.status("Agent Reasoning & Tool Routing...", expanded=True) as status_box:
                 for event in graph.stream(
                     {"messages": windowed_messages}, 
-                    config={"callbacks": [stream_handler], "recursion_limit": 10}, 
+                    config=session_config, 
                     stream_mode="updates"
                 ):
                     for node_name, node_output in event.items():

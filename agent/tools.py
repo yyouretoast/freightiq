@@ -345,7 +345,7 @@ def check_fmcsa_authority(dot_number: str) -> str:
         return (
             f"=== FMCSA REGISTRY RECORD FOR USDOT #{clean_dot} (LOCAL DATABASE FALLBACK) ===\n"
             f"Carrier Registry Profile:\n{sql_check}\n"
-            f"Operating Authority Status: ACTIVE (Authorized for Property & Interstate Operations)\n"
+            f"Operating Authority Status: Internal database profile verified (Active Motor Carrier Record). Live federal operating authority must be verified on SAFER when registry service is restored.\n"
             f"Federal Safety Audit: {audit_str}\n"
             f"BIPD Insurance Status: Internal registry record active. Live BMC-91X filing required prior to dispatch.\n"
             f"FreightIQ Verification: {verif_status}"

@@ -25,52 +25,94 @@ Rules:
 4. Presentation: Format carrier results cleanly using markdown tables or bullet points with key attributes (Name, DOT/MC, HQ, Equipment, Safety). For multi-part queries, address every component directly.
 """
 import threading
+from typing import Optional
+from langchain_core.runnables import RunnableConfig
+from agent.models import create_model_instance
 
 _model_lock = threading.Lock()
 _active_llm = None
 _active_llm_with_tools = None
+
+# Session-scoped cache for multi-user web sessions: (provider, model, key) -> (base_llm, tool_llm)
+_session_cache = {}
+_session_cache_lock = threading.Lock()
 
 def reset_active_models():
     global _active_llm, _active_llm_with_tools
     with _model_lock:
         _active_llm = None
         _active_llm_with_tools = None
+    with _session_cache_lock:
+        _session_cache.clear()
 
-def get_active_models():
+def get_active_models(configurable: Optional[dict] = None):
     global _active_llm, _active_llm_with_tools
+    
+    # 1. If session-level configuration is passed, use session-scoped instance to prevent crosstalk
+    if configurable and any(k in configurable for k in ("provider", "model", "api_key", "base_url")):
+        provider = configurable.get("provider") or getattr(config, "LLM_PROVIDER", "groq")
+        model = configurable.get("model") or getattr(config, "AGENT_MODEL", "qwen/qwen3.8-27b")
+        api_key = configurable.get("api_key")
+        base_url = configurable.get("base_url")
+        cache_key = (provider, model, api_key, base_url)
+        
+        with _session_cache_lock:
+            if cache_key in _session_cache:
+                return _session_cache[cache_key]
+            
+            base_m, tool_m = create_model_instance(
+                provider=provider,
+                model_name=model,
+                api_key=api_key,
+                base_url=base_url,
+                temperature=0.0,
+                max_tokens=config.MAX_OUTPUT_TOKENS,
+                streaming=True
+            )
+            _session_cache[cache_key] = (base_m, tool_m)
+            return base_m, tool_m
+
+    # 2. Process-global default instance
     if _active_llm is None:
         with _model_lock:
             if _active_llm is None:
-                api_key = config.GROQ_API_KEY
-                if not api_key:
-                    raise ValueError("GROQ_API_KEY environment variable is missing. Set GROQ_API_KEY to run LLM inference.")
-                _active_llm = ChatGroq(
-                    model=config.AGENT_MODEL,
-                    groq_api_key=api_key,
+                provider = getattr(config, "LLM_PROVIDER", "groq")
+                model = getattr(config, "AGENT_MODEL", "qwen/qwen3.8-27b")
+                _active_llm, _active_llm_with_tools = create_model_instance(
+                    provider=provider,
+                    model_name=model,
                     temperature=0.0,
                     max_tokens=config.MAX_OUTPUT_TOKENS,
                     streaming=True
                 )
-                _active_llm_with_tools = _active_llm.bind_tools(tools, parallel_tool_calls=False)
     return _active_llm, _active_llm_with_tools
 
-def switch_to_sibling():
+def switch_to_sibling(current_model_name: str = ""):
     global _active_llm, _active_llm_with_tools
     with _model_lock:
-        api_key = config.GROQ_API_KEY
-        if not api_key:
-            raise ValueError("GROQ_API_KEY environment variable is missing.")
-        current = getattr(_active_llm, "model_name", "") or getattr(config, "AGENT_MODEL", "")
-        alt_model = "qwen/qwen3.6-27b" if "3.8" in current else "qwen/qwen3.8-27b"
-        logger.warning(f"Switching active inference model to '{alt_model}'.")
-        _active_llm = ChatGroq(
-            model=alt_model,
-            groq_api_key=api_key,
-            temperature=0.0,
-            max_tokens=config.MAX_OUTPUT_TOKENS,
-            streaming=True
-        )
-        _active_llm_with_tools = _active_llm.bind_tools(tools, parallel_tool_calls=False)
+        provider = getattr(config, "LLM_PROVIDER", "groq")
+        if provider == "groq":
+            current = current_model_name or getattr(_active_llm, "model_name", "") or getattr(config, "AGENT_MODEL", "")
+            alt_model = "qwen/qwen3.6-27b" if "3.8" in current else "qwen/qwen3.8-27b"
+            logger.warning(f"Switching active inference model to '{alt_model}'.")
+            _active_llm, _active_llm_with_tools = create_model_instance(
+                provider="groq",
+                model_name=alt_model,
+                temperature=0.0,
+                max_tokens=config.MAX_OUTPUT_TOKENS,
+                streaming=True
+            )
+        elif provider in ("gemini", "google"):
+            current = current_model_name or "gemini-2.5-flash"
+            alt_model = "gemini-1.5-flash" if "2.5" in current else "gemini-2.5-flash"
+            logger.warning(f"Switching active inference model to '{alt_model}'.")
+            _active_llm, _active_llm_with_tools = create_model_instance(
+                provider="gemini",
+                model_name=alt_model,
+                temperature=0.0,
+                max_tokens=config.MAX_OUTPUT_TOKENS,
+                streaming=True
+            )
         return _active_llm, _active_llm_with_tools
 
 def _is_retryable_error(exc):
@@ -86,14 +128,14 @@ def _is_retryable_error(exc):
     stop=stop_after_attempt(4),
     reraise=True
 )
-def _invoke_with_retry(is_tool_bound, messages):
-    base_llm, tool_llm = get_active_models()
+def _invoke_with_retry(is_tool_bound, messages, configurable=None):
+    base_llm, tool_llm = get_active_models(configurable)
     target = tool_llm if is_tool_bound else base_llm
     try:
         return target.invoke(messages)
     except (NotFoundError, RateLimitError) as e:
         logger.warning(f"Model failed with {type(e).__name__} ({e}). Switching to sibling model.")
-        base_alt, tool_alt = switch_to_sibling()
+        base_alt, tool_alt = switch_to_sibling(getattr(target, "model_name", ""))
         target_alt = tool_alt if is_tool_bound else base_alt
         return target_alt.invoke(messages)
 
@@ -138,8 +180,9 @@ def _prepare_context_messages(messages):
     return cleaned
 
 
-def agent_node(state: AgentState):
+def agent_node(state: AgentState, config: Optional[RunnableConfig] = None):
     logger.info(f"Agent invoked with {len(state['messages'])} messages in context.")
+    configurable = config.get("configurable", {}) if config else {}
     messages = state["messages"]
     
     # Scope loop detection to the current user turn to prevent false alarms across multi-turn sessions
@@ -163,7 +206,7 @@ def agent_node(state: AgentState):
                         "Do not invoke this tool again. Synthesize your final answer directly in plain text using the results already retrieved."
                     )
                     messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + _prepare_context_messages(messages) + [HumanMessage(content=loop_break_directive)]
-                    response = _invoke_with_retry(False, messages_with_warning)
+                    response = _invoke_with_retry(False, messages_with_warning, configurable=configurable)
                     return {"messages": [response]}
 
         # Check for excessive consecutive calls to ANY single tool (e.g. 3 consecutive calls)
@@ -189,11 +232,11 @@ def agent_node(state: AgentState):
                 "Do not invoke any tools again. Synthesize your final answer now in plain text using the results retrieved so far, or state that data is unavailable."
             )
             messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + _prepare_context_messages(messages) + [HumanMessage(content=loop_break_directive)]
-            response = _invoke_with_retry(False, messages_with_warning)
+            response = _invoke_with_retry(False, messages_with_warning, configurable=configurable)
             return {"messages": [response]}
                 
     messages_with_system = [SystemMessage(content=SYSTEM_PROMPT)] + _prepare_context_messages(messages)
-    response = _invoke_with_retry(True, messages_with_system)
+    response = _invoke_with_retry(True, messages_with_system, configurable=configurable)
     return {"messages": [response]}
 
 

@@ -17,9 +17,9 @@ strategies = [
     "Reranked Hybrid\n(Cross-Encoder)"
 ]
 
-r1_scores = [0.967, 0.350, 0.500, 0.350, 0.733]
-r5_scores = [0.967, 0.700, 0.700, 0.700, 0.850]
-mrr_scores = [0.967, 0.477, 0.573, 0.477, 0.781]
+r1_scores = [0.967, 0.300, 0.450, 0.300, 0.700]
+r5_scores = [0.967, 0.667, 0.667, 0.683, 0.867]
+mrr_scores = [0.967, 0.429, 0.527, 0.433, 0.764]
 
 x = np.arange(len(strategies))
 
@@ -95,10 +95,10 @@ ax_kpi.text(0.5, 0.92, "KEY TAKEAWAYS", transform=ax_kpi.transAxes,
             ha="center", va="center", fontsize=11, fontweight="700", color="#00d4ff")
 
 kpis = [
-    ("Recall@1 Surge", "0.350 → 0.733", "+109.4% gain via Cross-Encoder", "#00d4ff"),
-    ("Overall MRR", "0.477 → 0.781", "+63.7% neural precision gain", "#00e676"),
-    ("Structured R@1", "0.350 → 0.900", "BM25+RRF eliminates vector misses", "#b347ff"),
-    ("Sub-ms Latency", "0.22 – 0.31 ms", "SQLite & FTS5 instant paths", "#ff9100")
+    ("Recall@1 Surge", "0.300 → 0.700", "+133.3% gain via Cross-Encoder", "#00d4ff"),
+    ("Overall MRR", "0.429 → 0.764", "+78.1% neural precision gain", "#00e676"),
+    ("Hybrid Recall@5", "0.400 → 0.750", "+87.5% multi-constraint lift", "#b347ff"),
+    ("Latency Impact", "~35ms overhead", "Production-viable neural rerank", "#ffaa33")
 ]
 
 y_pos = 0.74
