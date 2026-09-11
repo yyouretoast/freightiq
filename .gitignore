@@ -19,8 +19,8 @@ data/feedback.jsonl
 .init_complete
 data/.init_complete
 
-# Model Checkpoints (generated at runtime by scripts/train_reranker.py)
-models/reranker_weights.pt
+# Model Checkpoints & Weights
+models/
 *.pt
 
 # System files
