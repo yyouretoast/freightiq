@@ -89,10 +89,7 @@ def get_active_models(configurable: Optional[dict] = None):
 
 SIBLING_MODEL_MAP = {
     "groq": lambda curr: "qwen/qwen3.6-27b" if "3.8" in curr else "qwen/qwen3.8-27b",
-    "gemini": lambda curr: "gemini-1.5-flash" if "2.5" in curr else "gemini-2.5-flash",
-    "google": lambda curr: "gemini-1.5-flash" if "2.5" in curr else "gemini-2.5-flash",
     "openai": lambda curr: "gpt-4o" if "mini" in curr else "gpt-4o-mini",
-    "anthropic": lambda curr: "claude-3-5-sonnet-latest" if "haiku" in curr else "claude-3-5-haiku-latest",
     "ollama": lambda curr: "llama3.2:latest" if "qwen" in curr else "qwen2.5:14b",
     "local": lambda curr: "llama3.2:latest" if "qwen" in curr else "qwen2.5:14b",
     "openai_compatible": lambda curr: "llama3.2:latest" if "qwen" in curr else "qwen2.5:14b",

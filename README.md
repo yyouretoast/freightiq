@@ -206,8 +206,8 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 
 - **Cross-Encoder Compute Latency (~500ms)**: Cross-encoder scoring over the top-15 candidate pool takes ~400–500ms on CPU (compared to 0.3ms for SQLite queries and 0.2ms for FTS5 BM25). For interactive use, this is within normal turn thresholds; batch retrieval workloads would require GPU acceleration or pre-filtering.
 - **Multi-Constraint Semantic Falloff (0.550 Recall@1)**: When queries combine discrete attributes with free-form requirements (e.g., *"California flatbed carriers specializing in semiconductors"*), unranked dense and lexical search drop to 0.100–0.150 R@1, while the cross-encoder reaches 0.550 R@1 (0.750 Recall@5). This is why discrete constraints are routed to SQLite, reserving semantic search for unstructured descriptions.
-- **Single-Vendor Sibling Failover**: Intra-provider failover switches between `qwen/qwen3.8-27b` and `qwen/qwen3.6-27b` on Groq. While this protects against per-model rate limits and transient 503s with sub-second inference speeds and identical tool-binding semantics, an upstream platform outage or account-level quota exhaustion on Groq affects both siblings simultaneously. Production systems can configure alternative providers (e.g. Gemini, OpenAI, or Anthropic).
-- **Single-Turn Single-Tool Principle (`parallel_tool_calls=False`)**: To prevent redundant API calls and keep token usage within the 1,500-token budget, the model is bound with `parallel_tool_calls=False`. For multi-part questions requiring multiple tools, the agent addresses the primary intent first and relies on follow-up user turns rather than parallel execution.
+- **Single-Vendor Sibling Failover**: Intra-provider failover switches between `qwen/qwen3.8-27b` and `qwen/qwen3.6-27b` on Groq. While this protects against per-model rate limits and transient 503s with sub-second inference speeds and identical tool-binding semantics, an upstream platform outage or account-level quota exhaustion on Groq affects both siblings simultaneously. Production systems can configure alternative providers (e.g. OpenAI or local Ollama).
+- **Single-Turn Single-Tool Principle (`parallel_tool_calls=False`)**: To prevent redundant API calls and keep token usage within the 950-token budget (Groq OTPM safety ceiling), the model is bound with `parallel_tool_calls=False`. For multi-part questions requiring multiple tools, the agent addresses the primary intent first and relies on follow-up user turns rather than parallel execution.
 - **Synthetic Dataset**: 500 fictional carrier profiles are deterministically generated to avoid real-carrier compliance or data-quality misrepresentation while preserving authentic freight domain complexity (TWIC badges, GDP cold chain, Moffett forklifts, RGN lowboys, Carrier Vector chillers).
 - **Groq Free-Tier Token Budgets (200k TPD)**: Free-tier Groq API accounts enforce daily token limits. FreightIQ mitigates this via automatic sibling failover (`qwen/qwen3.8-27b` $\leftrightarrow$ `qwen/qwen3.6-27b`), tool output length bounding (2,000 characters), and turn-aligned 8-message context truncation.
 - **SQLite Write Serialization**: SQLite in WAL mode provides lock-free concurrent reads, but writes are serialized. High-volume multi-user writes in enterprise production would necessitate PostgreSQL.
@@ -277,13 +277,11 @@ cp .env.example .env
 
 | Variable | Required | Description | Default / Fallback |
 | :--- | :---: | :--- | :--- |
-| `LLM_PROVIDER` | No | Active inference provider (`groq`, `gemini`, `openai`, `anthropic`, `ollama`) | `groq` |
+| `LLM_PROVIDER` | No | Active inference provider (`groq`, `openai`, `ollama`) | `groq` |
 | `GROQ_API_KEY` | Conditional | Groq API key (required when using Groq provider) | — |
-| `GOOGLE_API_KEY` | Conditional | Google Gemini API key (or `GEMINI_API_KEY`) | — |
-| `OPENAI_API_KEY` | Conditional | OpenAI API key | — |
-| `ANTHROPIC_API_KEY` | Conditional | Anthropic Claude API key | — |
+| `OPENAI_API_KEY` | Conditional | OpenAI API key (required when using OpenAI provider) | — |
 | `AGENT_MODEL` | No | Active model ID | `qwen/qwen3.8-27b` (fallback: `qwen/qwen3.6-27b`) |
-| `FMCSA_WEB_KEY` | No | FMCSA QCMobile API web key | Default public key |
+| `FMCSA_WEB_KEY` | No | FMCSA QCMobile API web key | Optional (live check requires key, otherwise falls back to verified internal DB) |
 | `TAVILY_API_KEY` | No | Tavily Search API key for freight market intelligence | Falls back to DuckDuckGo (`ddgs`) |
 | `LANGCHAIN_TRACING_V2` | No | Enable LangSmith distributed execution tracing | `false` |
 | `LANGCHAIN_API_KEY` | No | LangSmith API key for trace ingestion | — |

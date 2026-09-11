@@ -482,38 +482,28 @@ with st.sidebar:
     
     selected_provider_label = st.selectbox(
         "LLM Provider",
-        ["Groq", "Google Gemini", "OpenAI", "Anthropic", "Ollama / Local"],
+        ["Groq (Default)", "OpenAI", "Ollama / Local"],
         index=0,
         help="Select inference provider for this session."
     )
     provider_map = {
-        "Groq": "groq",
-        "Google Gemini": "gemini",
+        "Groq (Default)": "groq",
         "OpenAI": "openai",
-        "Anthropic": "anthropic",
         "Ollama / Local": "ollama"
     }
     current_provider = provider_map[selected_provider_label]
     st.session_state["session_provider"] = current_provider
 
     if current_provider == "groq":
-        model_options = ["qwen/qwen3.8-27b", "qwen/qwen3.6-27b", "openai/gpt-oss-120b", "openai/gpt-oss-20b"]
+        model_options = ["qwen/qwen3.8-27b", "qwen/qwen3.6-27b"]
         key_label = "Groq API Key (Optional)"
         default_key_exists = bool(os.getenv("GROQ_API_KEY") or config.GROQ_API_KEY)
-    elif current_provider == "gemini":
-        model_options = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]
-        key_label = "Google API Key"
-        default_key_exists = bool(os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or getattr(config, "GOOGLE_API_KEY", None))
     elif current_provider == "openai":
         model_options = ["gpt-4o-mini", "gpt-4o"]
         key_label = "OpenAI API Key"
         default_key_exists = bool(os.getenv("OPENAI_API_KEY") or getattr(config, "OPENAI_API_KEY", None))
-    elif current_provider == "anthropic":
-        model_options = ["claude-3-5-haiku-latest", "claude-3-5-sonnet-latest"]
-        key_label = "Anthropic API Key"
-        default_key_exists = bool(os.getenv("ANTHROPIC_API_KEY") or getattr(config, "ANTHROPIC_API_KEY", None))
     else:
-        model_options = ["qwen2.5:14b", "llama3.2:latest", "deepseek-r1:14b", "mistral:latest"]
+        model_options = ["qwen2.5:14b", "llama3.2:latest"]
         key_label = "API Key (Optional for Local)"
         default_key_exists = True
 

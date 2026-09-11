@@ -10,14 +10,8 @@ SUPPORTED_PROVIDERS = {
     "groq": {
         "name": "Groq",
         "default_model": "qwen/qwen3.8-27b",
-        "models": ["qwen/qwen3.8-27b", "qwen/qwen3.6-27b", "openai/gpt-oss-120b", "openai/gpt-oss-20b"],
+        "models": ["qwen/qwen3.8-27b", "qwen/qwen3.6-27b"],
         "env_keys": ["GROQ_API_KEY"]
-    },
-    "gemini": {
-        "name": "Google Gemini",
-        "default_model": "gemini-2.5-flash",
-        "models": ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"],
-        "env_keys": ["GOOGLE_API_KEY", "GEMINI_API_KEY"]
     },
     "openai": {
         "name": "OpenAI",
@@ -25,16 +19,10 @@ SUPPORTED_PROVIDERS = {
         "models": ["gpt-4o-mini", "gpt-4o"],
         "env_keys": ["OPENAI_API_KEY"]
     },
-    "anthropic": {
-        "name": "Anthropic Claude",
-        "default_model": "claude-3-5-haiku-latest",
-        "models": ["claude-3-5-haiku-latest", "claude-3-5-sonnet-latest"],
-        "env_keys": ["ANTHROPIC_API_KEY"]
-    },
     "ollama": {
         "name": "Ollama / Local (OpenAI-Compatible)",
         "default_model": "qwen2.5:14b",
-        "models": ["qwen2.5:14b", "llama3.2:latest", "deepseek-r1:14b", "mistral:latest"],
+        "models": ["qwen2.5:14b", "llama3.2:latest"],
         "env_keys": ["OLLAMA_BASE_URL", "OPENAI_BASE_URL"]
     }
 }
@@ -47,12 +35,8 @@ def resolve_api_key(provider: str, user_key: Optional[str] = None) -> Optional[s
     provider_lower = provider.lower()
     if provider_lower == "groq":
         return getattr(config, "GROQ_API_KEY", None) or os.getenv("GROQ_API_KEY")
-    elif provider_lower in ("gemini", "google"):
-        return os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or getattr(config, "GOOGLE_API_KEY", None)
     elif provider_lower == "openai":
         return os.getenv("OPENAI_API_KEY") or getattr(config, "OPENAI_API_KEY", None)
-    elif provider_lower == "anthropic":
-        return os.getenv("ANTHROPIC_API_KEY") or getattr(config, "ANTHROPIC_API_KEY", None)
     elif provider_lower in ("ollama", "local", "openai_compatible"):
         return os.getenv("OPENAI_API_KEY", "ollama")
     return None
@@ -103,24 +87,7 @@ def create_model_instance(
         return llm, bind_tools_safely(llm)
 
     # 2. Google Gemini Provider
-    elif provider_lower in ("gemini", "google"):
-        try:
-            from langchain_google_genai import ChatGoogleGenerativeAI
-        except ImportError:
-            raise ImportError("langchain_google_genai is required for Gemini models. Install with: pip install langchain-google-genai")
-        key = resolve_api_key("gemini", api_key)
-        if not key:
-            raise ValueError("GOOGLE_API_KEY or GEMINI_API_KEY is missing.")
-        model = model_name or "gemini-2.5-flash"
-        llm = ChatGoogleGenerativeAI(
-            model=model,
-            google_api_key=key,
-            temperature=temperature,
-            max_output_tokens=max_tokens
-        )
-        return llm, bind_tools_safely(llm)
-
-    # 3. OpenAI Provider
+    # 2. OpenAI Provider
     elif provider_lower == "openai":
         try:
             from langchain_openai import ChatOpenAI
@@ -139,25 +106,7 @@ def create_model_instance(
         )
         return llm, bind_tools_safely(llm)
 
-    # 4. Anthropic Claude Provider
-    elif provider_lower == "anthropic":
-        try:
-            from langchain_anthropic import ChatAnthropic
-        except ImportError:
-            raise ImportError("langchain_anthropic is required for Anthropic models. Install with: pip install langchain-anthropic")
-        key = resolve_api_key("anthropic", api_key)
-        if not key:
-            raise ValueError("ANTHROPIC_API_KEY is missing.")
-        model = model_name or "claude-3-5-haiku-latest"
-        llm = ChatAnthropic(
-            model_name=model,
-            anthropic_api_key=key,
-            temperature=temperature,
-            max_tokens_to_sample=max_tokens
-        )
-        return llm, bind_tools_safely(llm)
-
-    # 5. Local / Ollama / OpenAI-Compatible Provider
+    # 3. Local / Ollama / OpenAI-Compatible Provider
     elif provider_lower in ("ollama", "local", "openai_compatible"):
         try:
             from langchain_openai import ChatOpenAI
