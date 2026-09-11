@@ -91,14 +91,14 @@ panel_box = FancyBboxPatch((0, 0), 1, 1, boxstyle="round,pad=0.03,rounding_size=
                            linewidth=1.2, transform=ax_kpi.transAxes, clip_on=False)
 ax_kpi.add_patch(panel_box)
 
-ax_kpi.text(0.5, 0.92, "KEY TAKEAWAYS", transform=ax_kpi.transAxes,
-            ha="center", va="center", fontsize=11, fontweight="700", color="#00d4ff")
+ax_kpi.text(0.5, 0.92, "BENCHMARK SUMMARY", transform=ax_kpi.transAxes,
+            ha="center", va="center", fontsize=10.5, fontweight="700", color="#00d4ff")
 
 kpis = [
-    ("Recall@1 Surge", "0.300 → 0.700", "+133.3% gain via Cross-Encoder", "#00d4ff"),
-    ("Overall MRR", "0.429 → 0.764", "+78.1% neural precision gain", "#00e676"),
-    ("Hybrid Recall@5", "0.400 → 0.750", "+87.5% multi-constraint lift", "#b347ff"),
-    ("Latency Impact", "~35ms overhead", "Production-viable neural rerank", "#ffaa33")
+    ("Recall@1", "0.300 → 0.700", "+133.3% lift with Cross-Encoder", "#00d4ff"),
+    ("MRR", "0.429 → 0.764", "+78.1% rank order gain", "#00e676"),
+    ("Hybrid Recall@5", "0.400 → 0.750", "+87.5% multi-constraint gain", "#b347ff"),
+    ("Latency Impact", "~35ms CPU", "Re-ranking compute overhead", "#ffaa33")
 ]
 
 y_pos = 0.74

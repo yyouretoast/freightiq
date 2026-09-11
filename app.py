@@ -409,15 +409,14 @@ st.markdown("""
     </svg>
     <div>
         <div class="fiq-title">FreightIQ</div>
-        <div class="fiq-subtitle">Agentic Carrier Intelligence · Dual-Modality Router · Hybrid RAG · Groq</div>
+        <div class="fiq-subtitle">Freight Carrier Lookup & Operations Router</div>
     </div>
 </div>
 <div class="fiq-telemetry">
-    <span class="telemetry-pill">● 500 Fictional Carriers</span>
-    <span class="telemetry-pill">● Sub-ms SQLite WAL</span>
-    <span class="telemetry-pill">● FTS5 BM25 + ChromaDB</span>
-    <span class="telemetry-pill">● Neural Cross-Encoder</span>
-    <span class="telemetry-pill">● Groq qwen3.8-27b</span>
+    <span class="telemetry-pill">500 Carrier Profiles</span>
+    <span class="telemetry-pill">SQLite (WAL)</span>
+    <span class="telemetry-pill">FTS5 BM25 + ChromaDB</span>
+    <span class="telemetry-pill">Cross-Encoder Re-ranking</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -482,16 +481,16 @@ with st.sidebar:
     st.markdown('<div class="sidebar-section"><div class="sidebar-title">Model & Provider Configuration</div></div>', unsafe_allow_html=True)
     
     selected_provider_label = st.selectbox(
-        "⚡ LLM Provider",
-        ["Groq (Ultra-Fast LPUs)", "Google Gemini (1M Context)", "OpenAI", "Anthropic Claude", "Ollama / Local"],
+        "LLM Provider",
+        ["Groq", "Google Gemini", "OpenAI", "Anthropic", "Ollama / Local"],
         index=0,
-        help="Select inference provider engine for your session."
+        help="Select inference provider for this session."
     )
     provider_map = {
-        "Groq (Ultra-Fast LPUs)": "groq",
-        "Google Gemini (1M Context)": "gemini",
+        "Groq": "groq",
+        "Google Gemini": "gemini",
         "OpenAI": "openai",
-        "Anthropic Claude": "anthropic",
+        "Anthropic": "anthropic",
         "Ollama / Local": "ollama"
     }
     current_provider = provider_map[selected_provider_label]
@@ -499,39 +498,39 @@ with st.sidebar:
 
     if current_provider == "groq":
         model_options = ["qwen/qwen3.8-27b", "qwen/qwen3.6-27b", "openai/gpt-oss-120b", "openai/gpt-oss-20b"]
-        key_label = "🔑 Groq API Key (Optional Override)"
+        key_label = "Groq API Key (Optional)"
         default_key_exists = bool(os.getenv("GROQ_API_KEY") or config.GROQ_API_KEY)
     elif current_provider == "gemini":
         model_options = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]
-        key_label = "🔑 Google / Gemini API Key"
+        key_label = "Google API Key"
         default_key_exists = bool(os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or getattr(config, "GOOGLE_API_KEY", None))
     elif current_provider == "openai":
         model_options = ["gpt-4o-mini", "gpt-4o"]
-        key_label = "🔑 OpenAI API Key"
+        key_label = "OpenAI API Key"
         default_key_exists = bool(os.getenv("OPENAI_API_KEY") or getattr(config, "OPENAI_API_KEY", None))
     elif current_provider == "anthropic":
         model_options = ["claude-3-5-haiku-latest", "claude-3-5-sonnet-latest"]
-        key_label = "🔑 Anthropic API Key"
+        key_label = "Anthropic API Key"
         default_key_exists = bool(os.getenv("ANTHROPIC_API_KEY") or getattr(config, "ANTHROPIC_API_KEY", None))
     else:
         model_options = ["qwen2.5:14b", "llama3.2:latest", "deepseek-r1:14b", "mistral:latest"]
-        key_label = "🔑 API Key (Optional for Local)"
+        key_label = "API Key (Optional for Local)"
         default_key_exists = True
 
     user_api_key = st.text_input(
         key_label,
         type="password",
         value=st.session_state.get(f"custom_key_{current_provider}", ""),
-        help="Session-isolated key. Stored only in your browser session."
+        help="Session-specific API key."
     )
     if user_api_key != st.session_state.get(f"custom_key_{current_provider}"):
         st.session_state[f"custom_key_{current_provider}"] = user_api_key
 
     selected_model = st.selectbox(
-        "🧠 Agent Model",
+        "Model",
         model_options,
         index=0,
-        help="Select active model for your session."
+        help="Select active model for this session."
     )
     st.session_state["session_model"] = selected_model
 
@@ -551,9 +550,9 @@ with st.sidebar:
 
     st.markdown(f"""
     <div class="sidebar-section">
-        <div class="sidebar-title">Agent Status</div>
-        <div style="margin-bottom: 8px;"><span class="status-badge {status_class}">● LLM: {status_text}</span></div>
-        <div style="margin-bottom: 8px;"><span class="status-badge {reranker_class}">● Re-ranker: {reranker_status}</span></div>
+        <div class="sidebar-title">System Status</div>
+        <div style="margin-bottom: 8px;"><span class="status-badge {status_class}">Model: {status_text}</span></div>
+        <div style="margin-bottom: 8px;"><span class="status-badge {reranker_class}">Re-ranker: {reranker_status}</span></div>
         <div style="font-size: 0.72rem; color: rgba(255,255,255,0.4); margin-top: 4px; margin-left: 2px;">
             Feedback Logs: {feedback_count} entries
         </div>
@@ -662,7 +661,7 @@ if user_query:
                 }
             }
 
-            with st.status("Agent Reasoning & Tool Routing...", expanded=True) as status_box:
+            with st.status("Executing query...", expanded=True) as status_box:
                 for event in graph.stream(
                     {"messages": windowed_messages}, 
                     config=session_config, 
@@ -718,7 +717,7 @@ if user_query:
                                 # Force final write to make sure text formatting is clean
                                 response_container.write(final_answer)
 
-                status_box.update(label="✓ Tool Routing & Synthesis Complete", state="complete", expanded=False)
+                status_box.update(label="✓ Complete", state="complete", expanded=False)
 
             if final_answer:
                 st.session_state.messages.append(AIMessage(
@@ -750,7 +749,7 @@ if st.session_state.messages and isinstance(st.session_state.messages[-1], AIMes
         st.write("---")
         last_msg_idx = len(st.session_state.messages) - 1
         if st.session_state.voted_message_index != last_msg_idx:
-            st.caption("Was this response helpful? Logs feedback for quality audits and retrieval evaluation:")
+            st.caption("Was this response helpful?")
             fb_col1, fb_col2, fb_col3 = st.columns([1, 1, 10])
             with fb_col1:
                 if st.button("👍 Yes", key="thumbs_up", use_container_width=True):
@@ -765,4 +764,4 @@ if st.session_state.messages and isinstance(st.session_state.messages[-1], AIMes
                     st.toast("Thank you! Feedback saved to feedback.jsonl.")
                     st.rerun()
         else:
-            st.success("Feedback logged successfully! Thank you for helping improve FreightIQ.")
+            st.success("Feedback saved.")

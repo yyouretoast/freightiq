@@ -1,7 +1,7 @@
 # AGENTS.md: Developer & AI Coding Agent Guidelines
 
 ## 1. Project Overview
-FreightIQ is an agentic freight carrier intelligence system. It utilizes LangGraph for stateful agent orchestration, Groq for fast LLM inference (`qwen/qwen3.8-27b`), ChromaDB for dense vector retrieval (`all-MiniLM-L6-v2`), HuggingFace SentenceTransformers CrossEncoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`) for neural re-ranking, and SQLite (WAL mode) for structured querying.
+FreightIQ is a freight carrier query routing and retrieval system. It utilizes LangGraph for stateful workflow orchestration, Groq for fast LLM inference (`qwen/qwen3.8-27b`), ChromaDB for dense vector retrieval (`all-MiniLM-L6-v2`), HuggingFace SentenceTransformers CrossEncoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`) for re-ranking, and SQLite (WAL mode) for structured querying.
 
 ## 2. Core Operational Directives
 When inspecting, refactoring, or extending FreightIQ:

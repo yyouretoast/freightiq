@@ -10,7 +10,7 @@ pinned: false
 
 # FreightIQ
 
-Freight carrier intelligence system featuring dual-modality query routing, hybrid retrieval (FTS5 BM25 + dense ChromaDB RRF), neural cross-encoder re-ranking, and LangGraph agent orchestration.
+Freight carrier query routing and retrieval system combining relational SQL queries, hybrid search (FTS5 BM25 + dense ChromaDB RRF), cross-encoder re-ranking, and LangGraph workflow orchestration.
 
 [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue?style=flat-square)](https://huggingface.co/spaces/yyouretoast/freightiq)
 [![FreightIQ Verification CI](https://github.com/yyouretoast/freightiq/actions/workflows/verify.yml/badge.svg)](https://github.com/yyouretoast/freightiq/actions/workflows/verify.yml)
@@ -198,16 +198,16 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 ### Key Findings
 1. **Lexical Retrieval Impact:** FTS5 BM25 retrieves exact domain tokens with sub-millisecond latency (0.22ms), outperforming dense vector search on structured constraint terms.
 2. **Consensus Ranking:** RRF ($k=60$) successfully balances lexical keyword recall with dense semantic breadth.
-3. **Cross-Encoder Re-Ranking Impact:** Joint query-document neural attention more than doubles dense baseline accuracy, boosting **Overall Recall@1 from 0.300 to 0.700 (+133.3%)** and **MRR from 0.429 to 0.764 (+78.1%)** across 100% de-leaked, authentic paraphrased queries.
+3. **Cross-Encoder Re-Ranking Impact:** Cross-encoder re-ranking increases **Overall Recall@1 from 0.300 to 0.700 (+133.3%)** and **MRR from 0.429 to 0.764 (+78.1%)** across the 60 benchmark queries.
 
 ---
 
 ## Engineering Trade-offs & Limitations
 
-- **Cross-Encoder Compute Latency (~500ms)**: Neural cross-attention over the top-15 fused candidate pool costs ~400–500ms on CPU (compared to 0.3ms for SQLite relational queries and 0.2ms for FTS5 BM25). For conversational interaction, this is within normal turn thresholds, but high-throughput batch retrieval would require GPU acceleration or vector-only pruning.
-- **Multi-Constraint Semantic Falloff (0.550 Recall@1)**: When queries mix hard relational constraints with qualitative needs (e.g., *"California flatbed carriers specializing in semiconductors"*), unranked dense and lexical search collapse to 0.100–0.150 R@1, while the neural cross-encoder recovers 0.550 R@1 (0.750 Recall@5). This empirically demonstrates why FreightIQ implements a dual-modality architecture: discrete constraints must be routed to SQLite, reserving vector search for unstructured domain language.
-- **Single-Vendor Sibling Failover**: Intra-provider failover switches between `qwen/qwen3.8-27b` and `qwen/qwen3.6-27b` on Groq. While this protects against per-model rate limits and transient 503s with sub-second inference speeds and identical tool-binding semantics, an upstream platform outage or account-level quota exhaustion on Groq affects both siblings simultaneously. Production enterprise systems would implement cross-provider failover (e.g. Groq $\rightarrow$ Anthropic/OpenAI).
-- **Single-Turn Single-Tool Principle (`parallel_tool_calls=False`)**: To prevent tool hallucination, redundant API calls, and context token explosion within the 800-token budget, the model is bound with `parallel_tool_calls=False`. For composite inquiries requiring multiple distinct tools (e.g., freight class calculation + flatbed carrier lookup), the agent addresses the primary intent first and relies on multi-turn user conversation rather than parallel execution.
+- **Cross-Encoder Compute Latency (~500ms)**: Cross-encoder scoring over the top-15 candidate pool takes ~400–500ms on CPU (compared to 0.3ms for SQLite queries and 0.2ms for FTS5 BM25). For interactive use, this is within normal turn thresholds; batch retrieval workloads would require GPU acceleration or pre-filtering.
+- **Multi-Constraint Semantic Falloff (0.550 Recall@1)**: When queries combine discrete attributes with free-form requirements (e.g., *"California flatbed carriers specializing in semiconductors"*), unranked dense and lexical search drop to 0.100–0.150 R@1, while the cross-encoder reaches 0.550 R@1 (0.750 Recall@5). This is why discrete constraints are routed to SQLite, reserving semantic search for unstructured descriptions.
+- **Single-Vendor Sibling Failover**: Intra-provider failover switches between `qwen/qwen3.8-27b` and `qwen/qwen3.6-27b` on Groq. While this protects against per-model rate limits and transient 503s with sub-second inference speeds and identical tool-binding semantics, an upstream platform outage or account-level quota exhaustion on Groq affects both siblings simultaneously. Production systems can configure alternative providers (e.g. Gemini, OpenAI, or Anthropic).
+- **Single-Turn Single-Tool Principle (`parallel_tool_calls=False`)**: To prevent redundant API calls and keep token usage within the 800-token budget, the model is bound with `parallel_tool_calls=False`. For multi-part questions requiring multiple tools, the agent addresses the primary intent first and relies on follow-up user turns rather than parallel execution.
 - **Synthetic Dataset**: 500 fictional carrier profiles are deterministically generated to avoid real-carrier compliance or data-quality misrepresentation while preserving authentic freight domain complexity (TWIC badges, GDP cold chain, Moffett forklifts, RGN lowboys, Carrier Vector chillers).
 - **Groq Free-Tier Token Budgets (200k TPD)**: Free-tier Groq API accounts enforce daily token limits. FreightIQ mitigates this via automatic sibling failover (`qwen/qwen3.8-27b` $\leftrightarrow$ `qwen/qwen3.6-27b`), tool output length bounding (2,000 characters), and turn-aligned 8-message context truncation.
 - **SQLite Write Serialization**: SQLite in WAL mode provides lock-free concurrent reads, but writes are serialized. High-volume multi-user writes in enterprise production would necessitate PostgreSQL.
@@ -237,7 +237,7 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 
 | Routing Modality | Example Query | Active Path | Execution & Precision Rationale |
 | :--- | :--- | :--- | :--- |
-| **Deterministic Relational Filter** | *"Find flatbed carriers in Ohio with a satisfactory safety rating."* | `carrier_sql_query` | Evaluates discrete constraints (`hq_state = 'OH'`, `equipment_types`, `safety_rating`) in $<1\text{ ms}$ with 100% precision, avoiding vector hallucinations. |
+| **Deterministic Relational Filter** | *"Find flatbed carriers in Ohio with a satisfactory safety rating."* | `carrier_sql_query` | Evaluates discrete constraints (`hq_state = 'OH'`, `equipment_types`, `safety_rating`) in $<1\text{ ms}$ with exact matching, avoiding approximate nearest-neighbor errors on discrete attributes. |
 | **Unstructured Domain Jargon** | *"Carriers specializing in perishable pharmaceutical cold chain with continuous temp monitoring."* | `carrier_semantic_search` | FTS5 BM25 + dense ChromaDB embeddings fused via RRF ($k=60$) and re-ranked with `cross-encoder/ms-marco-MiniLM-L-6-v2` (1.000 MRR). |
 | **Automated Zero-Row Relaxation** | *"Find carriers headquartered in Alaska with refrigerated units handling hazmat."* | `carrier_sql_query` | Zero rows match strict multi-clause conditions; tool automatically drops the most restrictive constraint and returns alternative candidates. |
 
