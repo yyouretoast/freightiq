@@ -15,6 +15,7 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
 # Ensure project root is in path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import config
 from agent.tools import carrier_semantic_search, carrier_sql_query, freight_class_calculator, web_search, check_fmcsa_authority
 from agent.graph import build_graph
 from langchain_core.messages import HumanMessage
@@ -75,11 +76,22 @@ def test_web_search():
         print("[OK] Live Web API queries validated successfully.")
 
 def test_fmcsa_authority():
-    print("\n--- 5. Testing FMCSA SAFER Registry Verification ---")
+    print("\n--- 5. Testing FMCSA Registry Verification & Safety Compliance ---")
     result = check_fmcsa_authority.invoke({"dot_number": "2404512"})
     print(result[:250] + "...")
     assert "FMCSA" in result and "2404512" in result, "FMCSA authority check returned unexpected output format."
-    print("[OK] FMCSA SAFER authority verification validated successfully.")
+    
+    # Verify compliance gating: Unsatisfactory safety carriers MUST fail verification
+    import sqlite3
+    with sqlite3.connect(f"file:{config.DB_PATH}?mode=ro", uri=True) as conn:
+        row = conn.execute("SELECT dot_number FROM carriers WHERE safety_rating = 'unsatisfactory' LIMIT 1").fetchone()
+        if row:
+            unsat_dot = row[0]
+            unsat_result = check_fmcsa_authority.invoke({"dot_number": unsat_dot})
+            assert "FAIL" in unsat_result or "DO NOT DISPATCH" in unsat_result, f"FMCSA verification failed to flag unsatisfactory carrier #{unsat_dot}!"
+            print(f"[OK] Safety rating audit gating verified: carrier #{unsat_dot} properly flagged as FAIL / DO NOT DISPATCH.")
+    
+    print("[OK] FMCSA authority verification and compliance gating validated successfully.")
 
 def test_agent_graph():
     print("\n--- 6. Testing Full Agent Graph Routing ---")
@@ -111,9 +123,11 @@ def test_agent_graph():
 def main():
     print("=== STARTING FREIGHTIQ SYSTEM VERIFICATION ===")
     
-    has_api_key = os.getenv("GROQ_API_KEY") and os.getenv("GROQ_API_KEY") != "mock_key_for_ci"
+    has_api_key = bool(os.getenv("GROQ_API_KEY"))
     if not has_api_key:
-        print("[WARNING] GROQ_API_KEY missing or mock. LLM Agent Graph routing test will be skipped.")
+        print("[NOTE] GROQ_API_KEY is not configured in this environment.")
+        print("       Tests 1-5 (calculators, SQL, hybrid retrieval, web search, FMCSA compliance) run fully offline.")
+        print("       Test 6 (LangGraph LLM routing) requires live inference credentials.")
         
     try:
         test_calculators()
@@ -123,9 +137,10 @@ def main():
         test_fmcsa_authority()
         if has_api_key:
             test_agent_graph()
+            print("\n[SUCCESS] ALL TESTS (1-6) PASSED: LLM agent orchestration and all 5 domain tools verified.")
         else:
-            print("\n[SKIP] Skipping Test 6: Agent Graph Routing (Requires GROQ_API_KEY)")
-        print("\n[SUCCESS] ALL TESTS PASSED: FreightIQ is fully verified and ready for deployment.")
+            print("\n[SKIP] Skipping Test 6: Agent Graph Routing (Requires live GROQ_API_KEY)")
+            print("\n[SUCCESS] ALL OFFLINE TESTS (1-5) PASSED: Domain tools, calculations, and safety gating verified.")
     except Exception as e:
         print(f"\n[ERROR] VERIFICATION FAILED: {str(e)}")
         sys.exit(1)

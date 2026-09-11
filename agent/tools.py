@@ -19,12 +19,14 @@ def carrier_semantic_search(query: str) -> str:
 def _split_sql_and_conditions(where_clause: str) -> list[str]:
     """
     Splits WHERE clause on top-level 'AND' keywords without splitting inside
-    single-quoted string literals or parenthesis-grouped expressions.
+    single-quoted string literals, parenthesis-grouped expressions, or
+    BETWEEN ... AND ... ranges.
     """
     parts = []
     current = []
     in_quotes = False
     paren_depth = 0
+    between_pending = False
     i = 0
     n = len(where_clause)
     while i < n:
@@ -41,12 +43,25 @@ def _split_sql_and_conditions(where_clause: str) -> list[str]:
             paren_depth = max(0, paren_depth - 1)
             current.append(ch)
             i += 1
-        elif not in_quotes and paren_depth == 0 and where_clause[i:i+5].upper() in (" AND ", "\nAND ", "\tAND "):
-            part_str = "".join(current).strip()
-            if part_str:
-                parts.append(part_str)
-            current = []
-            i += 4
+        elif not in_quotes and paren_depth == 0:
+            if where_clause[i:i+7].upper() == "BETWEEN" and (i == 0 or not where_clause[i-1].isalnum()) and (i+7 >= n or not where_clause[i+7].isalnum()):
+                between_pending = True
+                current.append(where_clause[i:i+7])
+                i += 7
+            elif where_clause[i:i+5].upper() in (" AND ", "\nAND ", "\tAND "):
+                if between_pending:
+                    between_pending = False
+                    current.append(where_clause[i:i+5])
+                    i += 5
+                else:
+                    part_str = "".join(current).strip()
+                    if part_str:
+                        parts.append(part_str)
+                    current = []
+                    i += 4
+            else:
+                current.append(ch)
+                i += 1
         else:
             current.append(ch)
             i += 1
@@ -261,7 +276,7 @@ def freight_class_calculator(weight_lbs: float, length_in: float, width_in: floa
 def check_fmcsa_authority(dot_number: str) -> str:
     """
     Verify carrier USDOT safety compliance, operating authority (Active/Revoked), 
-    and insurance filings directly against the FMCSA SAFER registry.
+    and registration status via FMCSA QCMobile API with internal database fallback.
     """
     clean_dot = "".join(filter(str.isdigit, str(dot_number)))
     if not clean_dot:
@@ -272,28 +287,38 @@ def check_fmcsa_authority(dot_number: str) -> str:
         f"SELECT carrier_name, mc_number, hq_state, safety_rating, years_operating FROM carriers WHERE dot_number = '{clean_dot}' LIMIT 1"
     )
 
-    # Attempt live query to public FMCSA SAFER endpoint
+    # Attempt live query to public FMCSA QCMobile endpoint
     try:
         import urllib.request
         import json
-        url = f"https://mobile.fmcsa.dot.gov/qc/services/carriers/{clean_dot}?webKey=4f03a62f4fb2a690e0e01da1eef67664c39846b0"
+        fmcsa_key = getattr(config, "FMCSA_WEB_KEY", "4f03a62f4fb2a690e0e01da1eef67664c39846b0")
+        url = f"https://mobile.fmcsa.dot.gov/qc/services/carriers/{clean_dot}?webKey={fmcsa_key}"
         req = urllib.request.Request(url, headers={"User-Agent": "FreightIQ/1.0", "Accept": "application/json"})
         with urllib.request.urlopen(req, timeout=3.0) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             carrier_data = data.get("content", {}).get("carrier", {})
             if carrier_data:
                 legal_name = carrier_data.get("legalName", "N/A")
-                status = carrier_data.get("statusCode", "A")
-                status_str = "ACTIVE (Authorized for Property)" if status == "A" else "INACTIVE / SUSPENDED"
-                safety = carrier_data.get("safetyRating", "Satisfactory")
+                status = carrier_data.get("statusCode", "")
+                status_str = "ACTIVE (Authorized for Property & Interstate Operations)" if status == "A" else "INACTIVE / SUSPENDED / REVOKED"
+                safety = carrier_data.get("safetyRating") or "Not Rated / Unrated"
+
+                if status != "A":
+                    verif_status = "FAIL — DO NOT DISPATCH (Operating authority is INACTIVE or REVOKED)"
+                elif safety.lower() == "unsatisfactory":
+                    verif_status = "FAIL — DO NOT DISPATCH (Federal Safety Audit: Unsatisfactory Compliance)"
+                elif safety.lower() == "conditional":
+                    verif_status = "WARNING — Supervisory Review Required (Federal Safety Audit: Conditional Compliance)"
+                else:
+                    verif_status = "PASS (Active Operating Authority Verified)"
+
                 return (
-                    f"=== FMCSA SAFER VERIFICATION FOR USDOT #{clean_dot} ===\n"
+                    f"=== FMCSA QCMOBILE VERIFICATION FOR USDOT #{clean_dot} ===\n"
                     f"Legal Entity Name: {legal_name}\n"
                     f"Operating Authority Status: {status_str}\n"
                     f"Federal Safety Rating: {safety}\n"
-                    f"BIPD Insurance on File: YES ($750,000+ Active Minimum Required)\n"
-                    f"Bond / Trust (BMC-84/85): Active\n"
-                    f"DOT Revocation / Suspension History: Clean"
+                    f"BIPD & Cargo Insurance: Basic endpoint does not provide policy limits. Verify BMC-91X filing directly on SAFER.\n"
+                    f"FreightIQ Verification: {verif_status}"
                 )
     except Exception as e:
         logger.debug(f"Live FMCSA request fallback: {e}")
@@ -301,20 +326,36 @@ def check_fmcsa_authority(dot_number: str) -> str:
     # Fallback to local verified database record
     has_local_record = sql_check and not sql_check.startswith("No matching records") and not sql_check.startswith("Error") and not sql_check.startswith("SQLite Error")
     if has_local_record:
+        safety_match = re.search(r"Safety Rating:\s*([a-zA-Z]+)", sql_check, re.IGNORECASE)
+        safety_rating = safety_match.group(1).lower() if safety_match else "unknown"
+
+        if safety_rating == "unsatisfactory":
+            audit_str = "Unsatisfactory Compliance (CRITICAL VIOLATIONS DETECTED)"
+            verif_status = "FAIL — DO NOT DISPATCH (Carrier has an Unsatisfactory Federal Safety Rating)"
+        elif safety_rating == "conditional":
+            audit_str = "Conditional Compliance (DEFICIENCIES NOTED)"
+            verif_status = "WARNING — Supervisory Review Required (Conditional Safety Rating)"
+        elif safety_rating == "satisfactory":
+            audit_str = "Satisfactory Compliance"
+            verif_status = "PASS (Verified in internal database - Satisfactory Safety Rating)"
+        else:
+            audit_str = "Unrated / Record Pending"
+            verif_status = "CONDITIONAL (Verify active certificate directly on SAFER)"
+
         return (
-            f"=== FMCSA SAFER RECORD FOR USDOT #{clean_dot} (LOCAL REGISTRY) ===\n"
+            f"=== FMCSA REGISTRY RECORD FOR USDOT #{clean_dot} (LOCAL DATABASE FALLBACK) ===\n"
             f"Carrier Registry Profile:\n{sql_check}\n"
             f"Operating Authority Status: ACTIVE (Authorized for Property & Interstate Operations)\n"
-            f"Federal Safety Audit: Satisfactory Compliance\n"
-            f"BIPD Insurance Status: Active & Filed on Federal Register\n"
-            f"FreightIQ Verification: PASS (Verified in internal database)"
+            f"Federal Safety Audit: {audit_str}\n"
+            f"BIPD Insurance Status: Internal registry record active. Live BMC-91X filing required prior to dispatch.\n"
+            f"FreightIQ Verification: {verif_status}"
         )
     else:
         return (
-            f"=== FMCSA SAFER VERIFICATION FOR USDOT #{clean_dot} ===\n"
+            f"=== FMCSA VERIFICATION FOR USDOT #{clean_dot} ===\n"
             f"Verification Status: UNVERIFIED / RECORD NOT FOUND\n"
             f"Details: USDOT #{clean_dot} was not found in local verified carrier records, "
-            f"and the external FMCSA SAFER registry service is currently unreachable.\n"
+            f"and the external FMCSA registry service is currently unreachable.\n"
             f"FreightIQ Verification: UNVERIFIED (Verify operating authority directly on safer.fmcsa.dot.gov before dispatch)"
         )
 

@@ -53,7 +53,7 @@ https://github.com/user-attachments/assets/dbf58565-39ee-4d17-a434-6a321c8afed4
 FreightIQ answers commercial freight questions by routing incoming requests across five specialized tools:
 1. **SQLite (`carrier_sql_query`)**: Exact relational filtering over 500 carrier profiles (states, equipment types, safety ratings, years in business).
 2. **Hybrid Search (`carrier_semantic_search`)**: FTS5 BM25 keyword matching + ChromaDB vector embeddings (`all-MiniLM-L6-v2`), combined via Reciprocal Rank Fusion ($k=60$) and re-ranked using `cross-encoder/ms-marco-MiniLM-L-6-v2`.
-3. **FMCSA SAFER Verification (`check_fmcsa_authority`)**: Real-time USDOT registry scraper checking operating authority status and safety audit records.
+3. **FMCSA Registration & Safety Audit (`check_fmcsa_authority`)**: Real-time USDOT QCMobile REST API query validating operating authority status and federal safety ratings, with internal database fallback.
 4. **NMFC Freight Class Calculator (`freight_class_calculator`)**: Deterministic density-to-class mapping with commodity exception overrides.
 5. **Live Web Search (`web_search`)**: Current freight rate trends and market updates via Tavily API with DuckDuckGo fallback.
 
@@ -89,7 +89,8 @@ flowchart TD
 • RRF fusion (k=60)
 • Cross-Encoder re-ranker"]
         ToolNode --> T3["check_fmcsa_authority
-• Live SAFER scraper"]
+• Live QCMobile REST API
+• Local database fallback"]
         ToolNode --> T4["freight_class_calculator
 • Volume & density formula
 • NMFC exception table"]
@@ -148,8 +149,10 @@ For detailed design rationale, see [ADR-001: SQL vs. Vector Routing](docs/adr/AD
   4. Neural re-ranking of the top 15 fused candidates via `cross-encoder/ms-marco-MiniLM-L-6-v2` (falls back to dense cosine similarity if unavailable).
 
 ### 3. `check_fmcsa_authority`
-- Scrapes the FMCSA SAFER registry (`safersys.org`) using a USDOT number.
-- Parses legal entity name, operating authority status (Authorized/Revoked), safety rating, and BIPD insurance filings ($750K–$5M).
+- Queries the FMCSA QCMobile JSON REST API (`mobile.fmcsa.dot.gov/qc/services/carriers/`) using a USDOT number, parameterized via `FMCSA_WEB_KEY`.
+- Evaluates legal entity registration, operating authority status (Active vs. Inactive/Revoked), and federal safety ratings (Satisfactory, Conditional, Unsatisfactory).
+- Enforces compliance safety gating: immediately flags carriers with unsatisfactory safety ratings as `FAIL — DO NOT DISPATCH` and conditional carriers with `WARNING — Supervisory Review Required`.
+- Local fallback: validates against internal database records if the public API times out, applying identical safety compliance gating. Directs brokers to SAFER for direct BMC-91X insurance filing checks.
 
 ### 4. `freight_class_calculator`
 - Calculates shipment volume (`L * W * H / 1728`) and density (`Weight / Volume`).
@@ -175,10 +178,10 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 | Retrieval Strategy | Recall@1 | Recall@3 | Recall@5 | MRR | Latency |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **SQLite Exact Query** | **0.967** | **0.967** | **0.967** | **0.967** | **0.31 ms** |
-| **ChromaDB Base Vector** | 0.500 | 0.683 | 0.733 | 0.596 | 270.60 ms |
-| **FTS5 Lexical Search (BM25)** | 0.633 | 0.767 | 0.817 | 0.701 | **0.22 ms** |
-| **Reranked Search (Cosine Fallback)** | 0.500 | 0.683 | 0.733 | 0.595 | 271.00 ms |
-| **Reranked Hybrid (Cross-Encoder + RRF)** | **0.850** | **0.900** | **0.900** | **0.872** | **499.37 ms** |
+| **ChromaDB Base Vector** | 0.350 | 0.583 | 0.700 | 0.477 | 270.60 ms |
+| **FTS5 Lexical Search (BM25)** | 0.500 | 0.633 | 0.700 | 0.573 | **0.22 ms** |
+| **Reranked Search (Cosine Fallback)** | 0.350 | 0.583 | 0.700 | 0.477 | 271.00 ms |
+| **Reranked Hybrid (Cross-Encoder + RRF)** | **0.733** | **0.833** | **0.850** | **0.781** | **499.37 ms** |
 
 <details>
 <summary><strong>View Stratified Breakdown by Query Category (Click to expand)</strong></summary>
@@ -187,15 +190,15 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 | Category | Description | Base Vector R@1 (MRR) | FTS5 BM25 R@1 (MRR) | Hybrid Cross-Encoder R@1 (MRR) |
 | :--- | :--- | :---: | :---: | :---: |
 | **Structured (20 queries)** | Hard attributes (state, safety rating, equipment) | 0.350 (0.508) | 0.650 (0.756) | **0.900 (0.942)** |
-| **Qualitative (20 queries)** | Freight jargon, certifications, service reputation | 0.900 (0.925) | 0.950 (0.967) | **1.000 (1.000)** |
+| **Qualitative (20 queries)** | Freight jargon, certifications, service capabilities (natural language) | 0.450 (0.568) | 0.550 (0.585) | **0.650 (0.727)** |
 | **Multi-Constraint Hybrid (20 queries)** | Geographic/equipment filter + qualitative need | 0.250 (0.354) | 0.300 (0.379) | **0.650 (0.675)** |
 
 </details>
 
 ### Key Findings
-1. **Lexical Retrieval Impact:** FTS5 BM25 retrieves exact domain tokens with sub-millisecond latency (0.22ms), eliminating the false-negative drops of pure vector search on industry terms (`TWIC`, `Moffett`, `RGN`, `Class 3`).
+1. **Lexical Retrieval Impact:** FTS5 BM25 retrieves exact domain tokens with sub-millisecond latency (0.22ms), outperforming dense vector search on structured constraint terms.
 2. **Consensus Ranking:** RRF ($k=60$) successfully balances lexical keyword recall with dense semantic breadth.
-3. **Cross-Encoder Re-Ranking Impact:** Joint query-document attention boosts **Overall MRR from 0.596 (dense baseline) to 0.872 (+46.3%)**, while achieving perfect **1.000 Recall@1 and 1.000 MRR on qualitative queries**.
+3. **Cross-Encoder Re-Ranking Impact:** Joint query-document neural attention more than doubles dense baseline accuracy, boosting **Overall Recall@1 from 0.350 to 0.733 (+109.4%)** and **MRR from 0.477 to 0.781 (+63.7%)** across realistic, un-leaked evaluation queries.
 
 ---
 
@@ -203,10 +206,12 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 
 - **Cross-Encoder Compute Latency (~500ms)**: Neural cross-attention over the top-15 fused candidate pool costs ~400–500ms on CPU (compared to 0.3ms for SQLite relational queries and 0.2ms for FTS5 BM25). For conversational interaction, this is within normal turn thresholds, but high-throughput batch retrieval would require GPU acceleration or vector-only pruning.
 - **Multi-Constraint Semantic Falloff (0.650 Recall@1)**: When queries mix hard relational constraints with qualitative needs (e.g., *"California flatbed carriers specializing in semiconductors"*), pure semantic search drops to 0.650 Recall@1. This empirically demonstrates why FreightIQ implements a dual-modality architecture: discrete constraints must be routed to SQLite, reserving vector search for unstructured domain language.
+- **Single-Vendor Sibling Failover**: Intra-provider failover switches between `qwen/qwen3.8-27b` and `qwen/qwen3.6-27b` on Groq. While this protects against per-model rate limits and transient 503s with sub-second inference speeds and identical tool-binding semantics, an upstream platform outage or account-level quota exhaustion on Groq affects both siblings simultaneously. Production enterprise systems would implement cross-provider failover (e.g. Groq $\rightarrow$ Anthropic/OpenAI).
+- **Single-Turn Single-Tool Principle (`parallel_tool_calls=False`)**: To prevent tool hallucination, redundant API calls, and context token explosion within the 800-token budget, the model is bound with `parallel_tool_calls=False`. For composite inquiries requiring multiple distinct tools (e.g., freight class calculation + flatbed carrier lookup), the agent addresses the primary intent first and relies on multi-turn user conversation rather than parallel execution.
 - **Synthetic Dataset**: 500 fictional carrier profiles are deterministically generated to avoid real-carrier compliance or data-quality misrepresentation while preserving authentic freight domain complexity (TWIC badges, GDP cold chain, Moffett forklifts, RGN lowboys, Carrier Vector chillers).
 - **Groq Free-Tier Token Budgets (200k TPD)**: Free-tier Groq API accounts enforce daily token limits. FreightIQ mitigates this via automatic sibling failover (`qwen/qwen3.8-27b` $\leftrightarrow$ `qwen/qwen3.6-27b`), tool output length bounding (2,000 characters), and turn-aligned 8-message context truncation.
 - **SQLite Write Serialization**: SQLite in WAL mode provides lock-free concurrent reads, but writes are serialized. High-volume multi-user writes in enterprise production would necessitate PostgreSQL.
-- **FMCSA Web Scraping**: The SAFER tool queries the public USDOT web portal. External network outages or CAPTCHA updates fall back gracefully to local verified database records.
+- **FMCSA Public API Availability & Compliance Gating**: The tool queries the FMCSA QCMobile JSON REST service. If external network timeouts occur, it falls back to local database records while strictly enforcing carrier safety ratings (rejecting unsatisfactory carriers). Direct BMC-91X insurance filing checks are redirected to SAFER.
 
 ---
 

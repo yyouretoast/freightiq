@@ -116,102 +116,102 @@ EVAL_CASES = [
     # --- Category 2: Qualitative / Jargon Queries (20 cases) ---
     {
         "category": "Qualitative",
-        "query": "Carriers equipped with drop-and-hook dry van trailers for distribution center networks.",
+        "query": "We need preloaded dry van swapping across large warehouse distribution hubs.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%drop-and-hook%'"
     },
     {
         "category": "Qualitative",
-        "query": "Carriers offering real-time automated pulp temperature monitoring for perishable goods.",
+        "query": "Looking for refrigerated haulers that provide continuous sensor tracking of internal produce temperatures.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%pulp temp%'"
     },
     {
         "category": "Qualitative",
-        "query": "GDP-compliant pharmaceutical carriers with dual reefer units and tamper-evident seals.",
+        "query": "Need certified pharma transport with backup cooling systems and chain-of-custody security seals.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%GDP-compliant%' OR notes LIKE '%dual reefer%'"
     },
     {
         "category": "Qualitative",
-        "query": "Licensed hazardous materials haulers carrying Class 3 flammable liquids and spill kits.",
+        "query": "Looking for certified chemical drivers outfitted with emergency containment gear for flammable liquids.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%Class 3%' OR notes LIKE '%spill kits%'"
     },
     {
         "category": "Qualitative",
-        "query": "High-value electronics transport with dual-driver teams and covert satellite geofencing.",
+        "query": "Carriers offering expedited team drivers and discreet route-tracking for high-value microchips.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%dual-driver%' OR notes LIKE '%covert GPS%'"
     },
     {
         "category": "Qualitative",
-        "query": "Jobsite flatbed delivery with Moffett forklift offloading capabilities.",
+        "query": "Flatbed delivery to remote construction jobsites requiring a mounted forklift for self-unloading.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%Moffett forklift%'"
     },
     {
         "category": "Qualitative",
-        "query": "Specialized heavy equipment transport using RGN lowboy trailers with 4-point chains.",
+        "query": "Carriers capable of moving oversized heavy industrial equipment using detachable lowboy trailers.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%RGN lowboy%'"
     },
     {
         "category": "Qualitative",
-        "query": "Automotive assembly carriers running sequenced JIT milk-runs.",
+        "query": "Dedicated logistics carriers supporting assembly plants with scheduled multi-stop round-the-clock rounds.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%milk-runs%' OR notes LIKE '%JIT%'"
     },
     {
         "category": "Qualitative",
-        "query": "Store delivery carriers with hydraulic liftgates and pallet jacks.",
+        "query": "Final-mile retail carriers with rear power liftgates and electric pallet jacks for stores without loading docks.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%liftgate%' OR notes LIKE '%pallet jacks%'"
     },
     {
         "category": "Qualitative",
-        "query": "Superload heavy-haul transport for wind turbine blades and bridge girders.",
+        "query": "Specialized heavy-haul carriers equipped with steerable dollies for extra-long structural infrastructure components.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%wind turbine%' OR notes LIKE '%superload%'"
     },
     {
         "category": "Qualitative",
-        "query": "Sanitary and chemical stainless steel liquid bulk tankers with rear pump-off.",
+        "query": "Bulk fluid transporters with insulated stainless steel tankers and integrated discharge pumps.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%rear pump-off%' OR notes LIKE '%liquid bulk%'"
     },
     {
         "category": "Qualitative",
-        "query": "Port drayage intermodal carriers with TWIC badges for container transport.",
+        "query": "Harbor drayage truckers with federal security clearance credentials for ocean container haulage.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%TWIC badges%' OR notes LIKE '%drayage%'"
     },
     {
         "category": "Qualitative",
-        "query": "Clean food-grade 53-foot air-ride trailers for grocery freight.",
+        "query": "Pest-free sanitized trailers with air-ride suspension for sensitive supermarket food distribution.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%food-grade%'"
     },
     {
         "category": "Qualitative",
-        "query": "Life sciences clinical trial transport with continuous telematics.",
+        "query": "Specialized cold chain carriers for medical research samples requiring active data logger validation.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%clinical trial%' OR notes LIKE '%life sciences%'"
     },
     {
         "category": "Qualitative",
-        "query": "Class 8 corrosives and toxic chemical transport with Chemtrec monitoring.",
+        "query": "Certified chemical haulers for toxic inhalation hazards and acid corrosives connected to 24/7 emergency response.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%Class 8%' OR notes LIKE '%Chemtrec%'"
     },
     {
         "category": "Qualitative",
-        "query": "Precision CNC machinery and tooling haulers with air-ride suspension.",
+        "query": "Delicate industrial machinery transport requiring shock-absorbing air ride and weatherized tarps.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%CNC equipment%' OR notes LIKE '%machinery tooling%'"
     },
     {
         "category": "Qualitative",
-        "query": "Tier-1 automotive supplier parts transport with strict delivery windows.",
+        "query": "Motor carriers specialized in high-priority assembly plant supply lines with narrow delivery appointments.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%tier-1 automotive%'"
     },
     {
         "category": "Qualitative",
-        "query": "Construction lumber and roofing drywall haulers with heavy drop tarps.",
+        "query": "Open-deck flatbed drivers equipped to haul moisture-sensitive building materials like drywall and shingles.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%roofing shingles%' OR notes LIKE '%drop tarps%'"
     },
     {
         "category": "Qualitative",
-        "query": "Multi-stop LTL consolidation with live GPS milestone tracking.",
+        "query": "Less-than-truckload freight consolidation with real-time waypoint alerts and shipment status pings.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%GPS milestone tracking%'"
     },
     {
         "category": "Qualitative",
-        "query": "Carriers with spread-axle aluminum flatbeds and 4-inch heavy-duty straps.",
+        "query": "Flatbed haulers featuring aluminum wide-spread tandem axles and wide winch straps for load securement.",
         "sql": "SELECT dot_number FROM carriers WHERE notes LIKE '%spread-axle%'"
     },
 

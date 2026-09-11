@@ -24,39 +24,54 @@ Rules:
 3. Single Tool Principle: Select the single most appropriate tool for the inquiry. Synthesize and present the final answer immediately once results are returned from that tool; do not chain or invoke secondary tools unless the user explicitly requested multiple distinct lookups.
 4. Presentation: Format carrier results cleanly using markdown tables or bullet points with key attributes (Name, DOT/MC, HQ, Equipment, Safety). For multi-part queries, address every component directly.
 """
+import threading
 
+_model_lock = threading.Lock()
 _active_llm = None
 _active_llm_with_tools = None
+
+def reset_active_models():
+    global _active_llm, _active_llm_with_tools
+    with _model_lock:
+        _active_llm = None
+        _active_llm_with_tools = None
 
 def get_active_models():
     global _active_llm, _active_llm_with_tools
     if _active_llm is None:
+        with _model_lock:
+            if _active_llm is None:
+                api_key = config.GROQ_API_KEY
+                if not api_key:
+                    raise ValueError("GROQ_API_KEY environment variable is missing. Set GROQ_API_KEY to run LLM inference.")
+                _active_llm = ChatGroq(
+                    model=config.AGENT_MODEL,
+                    groq_api_key=api_key,
+                    temperature=0.0,
+                    max_tokens=config.MAX_OUTPUT_TOKENS,
+                    streaming=True
+                )
+                _active_llm_with_tools = _active_llm.bind_tools(tools, parallel_tool_calls=False)
+    return _active_llm, _active_llm_with_tools
+
+def switch_to_sibling():
+    global _active_llm, _active_llm_with_tools
+    with _model_lock:
+        api_key = config.GROQ_API_KEY
+        if not api_key:
+            raise ValueError("GROQ_API_KEY environment variable is missing.")
+        current = getattr(_active_llm, "model_name", "") or getattr(config, "AGENT_MODEL", "")
+        alt_model = "qwen/qwen3.6-27b" if "3.8" in current else "qwen/qwen3.8-27b"
+        logger.warning(f"Switching active inference model to '{alt_model}'.")
         _active_llm = ChatGroq(
-            model=config.AGENT_MODEL,
-            groq_api_key=config.GROQ_API_KEY,
+            model=alt_model,
+            groq_api_key=api_key,
             temperature=0.0,
             max_tokens=config.MAX_OUTPUT_TOKENS,
             streaming=True
         )
         _active_llm_with_tools = _active_llm.bind_tools(tools, parallel_tool_calls=False)
-    return _active_llm, _active_llm_with_tools
-
-def switch_to_sibling():
-    global _active_llm, _active_llm_with_tools
-    current = getattr(_active_llm, "model_name", "") or getattr(config, "AGENT_MODEL", "")
-    alt_model = "qwen/qwen3.6-27b" if "3.8" in current else "qwen/qwen3.8-27b"
-    logger.warning(f"Switching active inference model to '{alt_model}'.")
-    _active_llm = ChatGroq(
-        model=alt_model,
-        groq_api_key=config.GROQ_API_KEY,
-        temperature=0.0,
-        max_tokens=config.MAX_OUTPUT_TOKENS,
-        streaming=True
-    )
-    _active_llm_with_tools = _active_llm.bind_tools(tools, parallel_tool_calls=False)
-    return _active_llm, _active_llm_with_tools
-
-llm, llm_with_tools = get_active_models()
+        return _active_llm, _active_llm_with_tools
 
 def _is_retryable_error(exc):
     if isinstance(exc, (RateLimitError, InternalServerError, APIConnectionError)):

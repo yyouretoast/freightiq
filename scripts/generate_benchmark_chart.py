@@ -17,9 +17,9 @@ strategies = [
     "Reranked Hybrid\n(Cross-Encoder)"
 ]
 
-r1_scores = [0.967, 0.500, 0.633, 0.500, 0.850]
-r5_scores = [0.967, 0.733, 0.817, 0.733, 0.900]
-mrr_scores = [0.967, 0.596, 0.701, 0.595, 0.872]
+r1_scores = [0.967, 0.350, 0.500, 0.350, 0.733]
+r5_scores = [0.967, 0.700, 0.700, 0.700, 0.850]
+mrr_scores = [0.967, 0.477, 0.573, 0.477, 0.781]
 
 x = np.arange(len(strategies))
 
@@ -95,9 +95,9 @@ ax_kpi.text(0.5, 0.92, "KEY TAKEAWAYS", transform=ax_kpi.transAxes,
             ha="center", va="center", fontsize=11, fontweight="700", color="#00d4ff")
 
 kpis = [
-    ("Recall@1 Surge", "0.500 → 0.850", "+70.0% gain via Cross-Encoder", "#00d4ff"),
-    ("Overall MRR", "0.596 → 0.872", "+46.3% neural precision", "#00e676"),
-    ("Qualitative Jargon", "1.000 MRR", "Perfect recall on freight terms", "#b347ff"),
+    ("Recall@1 Surge", "0.350 → 0.733", "+109.4% gain via Cross-Encoder", "#00d4ff"),
+    ("Overall MRR", "0.477 → 0.781", "+63.7% neural precision gain", "#00e676"),
+    ("Structured R@1", "0.350 → 0.900", "BM25+RRF eliminates vector misses", "#b347ff"),
     ("Sub-ms Latency", "0.22 – 0.31 ms", "SQLite & FTS5 instant paths", "#ff9100")
 ]
 

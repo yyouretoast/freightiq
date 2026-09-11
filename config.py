@@ -20,7 +20,8 @@ CROSS_ENCODER_MODEL_NAME = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
 # LLM & Search Configuration (centralized env var reads)
 AGENT_MODEL = os.getenv("AGENT_MODEL", "qwen/qwen3.8-27b")
-GROQ_API_KEY = os.getenv("GROQ_API_KEY") or "mock_key_for_ci"
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+FMCSA_WEB_KEY = os.getenv("FMCSA_WEB_KEY", "4f03a62f4fb2a690e0e01da1eef67664c39846b0")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 MAX_OUTPUT_TOKENS = int(os.getenv("MAX_OUTPUT_TOKENS", "800"))
 

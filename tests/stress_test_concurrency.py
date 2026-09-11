@@ -54,6 +54,16 @@ def worker_task(worker_id):
         sql_res = query_carriers_sql(sql_query)
         logger.info(f"Worker {worker_id}: SQL queried successfully. Result length: {len(sql_res)}")
         
+        # 4. Stress concurrent LLM singleton instantiation & failover lock
+        if os.getenv("GROQ_API_KEY"):
+            from agent.nodes import get_active_models, switch_to_sibling
+            base_llm, tool_llm = get_active_models()
+            assert base_llm is not None, "Active LLM should not be None"
+            if worker_id % 5 == 0:
+                alt_base, alt_tool = switch_to_sibling()
+                assert alt_base is not None, "Sibling model should not be None"
+            logger.info(f"Worker {worker_id}: Concurrent LLM singleton thread-safety check passed.")
+
         return True
         
     except Exception as e:

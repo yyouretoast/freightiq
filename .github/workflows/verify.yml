@@ -25,9 +25,17 @@ jobs:
       - name: Run System Verification
         run: |
           python -m tests.verify_system
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
       - name: Run Retrieval Benchmark
         run: |
           python -m tests.evaluate_retrieval
       - name: Run Concurrency Test
         run: |
           python -m tests.stress_test_concurrency
+      - name: Run Agent Trajectory Evaluation (When Secret Configured)
+        if: ${{ env.GROQ_API_KEY != '' }}
+        run: |
+          python -m tests.evaluate_agent_trajectories
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}

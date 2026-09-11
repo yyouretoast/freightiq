@@ -491,10 +491,12 @@ with st.sidebar:
         st.session_state.custom_groq_key = user_groq_key
         os.environ["GROQ_API_KEY"] = user_groq_key
         config.GROQ_API_KEY = user_groq_key
+        from agent.nodes import reset_active_models
+        reset_active_models()
         st.rerun()
 
     active_key = os.getenv("GROQ_API_KEY") or config.GROQ_API_KEY
-    api_key_set = bool(active_key and active_key != "mock_key_for_ci")
+    api_key_set = bool(active_key)
     
     selected_model = st.selectbox(
         "🧠 Agent Model",
@@ -505,6 +507,8 @@ with st.sidebar:
     if selected_model != config.AGENT_MODEL:
         config.AGENT_MODEL = selected_model
         os.environ["AGENT_MODEL"] = selected_model
+        from agent.nodes import reset_active_models
+        reset_active_models()
 
     status_class = "status-ok" if api_key_set else "status-err"
     status_text = f"{config.AGENT_MODEL} · Connected" if api_key_set else "Groq API Key Missing"
