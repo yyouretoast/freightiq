@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "freightiq"
 version = "2.2.0"
-description = "Agentic Freight Carrier Intelligence & Hybrid RAG System"
+description = "Freight carrier query routing and retrieval system"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -17,6 +17,9 @@ dependencies = [
     "langchain>=0.1.0",
     "langchain-groq>=0.1.0",
     "langchain-community>=0.0.30",
+    "langchain-google-genai>=2.0.0",
+    "langchain-openai>=0.1.0",
+    "langchain-anthropic>=0.1.0",
     "chromadb>=0.4.0",
     "sentence-transformers>=2.2.0",
     "streamlit>=1.30.0",

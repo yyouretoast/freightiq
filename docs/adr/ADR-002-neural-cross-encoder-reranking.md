@@ -13,8 +13,8 @@ We implement a two-stage retrieval pipeline:
 
 ## Consequences
 ### Positive
-- **Drastic Metric Gains:** Empirical benchmarks across 60 queries demonstrated a leap in Recall@1 from 0.500 (dense alone) to **0.850** (+70.0%) and Overall MRR from 0.596 to **0.872** (+46.3%), with perfect 1.000 Recall@1 and 1.000 MRR on qualitative domain jargon queries.
-- **Bounded Latency:** Scoring only 15 candidate pairs takes ~12–25ms on CPU, staying well below typical conversational turn SLAs (<100ms retrieval overhead).
+- **Metric Gains:** Empirical benchmarks across 60 queries demonstrated a leap in Recall@1 from 0.300 (dense baseline) to **0.700** (+133.3%) and Overall MRR from 0.429 to **0.764** (+78.1%), with 0.650 Recall@1 and 0.727 MRR on qualitative domain queries.
+- **Bounded Latency:** Scoring 15 candidate pairs adds ~35ms compute latency on CPU (~499ms total pipeline), staying well within interactive conversational turn thresholds.
 
 ### Trade-offs & Mitigations
 - In-process memory footprint increases by ~80MB for model weights. This easily fits within free-tier container limits (HuggingFace Spaces 16GB RAM limit, local workstation ~80MB RAM).

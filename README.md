@@ -57,7 +57,7 @@ FreightIQ answers commercial freight questions by routing incoming requests acro
 4. **NMFC Freight Class Calculator (`freight_class_calculator`)**: Deterministic density-to-class mapping with commodity exception overrides.
 5. **Live Web Search (`web_search`)**: Current freight rate trends and market updates via Tavily API with DuckDuckGo fallback.
 
-Orchestration is handled by a LangGraph state machine powered by Groq (`qwen/qwen3.8-27b` with automatic fallback to `qwen/qwen3.6-27b`).
+Orchestration is handled by a LangGraph state machine supporting multiple LLM backends: Groq (default: `qwen/qwen3.8-27b` with automatic fallback to `qwen/qwen3.6-27b`), Google Gemini, OpenAI, Anthropic, and local Ollama models.
 
 ---
 
@@ -256,7 +256,7 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 
 ### 1. Prerequisites
 - Python 3.10+ (tested on Python 3.11)
-- Groq API key
+- LLM API key (Groq, Google Gemini, OpenAI, Anthropic, or local Ollama)
 
 ### 2. Installation
 ```bash
@@ -277,8 +277,13 @@ cp .env.example .env
 
 | Variable | Required | Description | Default / Fallback |
 | :--- | :---: | :--- | :--- |
-| `GROQ_API_KEY` | **Yes** | Groq API key for LLM inference | — |
-| `AGENT_MODEL` | No | Active Groq model ID | `qwen/qwen3.8-27b` (fallback: `qwen/qwen3.6-27b`) |
+| `LLM_PROVIDER` | No | Active inference provider (`groq`, `gemini`, `openai`, `anthropic`, `ollama`) | `groq` |
+| `GROQ_API_KEY` | Conditional | Groq API key (required when using Groq provider) | — |
+| `GOOGLE_API_KEY` | Conditional | Google Gemini API key (or `GEMINI_API_KEY`) | — |
+| `OPENAI_API_KEY` | Conditional | OpenAI API key | — |
+| `ANTHROPIC_API_KEY` | Conditional | Anthropic Claude API key | — |
+| `AGENT_MODEL` | No | Active model ID | `qwen/qwen3.8-27b` (fallback: `qwen/qwen3.6-27b`) |
+| `FMCSA_WEB_KEY` | No | FMCSA QCMobile API web key | Default public key |
 | `TAVILY_API_KEY` | No | Tavily Search API key for freight market intelligence | Falls back to DuckDuckGo (`ddgs`) |
 | `LANGCHAIN_TRACING_V2` | No | Enable LangSmith distributed execution tracing | `false` |
 | `LANGCHAIN_API_KEY` | No | LangSmith API key for trace ingestion | — |

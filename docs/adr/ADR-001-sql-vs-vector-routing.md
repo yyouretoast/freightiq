@@ -24,4 +24,4 @@ We enforce a strict two-pronged routing architecture at the agent orchestration 
 - Sub-5ms response latency on structured queries without invoking vector embeddings or neural inference.
 
 ### Trade-offs & Mitigations
-- Multi-constraint hybrid queries ("Find California flatbed carriers specializing in high-theft electronics") require consensus between relational properties and semantic descriptions. Mitigated by indexing relational metadata directly into the hybrid FTS5 text documents, achieving 70.0% Recall@5 and 0.675 MRR on multi-constraint queries even when queried purely through natural language.
+- Multi-constraint hybrid queries ("Find California flatbed carriers specializing in high-theft electronics") require consensus between relational properties and semantic descriptions. Mitigated by indexing relational metadata directly into the hybrid FTS5 text documents, achieving 0.550 Recall@1, 0.750 Recall@5, and 0.625 MRR on multi-constraint queries even when queried purely through natural language.

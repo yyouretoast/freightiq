@@ -69,7 +69,7 @@ if "voted_message_index" not in st.session_state:
     st.session_state.voted_message_index = -1
 
 st.set_page_config(
-    page_title="FreightIQ | Carrier Intelligence",
+    page_title="FreightIQ | Carrier Operations Router",
     page_icon="🚚",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -564,8 +564,8 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    if not api_key_set:
-        st.warning("Set `GROQ_API_KEY` in `.env` or paste your key above to enable the agent.")
+    if not has_active_key:
+        st.warning(f"Provide an API key for {selected_provider_label} above or set it in your `.env` to enable the agent.")
 
     if st.button("🗑️ Reset Conversation", use_container_width=True):
         st.session_state.messages = []
@@ -755,13 +755,13 @@ if st.session_state.messages and isinstance(st.session_state.messages[-1], AIMes
                 if st.button("👍 Yes", key="thumbs_up", use_container_width=True):
                     save_feedback(last_query, last_response, "up")
                     st.session_state.voted_message_index = last_msg_idx
-                    st.toast("Thank you! Feedback saved to feedback.jsonl.")
+                    st.toast("Feedback saved.")
                     st.rerun()
             with fb_col2:
                 if st.button("👎 No", key="thumbs_down", use_container_width=True):
                     save_feedback(last_query, last_response, "down")
                     st.session_state.voted_message_index = last_msg_idx
-                    st.toast("Thank you! Feedback saved to feedback.jsonl.")
+                    st.toast("Feedback saved.")
                     st.rerun()
         else:
             st.success("Feedback saved.")
