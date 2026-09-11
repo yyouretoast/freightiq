@@ -1,3 +1,5 @@
+import os
+import math
 import logging
 import re
 from langchain_core.tools import tool
@@ -70,6 +72,34 @@ def _split_sql_and_conditions(where_clause: str) -> list[str]:
         parts.append(last_str)
     return parts
 
+def _strip_trailing_sql_clauses(where_clause: str) -> tuple[str, str]:
+    """
+    Extracts the WHERE clause conditions and trailing clauses (ORDER BY, GROUP BY, LIMIT),
+    guaranteeing that keywords inside single-quoted string literals are never matched.
+    Returns (clean_where_conditions, trailing_clauses).
+    """
+    in_quotes = False
+    n = len(where_clause)
+    i = 0
+    split_pos = n
+    trailing = ""
+    while i < n:
+        ch = where_clause[i]
+        if ch == "'" and (i == 0 or where_clause[i-1] != "\\"):
+            in_quotes = not in_quotes
+            i += 1
+        elif not in_quotes:
+            remainder = where_clause[i:]
+            match = re.match(r'^(ORDER\s+BY|GROUP\s+BY|LIMIT)\b', remainder, re.IGNORECASE)
+            if match and (i == 0 or where_clause[i-1].isspace()):
+                split_pos = i
+                trailing = where_clause[i:].strip()
+                break
+            i += 1
+        else:
+            i += 1
+    return where_clause[:split_pos].strip(), trailing
+
 @tool
 def carrier_sql_query(query: str) -> str:
     """
@@ -114,21 +144,27 @@ def carrier_sql_query(query: str) -> str:
         where_match = re.search(r'\bWHERE\b\s+(.*)', clean, re.IGNORECASE)
         if where_match:
             where_clause = where_match.group(1)
-            where_clause_clean = re.split(r'\b(ORDER\s+BY|GROUP\s+BY|LIMIT)\b', where_clause, flags=re.IGNORECASE)[0].strip()
-            and_parts = _split_sql_and_conditions(where_clause_clean)
-            if len(and_parts) > 1:
-                # Try dropping the last condition to provide partial/relaxed matches
-                relaxed_where = " AND ".join(and_parts[:-1])
+            where_conditions, trailing = _strip_trailing_sql_clauses(where_clause)
+            and_parts = _split_sql_and_conditions(where_conditions)
+            
+            # Safety constraints must NEVER be dropped during zero-row relaxation
+            is_safety_cond = lambda p: bool(re.search(r'\bsafety_rating\b', p, re.IGNORECASE))
+            relaxable_parts = [p for p in and_parts if not is_safety_cond(p)]
+
+            if len(relaxable_parts) >= 1 and len(and_parts) > 1:
+                # Drop the last non-safety condition while preserving safety rating compliance
+                dropped_part = relaxable_parts[-1]
+                kept_parts = [p for p in and_parts if p != dropped_part]
+                relaxed_where = " AND ".join(kept_parts)
                 prefix = clean[:where_match.start()]
-                suffix_match = re.search(r'\b(ORDER\s+BY|GROUP\s+BY|LIMIT)\b.*', where_clause, re.IGNORECASE)
-                suffix = f" {suffix_match.group(0)}" if suffix_match else ""
+                suffix = f" {trailing}" if trailing else ""
                 relaxed_sql = f"{prefix}WHERE {relaxed_where}{suffix}"
                 relaxed_wrapped = f"SELECT * FROM ({relaxed_sql}) AS _bounded_carriers LIMIT 5"
                 relaxed_res = query_carriers_sql(relaxed_wrapped)
                 if relaxed_res and not relaxed_res.startswith("No matching") and not relaxed_res.startswith("SQLite Error"):
                     return (
                         "Notice: 0 carriers matched all strict query constraints. "
-                        f"Relaxed search (omitting '{and_parts[-1].strip()}'):\n\n{relaxed_res}\n\n"
+                        f"Relaxed search (omitting '{dropped_part.strip()}'):\n\n{relaxed_res}\n\n"
                         "Note: You may also invoke carrier_semantic_search if looking for broader similarity."
                     )
         return (
@@ -192,8 +228,10 @@ def freight_class_calculator(weight_lbs: float, length_in: float, width_in: floa
     Calculate the NMFC freight class based on shipment weight in pounds, dimensions in inches, and optional cargo description.
     Accurately maps density (lbs/cubic foot) to standard NMFC class, or resolves fixed class exceptions (e.g. insulation).
     """
-    if weight_lbs <= 0 or length_in <= 0 or width_in <= 0 or height_in <= 0:
-        return "Error: All inputs (weight, length, width, height) must be greater than zero."
+    import math
+    for val in (weight_lbs, length_in, width_in, height_in):
+        if not isinstance(val, (int, float)) or math.isnan(val) or math.isinf(val) or val <= 0:
+            return "Error: All inputs (weight, length, width, height) must be positive, finite numerical values greater than zero."
         
     cubic_inches = length_in * width_in * height_in
     cubic_feet = cubic_inches / 1728.0
@@ -211,9 +249,15 @@ def freight_class_calculator(weight_lbs: float, length_in: float, width_in: floa
     applied_exception = None
     if cargo_description:
         desc_lower = cargo_description.lower()
+        negations = {"no", "not", "non", "without", "except"}
         for keyword, ex_class in exceptions.items():
-            if keyword in desc_lower:
-                applied_exception = (keyword, ex_class)
+            for m in re.finditer(rf'\b{re.escape(keyword)}\b', desc_lower):
+                preceding = desc_lower[:m.start()].rstrip()
+                last_word = re.sub(r'[^\w]', '', preceding.split()[-1]) if preceding.split() else ""
+                if last_word not in negations:
+                    applied_exception = (keyword, ex_class)
+                    break
+            if applied_exception:
                 break
     
     if density >= 50:
@@ -282,52 +326,66 @@ def check_fmcsa_authority(dot_number: str) -> str:
     if not clean_dot:
         return "Error: Please provide a valid USDOT number containing digits."
 
-    # First check carrier in database for baseline identity
-    sql_check = query_carriers_sql(
-        f"SELECT carrier_name, mc_number, hq_state, safety_rating, years_operating FROM carriers WHERE dot_number = '{clean_dot}' LIMIT 1"
-    )
-
-    # Attempt live query to public FMCSA QCMobile endpoint
-    try:
-        import urllib.request
-        import json
-        fmcsa_key = getattr(config, "FMCSA_WEB_KEY", "4f03a62f4fb2a690e0e01da1eef67664c39846b0")
-        url = f"https://mobile.fmcsa.dot.gov/qc/services/carriers/{clean_dot}?webKey={fmcsa_key}"
-        req = urllib.request.Request(url, headers={"User-Agent": "FreightIQ/1.0", "Accept": "application/json"})
-        with urllib.request.urlopen(req, timeout=3.0) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            carrier_data = data.get("content", {}).get("carrier", {})
-            if carrier_data:
-                legal_name = carrier_data.get("legalName", "N/A")
-                status = carrier_data.get("statusCode", "")
-                status_str = "ACTIVE (Authorized for Property & Interstate Operations)" if status == "A" else "INACTIVE / SUSPENDED / REVOKED"
-                safety = carrier_data.get("safetyRating") or "Not Rated / Unrated"
-
-                if status != "A":
-                    verif_status = "FAIL — DO NOT DISPATCH (Operating authority is INACTIVE or REVOKED)"
-                elif safety.lower() == "unsatisfactory":
-                    verif_status = "FAIL — DO NOT DISPATCH (Federal Safety Audit: Unsatisfactory Compliance)"
-                elif safety.lower() == "conditional":
-                    verif_status = "WARNING — Supervisory Review Required (Federal Safety Audit: Conditional Compliance)"
-                else:
-                    verif_status = "PASS (Active Operating Authority Verified)"
-
-                return (
-                    f"=== FMCSA QCMOBILE VERIFICATION FOR USDOT #{clean_dot} ===\n"
-                    f"Legal Entity Name: {legal_name}\n"
-                    f"Operating Authority Status: {status_str}\n"
-                    f"Federal Safety Rating: {safety}\n"
-                    f"BIPD & Cargo Insurance: Basic endpoint does not provide policy limits. Verify BMC-91X filing directly on SAFER.\n"
-                    f"FreightIQ Verification: {verif_status}"
+    # 1. Query structured carrier record directly from SQLite (prevents text-dump regex injection)
+    local_row = None
+    if os.path.exists(config.DB_PATH):
+        try:
+            import sqlite3
+            with sqlite3.connect(f"file:{config.DB_PATH}?mode=ro", uri=True, timeout=5.0) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT carrier_name, mc_number, hq_state, safety_rating, years_operating FROM carriers WHERE dot_number = ? LIMIT 1",
+                    (clean_dot,)
                 )
-    except Exception as e:
-        logger.debug(f"Live FMCSA request fallback: {e}")
+                local_row = cursor.fetchone()
+        except Exception as e:
+            logger.debug(f"Local database check failed: {e}")
 
-    # Fallback to local verified database record
-    has_local_record = sql_check and not sql_check.startswith("No matching records") and not sql_check.startswith("Error") and not sql_check.startswith("SQLite Error")
-    if has_local_record:
-        safety_match = re.search(r"Safety Rating:\s*([a-zA-Z]+)", sql_check, re.IGNORECASE)
-        safety_rating = safety_match.group(1).lower() if safety_match else "unknown"
+    # 2. Attempt live query to public FMCSA QCMobile endpoint if key is provided
+    fmcsa_key = getattr(config, "FMCSA_WEB_KEY", None) or os.getenv("FMCSA_WEB_KEY")
+    if fmcsa_key:
+        try:
+            import urllib.request
+            import json
+            url = f"https://mobile.fmcsa.dot.gov/qc/services/carriers/{clean_dot}?webKey={fmcsa_key}"
+            req = urllib.request.Request(url, headers={"User-Agent": "FreightIQ/1.0", "Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=3.0) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                carrier_data = data.get("content", {}).get("carrier", {})
+                if carrier_data:
+                    legal_name = carrier_data.get("legalName", "N/A")
+                    status = carrier_data.get("statusCode", "")
+                    status_str = "ACTIVE (Authorized for Property & Interstate Operations)" if status == "A" else "INACTIVE / SUSPENDED / REVOKED"
+                    safety = carrier_data.get("safetyRating") or "Not Rated / Unrated"
+
+                    if status != "A":
+                        verif_status = "FAIL — DO NOT DISPATCH (Operating authority is INACTIVE or REVOKED)"
+                    elif safety.lower() == "unsatisfactory":
+                        verif_status = "FAIL — DO NOT DISPATCH (Federal Safety Audit: Unsatisfactory Compliance)"
+                    elif safety.lower() == "conditional":
+                        verif_status = "WARNING — Supervisory Review Required (Federal Safety Audit: Conditional Compliance)"
+                    else:
+                        verif_status = "PASS (Active Operating Authority Verified)"
+
+                    return (
+                        f"=== FMCSA QCMOBILE VERIFICATION FOR USDOT #{clean_dot} ===\n"
+                        f"Legal Entity Name: {legal_name}\n"
+                        f"Operating Authority Status: {status_str}\n"
+                        f"Federal Safety Rating: {safety}\n"
+                        f"BIPD & Cargo Insurance: Basic endpoint does not provide policy limits. Verify BMC-91X filing directly on SAFER.\n"
+                        f"FreightIQ Verification: {verif_status}"
+                    )
+        except Exception as e:
+            logger.debug(f"Live FMCSA request fallback: {e}")
+
+    # 3. Fallback to local verified database record
+    if local_row:
+        carrier_name = local_row["carrier_name"]
+        mc_number = local_row["mc_number"]
+        hq_state = local_row["hq_state"]
+        years_operating = local_row["years_operating"]
+        safety_rating = str(local_row["safety_rating"]).lower().strip()
 
         if safety_rating == "unsatisfactory":
             audit_str = "Unsatisfactory Compliance (CRITICAL VIOLATIONS DETECTED)"
@@ -344,7 +402,12 @@ def check_fmcsa_authority(dot_number: str) -> str:
 
         return (
             f"=== FMCSA REGISTRY RECORD FOR USDOT #{clean_dot} (LOCAL DATABASE FALLBACK) ===\n"
-            f"Carrier Registry Profile:\n{sql_check}\n"
+            f"Carrier Registry Profile:\n"
+            f"Carrier Name: {carrier_name}\n"
+            f"MC Number: {mc_number}\n"
+            f"HQ State: {hq_state}\n"
+            f"Years Operating: {years_operating}\n"
+            f"Safety Rating: {safety_rating}\n"
             f"Operating Authority Status: Internal database profile verified (Active Motor Carrier Record). Live federal operating authority must be verified on SAFER when registry service is restored.\n"
             f"Federal Safety Audit: {audit_str}\n"
             f"BIPD Insurance Status: Internal registry record active. Live BMC-91X filing required prior to dispatch.\n"

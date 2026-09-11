@@ -87,38 +87,105 @@ def get_active_models(configurable: Optional[dict] = None):
                 )
     return _active_llm, _active_llm_with_tools
 
-def switch_to_sibling(current_model_name: str = ""):
+SIBLING_MODEL_MAP = {
+    "groq": lambda curr: "qwen/qwen3.6-27b" if "3.8" in curr else "qwen/qwen3.8-27b",
+    "gemini": lambda curr: "gemini-1.5-flash" if "2.5" in curr else "gemini-2.5-flash",
+    "google": lambda curr: "gemini-1.5-flash" if "2.5" in curr else "gemini-2.5-flash",
+    "openai": lambda curr: "gpt-4o" if "mini" in curr else "gpt-4o-mini",
+    "anthropic": lambda curr: "claude-3-5-sonnet-latest" if "haiku" in curr else "claude-3-5-haiku-latest",
+    "ollama": lambda curr: "llama3.2:latest" if "qwen" in curr else "qwen2.5:14b",
+    "local": lambda curr: "llama3.2:latest" if "qwen" in curr else "qwen2.5:14b",
+    "openai_compatible": lambda curr: "llama3.2:latest" if "qwen" in curr else "qwen2.5:14b",
+}
+
+def _extract_model_name(llm_obj) -> str:
+    if llm_obj is None:
+        return ""
+    underlying = getattr(llm_obj, "bound", llm_obj)
+    return (
+        getattr(underlying, "model_name", None)
+        or getattr(underlying, "model", None)
+        or getattr(llm_obj, "model_name", None)
+        or getattr(llm_obj, "model", None)
+        or ""
+    )
+
+def switch_to_sibling(current_model_name: str = "", configurable: Optional[dict] = None):
     global _active_llm, _active_llm_with_tools
+    
+    # 1. Session-scoped failover
+    if configurable and any(k in configurable for k in ("provider", "model", "api_key", "base_url")):
+        provider = (configurable.get("provider") or getattr(config, "LLM_PROVIDER", "groq")).lower()
+        current = (
+            current_model_name
+            or configurable.get("model")
+            or getattr(config, "AGENT_MODEL", "")
+        )
+        mapper = SIBLING_MODEL_MAP.get(provider, SIBLING_MODEL_MAP["groq"])
+        alt_model = mapper(current)
+        logger.warning(
+            f"Switching session model from '{current}' to sibling '{alt_model}' (provider: {provider})."
+        )
+        
+        configurable["model"] = alt_model
+        
+        base_alt, tool_alt = create_model_instance(
+            provider=provider,
+            model_name=alt_model,
+            api_key=configurable.get("api_key"),
+            base_url=configurable.get("base_url"),
+            temperature=0.0,
+            max_tokens=config.MAX_OUTPUT_TOKENS,
+            streaming=True
+        )
+        cache_key = (provider, alt_model, configurable.get("api_key"), configurable.get("base_url"))
+        with _session_cache_lock:
+            _session_cache[cache_key] = (base_alt, tool_alt)
+        return base_alt, tool_alt
+
+    # 2. Process-global failover
     with _model_lock:
-        provider = getattr(config, "LLM_PROVIDER", "groq")
-        if provider == "groq":
-            current = current_model_name or getattr(_active_llm, "model_name", "") or getattr(config, "AGENT_MODEL", "")
-            alt_model = "qwen/qwen3.6-27b" if "3.8" in current else "qwen/qwen3.8-27b"
-            logger.warning(f"Switching active inference model to '{alt_model}'.")
-            _active_llm, _active_llm_with_tools = create_model_instance(
-                provider="groq",
-                model_name=alt_model,
-                temperature=0.0,
-                max_tokens=config.MAX_OUTPUT_TOKENS,
-                streaming=True
-            )
-        elif provider in ("gemini", "google"):
-            current = current_model_name or "gemini-2.5-flash"
-            alt_model = "gemini-1.5-flash" if "2.5" in current else "gemini-2.5-flash"
-            logger.warning(f"Switching active inference model to '{alt_model}'.")
-            _active_llm, _active_llm_with_tools = create_model_instance(
-                provider="gemini",
-                model_name=alt_model,
-                temperature=0.0,
-                max_tokens=config.MAX_OUTPUT_TOKENS,
-                streaming=True
-            )
+        provider = (getattr(config, "LLM_PROVIDER", "groq")).lower()
+        current = (
+            current_model_name
+            or _extract_model_name(_active_llm)
+            or getattr(config, "AGENT_MODEL", "")
+        )
+        mapper = SIBLING_MODEL_MAP.get(provider, SIBLING_MODEL_MAP["groq"])
+        alt_model = mapper(current)
+        logger.warning(
+            f"Switching active inference model from '{current}' to sibling '{alt_model}' (provider: {provider})."
+        )
+        _active_llm, _active_llm_with_tools = create_model_instance(
+            provider=provider,
+            model_name=alt_model,
+            temperature=0.0,
+            max_tokens=config.MAX_OUTPUT_TOKENS,
+            streaming=True
+        )
         return _active_llm, _active_llm_with_tools
+
+def _is_rate_limit_or_not_found(exc):
+    if isinstance(exc, (NotFoundError, RateLimitError)):
+        return True
+    status_code = getattr(exc, "status_code", None) or getattr(exc, "code", None)
+    if status_code in (404, 429):
+        return True
+    exc_type_name = type(exc).__name__
+    if any(term in exc_type_name for term in ("RateLimit", "NotFound", "ResourceExhausted")):
+        return True
+    return False
 
 def _is_retryable_error(exc):
     if isinstance(exc, (RateLimitError, InternalServerError, APIConnectionError)):
         return True
     if isinstance(exc, APIStatusError) and getattr(exc, "status_code", None) in (413, 429, 500, 502, 503, 504):
+        return True
+    status_code = getattr(exc, "status_code", None) or getattr(exc, "code", None)
+    if status_code in (413, 429, 500, 502, 503, 504):
+        return True
+    exc_type_name = type(exc).__name__
+    if any(term in exc_type_name for term in ("RateLimit", "InternalServer", "APIConnection", "ServiceUnavailable")):
         return True
     return False
 
@@ -131,13 +198,23 @@ def _is_retryable_error(exc):
 def _invoke_with_retry(is_tool_bound, messages, configurable=None):
     base_llm, tool_llm = get_active_models(configurable)
     target = tool_llm if is_tool_bound else base_llm
+    curr_model = _extract_model_name(target)
     try:
         return target.invoke(messages)
-    except (NotFoundError, RateLimitError) as e:
-        logger.warning(f"Model failed with {type(e).__name__} ({e}). Switching to sibling model.")
-        base_alt, tool_alt = switch_to_sibling(getattr(target, "model_name", ""))
-        target_alt = tool_alt if is_tool_bound else base_alt
-        return target_alt.invoke(messages)
+    except Exception as e:
+        if _is_rate_limit_or_not_found(e):
+            logger.warning(f"Model '{curr_model}' failed with {type(e).__name__} ({e}). Switching to sibling model.")
+            base_alt, tool_alt = switch_to_sibling(curr_model, configurable=configurable)
+            target_alt = tool_alt if is_tool_bound else base_alt
+            alt_model = _extract_model_name(target_alt)
+            try:
+                return target_alt.invoke(messages)
+            except Exception as alt_err:
+                logger.error(f"Sibling model failover to '{alt_model}' also failed: {alt_err}")
+                raise RuntimeError(
+                    f"Both primary model '{curr_model}' and failover sibling model '{alt_model}' failed: {alt_err}"
+                ) from alt_err
+        raise e
 
 
 
