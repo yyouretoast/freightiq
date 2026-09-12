@@ -57,7 +57,7 @@ FreightIQ answers commercial freight questions by routing incoming requests acro
 4. **NMFC Freight Class Calculator (`freight_class_calculator`)**: Deterministic density-to-class mapping with commodity exception overrides.
 5. **Live Web Search (`web_search`)**: Current freight rate trends and market updates via Tavily API with DuckDuckGo fallback.
 
-Orchestration is handled by a LangGraph state machine supporting multiple LLM backends: Groq (default: `qwen/qwen3.8-27b` with automatic fallback to `qwen/qwen3.6-27b`), Google Gemini, OpenAI, Anthropic, and local Ollama models.
+Orchestration is handled by a LangGraph state machine supporting multiple LLM backends: Groq (default: `qwen/qwen3.8-27b` with automatic fallback to `qwen/qwen3.6-27b`), OpenAI (`gpt-4o-mini`, `gpt-4o`), and local Ollama models.
 
 ---
 
@@ -256,7 +256,7 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 
 ### 1. Prerequisites
 - Python 3.10+ (tested on Python 3.11)
-- LLM API key (Groq, Google Gemini, OpenAI, Anthropic, or local Ollama)
+- LLM API key (Groq, OpenAI, or local Ollama)
 
 ### 2. Installation
 ```bash

@@ -65,7 +65,7 @@ def create_model_instance(
     Factory function returning (base_llm, tool_bound_llm) for the requested provider.
     """
     provider_lower = provider.lower()
-    max_tokens = max_tokens or getattr(config, "MAX_OUTPUT_TOKENS", 1500)
+    max_tokens = max_tokens or getattr(config, "MAX_OUTPUT_TOKENS", 950)
 
     # 1. Groq Provider
     if provider_lower == "groq":
@@ -75,7 +75,7 @@ def create_model_instance(
             raise ValueError("GROQ_API_KEY is missing. Provide a valid Groq API key.")
         model = model_name or getattr(config, "AGENT_MODEL", "qwen/qwen3.8-27b")
         # Groq on-demand tier enforces a strict 1,000 Output Tokens Per Minute (OTPM) ceiling.
-        # Cap Groq to 950 tokens to prevent 429 rate limit rejections, while alternative providers can use 1,500+.
+        # Cap Groq to 950 tokens to prevent 429 rate limit rejections.
         groq_tokens = min(max_tokens, 950) if max_tokens else 950
         llm = ChatGroq(
             model=model,
@@ -86,7 +86,6 @@ def create_model_instance(
         )
         return llm, bind_tools_safely(llm)
 
-    # 2. Google Gemini Provider
     # 2. OpenAI Provider
     elif provider_lower == "openai":
         try:

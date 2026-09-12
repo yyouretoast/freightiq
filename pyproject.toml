@@ -17,9 +17,7 @@ dependencies = [
     "langchain>=0.1.0",
     "langchain-groq>=0.1.0",
     "langchain-community>=0.0.30",
-    "langchain-google-genai>=2.0.0",
     "langchain-openai>=0.1.0",
-    "langchain-anthropic>=0.1.0",
     "chromadb>=0.4.0",
     "sentence-transformers>=2.2.0",
     "streamlit>=1.30.0",
@@ -39,4 +37,4 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["agent*", "rag*", "config*"]
+include = ["agent*", "rag*", "config*", "utils*"]

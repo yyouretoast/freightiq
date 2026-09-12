@@ -12,6 +12,4 @@ tenacity>=8.2.0
 numpy>=1.24.0
 tokenizers>=0.22.0,<=0.23.0
 tavily-python>=0.5.0
-langchain-google-genai>=2.0.0
 langchain-openai>=0.1.0
-langchain-anthropic>=0.1.0
