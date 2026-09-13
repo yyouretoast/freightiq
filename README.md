@@ -20,12 +20,12 @@ Freight carrier query routing and retrieval system combining relational SQL quer
 > **Live Demo:** [huggingface.co/spaces/yyouretoast/freightiq](https://huggingface.co/spaces/yyouretoast/freightiq)  
 > **Repository:** [github.com/yyouretoast/freightiq](https://github.com/yyouretoast/freightiq)
 
-https://github.com/user-attachments/assets/dbf58565-39ee-4d17-a434-6a321c8afed4
+https://github.com/yyouretoast/freightiq/raw/main/assets/demo.mp4
 
 <p align="center">
   <em>Demo: Query routing across SQLite, hybrid search, freight class calculator, and FMCSA registry lookup.</em>
   <br>
-  <sub><em>If video does not play inline, <a href="https://github.com/user-attachments/assets/dbf58565-39ee-4d17-a434-6a321c8afed4">click here to watch the direct demo recording</a> or try the <a href="https://huggingface.co/spaces/yyouretoast/freightiq">live interactive demo</a>.</em></sub>
+  <sub><em>If video does not play inline, <a href="https://github.com/yyouretoast/freightiq/raw/main/assets/demo.mp4">click here to watch the direct demo recording</a> or try the <a href="https://huggingface.co/spaces/yyouretoast/freightiq">live interactive demo</a>.</em></sub>
 </p>
 
 ---

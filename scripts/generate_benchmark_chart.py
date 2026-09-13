@@ -97,7 +97,7 @@ ax_kpi.text(0.5, 0.92, "BENCHMARK SUMMARY", transform=ax_kpi.transAxes,
 kpis = [
     ("Recall@1", "0.300 → 0.700", "+133.3% lift with Cross-Encoder", "#00d4ff"),
     ("MRR", "0.429 → 0.764", "+78.1% rank order gain", "#00e676"),
-    ("Hybrid Recall@5", "0.400 → 0.750", "+87.5% multi-constraint gain", "#b347ff"),
+    ("Recall@5", "0.667 → 0.867", "+30.0% gain (missed: 33% → 13%)", "#b347ff"),
     ("Latency Impact", "~35ms CPU", "Re-ranking compute overhead", "#ffaa33")
 ]
 
