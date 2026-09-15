@@ -21,7 +21,7 @@ We enforce a strict two-pronged routing architecture at the agent orchestration 
 ### Positive
 - 100% precision on discrete relational constraints (e.g., FMCSA compliance ratings, state jurisdictions).
 - Clean separation of concerns between relational execution and neural semantic ranking.
-- Sub-5ms response latency on structured queries without invoking vector embeddings or neural inference.
+- Sub-millisecond response latency (0.31 ms) on structured queries without invoking vector embeddings or neural inference, as demonstrated in [Figure 2: Latency vs. Accuracy Pareto Trade-Off](../assets/retrieval_latency_tradeoff.png).
 
 ### Trade-offs & Mitigations
-- Multi-constraint hybrid queries ("Find California flatbed carriers specializing in high-theft electronics") require consensus between relational properties and semantic descriptions. Mitigated by indexing relational metadata directly into the hybrid FTS5 text documents, achieving 0.550 Recall@1, 0.750 Recall@5, and 0.625 MRR on multi-constraint queries even when queried purely through natural language.
+- Multi-constraint hybrid queries ("Find California flatbed carriers specializing in high-theft electronics") require consensus between relational properties and semantic descriptions. As demonstrated in [Figure 3: Stratified Retrieval Performance](../assets/retrieval_stratified_categories.png), dense and lexical retrieval collapse to 0.100–0.150 Recall@1 when forced to resolve both dimensions simultaneously. This is mitigated by indexing relational metadata into hybrid FTS5 text documents and re-ranking with a neural cross-encoder, restoring performance to 0.550 Recall@1 (0.750 Recall@5) even under pure natural language input.

@@ -170,7 +170,7 @@ For detailed design rationale, see [ADR-001: SQL vs. Vector Routing](docs/adr/AD
 Evaluated against 500 commercial carrier profiles using 60 test queries in `tests/evaluate_retrieval.py`:
 
 <p align="center">
-  <img src="https://media.githubusercontent.com/media/yyouretoast/freightiq/main/docs/assets/retrieval_benchmark.png" alt="FreightIQ Multi-Strategy Retrieval Benchmark" width="100%">
+  <img src="docs/assets/retrieval_benchmark.png" alt="FreightIQ Multi-Strategy Retrieval Benchmark" width="100%">
 </p>
 
 ### Overall Metrics (60 Queries)
@@ -183,9 +183,17 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 | **Reranked Search (Cosine Fallback)** | 0.300 | 0.550 | 0.683 | 0.433 | 271.00 ms |
 | **Reranked Hybrid (Cross-Encoder + RRF)** | **0.700** | **0.817** | **0.867** | **0.764** | **499.37 ms** |
 
+<p align="center">
+  <img src="docs/assets/retrieval_latency_tradeoff.png" alt="FreightIQ Retrieval Latency vs Accuracy Pareto Trade-Off" width="100%">
+</p>
+
 <details>
 <summary><strong>View Stratified Breakdown by Query Category (Click to expand)</strong></summary>
 <br>
+
+<p align="center">
+  <img src="docs/assets/retrieval_stratified_categories.png" alt="FreightIQ Stratified Retrieval Performance Across Query Categories" width="100%">
+</p>
 
 | Category | Description | Base Vector R@1 (MRR) | FTS5 BM25 R@1 (MRR) | Hybrid Cross-Encoder R@1 (MRR) |
 | :--- | :--- | :---: | :---: | :---: |
@@ -199,13 +207,14 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 1. **Lexical Retrieval Impact:** FTS5 BM25 retrieves exact domain tokens with sub-millisecond latency (0.22ms), outperforming dense vector search on structured constraint terms.
 2. **Consensus Ranking:** RRF ($k=60$) successfully balances lexical keyword recall with dense semantic breadth.
 3. **Cross-Encoder Re-Ranking Impact:** Cross-encoder re-ranking increases **Overall Recall@1 from 0.300 to 0.700 (+133.3%)** and **MRR from 0.429 to 0.764 (+78.1%)** across the 60 benchmark queries.
+4. **Pareto Trade-Off Justification:** As shown in Figure 2, deterministic relational queries are resolved in 0.31 ms with 0.967 MRR via SQLite, preventing unnecessary invocation of the ~500 ms neural cross-encoder pipeline.
 
 ---
 
 ## Engineering Trade-offs & Limitations
 
 - **Cross-Encoder Compute Latency (~500ms)**: Cross-encoder scoring over the top-15 candidate pool takes ~400–500ms on CPU (compared to 0.3ms for SQLite queries and 0.2ms for FTS5 BM25). For interactive use, this is within normal turn thresholds; batch retrieval workloads would require GPU acceleration or pre-filtering.
-- **Multi-Constraint Semantic Falloff (0.550 Recall@1)**: When queries combine discrete attributes with free-form requirements (e.g., *"California flatbed carriers specializing in semiconductors"*), unranked dense and lexical search drop to 0.100–0.150 R@1, while the cross-encoder reaches 0.550 R@1 (0.750 Recall@5). This is why discrete constraints are routed to SQLite, reserving semantic search for unstructured descriptions.
+- **Multi-Constraint Semantic Falloff (0.550 Recall@1)**: When queries combine discrete attributes with free-form requirements (e.g., *"California flatbed carriers specializing in semiconductors"*), unranked dense and lexical search drop to 0.100–0.150 R@1, while the cross-encoder reaches 0.550 R@1 (0.750 Recall@5). This is why discrete constraints are routed to SQLite, reserving semantic search for unstructured descriptions (Figure 3).
 - **Single-Vendor Sibling Failover**: Intra-provider failover switches between `qwen/qwen3.8-27b` and `qwen/qwen3.6-27b` on Groq. While this protects against per-model rate limits and transient 503s with sub-second inference speeds and identical tool-binding semantics, an upstream platform outage or account-level quota exhaustion on Groq affects both siblings simultaneously. Production systems can configure alternative providers (e.g. OpenAI or local Ollama).
 - **Single-Turn Single-Tool Principle (`parallel_tool_calls=False`)**: To prevent redundant API calls and keep token usage within the 950-token budget (Groq OTPM safety ceiling), the model is bound with `parallel_tool_calls=False`. For multi-part questions requiring multiple tools, the agent addresses the primary intent first and relies on follow-up user turns rather than parallel execution.
 - **Synthetic Dataset**: 500 fictional carrier profiles are deterministically generated to avoid real-carrier compliance or data-quality misrepresentation while preserving authentic freight domain complexity (TWIC badges, GDP cold chain, Moffett forklifts, RGN lowboys, Carrier Vector chillers).
@@ -249,6 +258,10 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 - ✅ **Agent Trajectory Audit** (`tests/evaluate_agent_trajectories.py`): **20 / 20 Passed** (Routing, prompt injections, safety bounds, loop breaker)
 - ✅ **Retrieval Benchmark** (`tests/evaluate_retrieval.py`): **60 / 60 Evaluated** (Empirical ground truth across 5 retrieval strategies)
 - ✅ **Concurrency Stress Test** (`tests/stress_test_concurrency.py`): **15 / 15 Passed** (Zero errors under concurrent SQLite WAL load)
+
+<p align="center">
+  <img src="docs/assets/agent_trajectory_matrix.png" alt="FreightIQ Agent Routing Trajectory & Guardrail Compliance Matrix" width="100%">
+</p>
 
 ---
 
