@@ -24,6 +24,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
+    - name: Seed SQLite database and ChromaDB vector index
+      run: |
+        python scripts/seed_db.py
+
     - name: Verify offline system & domain tools
       run: |
         python -m tests.verify_system
