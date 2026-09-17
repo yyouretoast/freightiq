@@ -10,7 +10,7 @@ pinned: false
 
 # FreightIQ
 
-**LangGraph freight carrier routing agent featuring dual-modality SQL/vector routing, hybrid FTS5 BM25 + dense retrieval, and neural Cross-Encoder re-ranking.**
+Freight carrier query routing engine built with LangGraph. Resolves discrete constraints (states, equipment, safety ratings) via sub-millisecond SQLite queries and qualitative operational capabilities via hybrid FTS5 BM25 + dense vector retrieval with neural Cross-Encoder re-ranking.
 
 [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue?style=flat-square)](https://huggingface.co/spaces/yyouretoast/freightiq)
 [![FreightIQ Verification CI](https://github.com/yyouretoast/freightiq/actions/workflows/verify.yml/badge.svg)](https://github.com/yyouretoast/freightiq/actions/workflows/verify.yml)
@@ -32,9 +32,8 @@ https://github.com/user-attachments/assets/87267c8e-72b0-4862-9c19-cc56a6c3b4f8
 
 ## Table of Contents
 
-- [Overview](#overview)
+- [Overview & Query Routing Rationale](#overview--query-routing-rationale)
 - [Architecture](#architecture)
-- [Query Routing Rationale](#query-routing-rationale)
 - [Tools](#tools)
 - [Retrieval Benchmarks](#retrieval-benchmarks)
 - [Engineering Trade-offs & Limitations](#engineering-trade-offs--limitations)
@@ -48,16 +47,19 @@ https://github.com/user-attachments/assets/87267c8e-72b0-4862-9c19-cc56a6c3b4f8
 
 ---
 
-## Overview
+## Overview & Query Routing Rationale
 
-FreightIQ answers commercial freight questions by routing incoming requests across five specialized tools:
-1. **SQLite (`carrier_sql_query`)**: Exact relational filtering over 500 carrier profiles (states, equipment types, safety ratings, years in business).
-2. **Hybrid Search (`carrier_semantic_search`)**: FTS5 BM25 keyword matching + ChromaDB vector embeddings (`all-MiniLM-L6-v2`), combined via Reciprocal Rank Fusion ($k=60$) and re-ranked using `cross-encoder/ms-marco-MiniLM-L-6-v2`.
-3. **FMCSA Registration & Safety Audit (`check_fmcsa_authority`)**: Real-time USDOT QCMobile REST API query validating operating authority status and federal safety ratings, with internal database fallback.
-4. **NMFC Freight Class Calculator (`freight_class_calculator`)**: Deterministic density-to-class mapping with commodity exception overrides.
-5. **Live Web Search (`web_search`)**: Current freight rate trends and market updates via Tavily API with DuckDuckGo fallback.
+Commercial freight inquiries fall into two fundamentally distinct retrieval classes:
 
-Orchestration is handled by a LangGraph state machine supporting multiple LLM backends: Groq (default: `qwen/qwen3.8-27b` with automatic fallback to `qwen/qwen3.6-27b`), OpenAI (`gpt-4o-mini`, `gpt-4o`), and local Ollama models.
+- **Deterministic Relational Queries** (e.g., *"Find flatbed carriers in Ohio with a satisfactory safety rating"*):  
+  Dense vector search approximates semantic closeness and frequently returns carriers in adjacent states or with missing certifications. These queries are routed to **SQLite**, where discrete constraints evaluate with 100% precision in under $1\text{ ms}$.
+
+- **Qualitative Domain Queries** (e.g., *"Carriers specializing in perishable pharmaceutical cold chain with continuous monitoring"*):  
+  Relational schemas cannot cleanly express nuanced operational capabilities, equipment phrasing, or special certifications. These queries are routed to a **two-stage hybrid search pipeline** (FTS5 BM25 + dense ChromaDB embeddings fused via RRF and re-ranked with a neural Cross-Encoder).
+
+Orchestration is handled by a stateful **LangGraph** ReAct workflow supporting multiple LLM backends (Groq `qwen/qwen3.8-27b` with automatic fallback to `qwen/qwen3.6-27b`, OpenAI, and local Ollama) that dynamically routes incoming requests across specialized tools.
+
+For detailed design rationale, see [ADR-001: SQL vs. Vector Routing](docs/adr/ADR-001-sql-vs-vector-routing.md).
 
 ---
 
@@ -115,20 +117,6 @@ flowchart TD
     Tables --> Agent
     Web --> Agent
 ```
-
----
-
-## Query Routing Rationale
-
-Logistics inquiries fall into two distinct query classes:
-
-- **Deterministic relational queries** (e.g., *"Find flatbed carriers in Ohio with satisfactory safety rating"*):  
-  Dense vector search approximates semantic closeness and often returns carriers in adjacent states or with missing certifications. These queries are routed to SQLite, where constraints evaluate with 100% precision in under 1ms.
-
-- **Qualitative queries** (e.g., *"Carriers specializing in perishable pharmaceutical cold chain"*):  
-  Relational schemas cannot cleanly express nuanced operational capabilities or equipment phrasing. These queries route to the hybrid search pipeline.
-
-For detailed design rationale, see [ADR-001: SQL vs. Vector Routing](docs/adr/ADR-001-sql-vs-vector-routing.md).
 
 ---
 
