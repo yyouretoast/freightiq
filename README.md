@@ -10,7 +10,7 @@ pinned: false
 
 # FreightIQ
 
-Freight carrier query routing and retrieval system combining relational SQL queries, hybrid search (FTS5 BM25 + dense ChromaDB RRF), cross-encoder re-ranking, and LangGraph workflow orchestration.
+**LangGraph freight carrier routing agent featuring dual-modality SQL/vector routing, hybrid FTS5 BM25 + dense retrieval, and neural Cross-Encoder re-ranking.**
 
 [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue?style=flat-square)](https://huggingface.co/spaces/yyouretoast/freightiq)
 [![FreightIQ Verification CI](https://github.com/yyouretoast/freightiq/actions/workflows/verify.yml/badge.svg)](https://github.com/yyouretoast/freightiq/actions/workflows/verify.yml)
@@ -228,17 +228,18 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 
 | Failure Mode | Control | Implementation |
 | :--- | :--- | :--- |
-| **SQL Mutation / Data Corruption** | Engine-level read-only URI + AST check | `file:DB?mode=ro`; queries must start with `SELECT` or `WITH` |
-| **FTS5 Syntax Crash on Special Characters** | Tokenizer & query sanitizer | `sanitize_fts5_query()` strips hyphens, colons, slashes, and quotes |
-| **Tool Loops & Thrashing** | Turn-scoped loop breaker | Detects duplicate consecutive calls; forces final text synthesis |
-| **Context Window Exhaustion** | History sliding window & turn alignment | Truncates context to last 8 messages while walking back to ensure valid conversation turns (preventing orphaned ToolMessages) |
-| **Groq 413 Payload Too Large** | Tool output length bounding | Capped at 2,000 characters per tool response before context injection |
+| **SQL Mutation / Data Corruption** | Engine-level read-only URI + AST check | `file:DB?mode=ro`; queries must start with `SELECT` or `WITH`; comments stripped |
+| **FTS5 Syntax Crash on Special Characters** | Tokenizer & query sanitizer | `sanitize_fts5_query()` strips punctuation/stop words while preserving single-digit Hazmat codes |
+| **Tool Loops & Thrashing** | Turn-scoped loop breaker | Detects duplicate consecutive calls and alternating ping-pong cycles ($A \to B \to A$); forces synthesis |
+| **Context Window Exhaustion** | History sliding window & turn alignment | Truncates context to last 8 messages while walking back to ensure valid conversation turns |
+| **Payload Bloat & SQL Truncation** | Tool output length bounding | Bounded at 8,000 characters per tool response (fits all 25 candidate rows cleanly) |
+| **API Socket Hang / Network Freeze** | Client-level request timeout | Enforced 30.0s hard socket timeout on `ChatGroq` and `ChatOpenAI` constructors |
 | **Groq 429 Daily Quota Exhaustion** | Sibling model failover | Automatically switches active inference between `qwen3.8-27b` and `qwen3.6-27b` |
-| **Zero-Row Relational Miss** | Constraint relaxation | Drops the most restrictive `WHERE` clause and retrieves partial matches |
+| **Zero-Row Relational Miss** | Constraint relaxation | Drops the last non-safety `WHERE` constraint across multi-line queries and retrieves partial matches |
 | **Prompt Injection / Jailbreak** | Grounding prompt & safety refusal | Rejects system prompt leaks; refuses hazardous cargo override directives |
-| **Search API Unavailability** | Provider fallback | Tavily fails over to DuckDuckGo without throwing unhandled exceptions |
-| **Cross-Encoder Weights Missing** | Metric fallback | Falls back to dense cosine similarity if model fails to load |
-| **Database Concurrency** | SQLite WAL mode + file lock | Supports concurrent readers; serialization on initialization |
+| **Search API Unavailability** | Provider fallback | Tavily fails over to DuckDuckGo (`ddgs`) without throwing unhandled exceptions |
+| **Cross-Encoder Weights Missing** | Metric fallback & failure cache | NumPy vectorized cosine fallback ($<5\mu\text{s}$) with `_CROSS_ENCODER_FAILED` fail-fast memory caching |
+| **Database Concurrency & Drift** | SQLite WAL mode + FTS5 triggers | Real-time index sync triggers (`carriers_ai/ad/au`) + lock-free concurrent readers |
 
 ---
 
@@ -248,7 +249,10 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 | :--- | :--- | :--- | :--- |
 | **Deterministic Relational Filter** | *"Find flatbed carriers in Ohio with a satisfactory safety rating."* | `carrier_sql_query` | Evaluates discrete constraints (`hq_state = 'OH'`, `equipment_types`, `safety_rating`) in $<1\text{ ms}$ with exact matching, avoiding approximate nearest-neighbor errors on discrete attributes. |
 | **Unstructured Domain Jargon** | *"Carriers specializing in perishable pharmaceutical cold chain with continuous temp monitoring."* | `carrier_semantic_search` | FTS5 BM25 + dense ChromaDB embeddings fused via RRF ($k=60$) and re-ranked with `cross-encoder/ms-marco-MiniLM-L-6-v2` (1.000 MRR). |
-| **Automated Zero-Row Relaxation** | *"Find carriers headquartered in Alaska with refrigerated units handling hazmat."* | `carrier_sql_query` | Zero rows match strict multi-clause conditions; tool automatically drops the most restrictive constraint and returns alternative candidates. |
+| **Automated Zero-Row Relaxation** | *"Find carriers headquartered in Alaska with refrigerated units handling hazmat."* | `carrier_sql_query` | Zero rows match strict multi-clause conditions; tool automatically drops the last non-safety constraint and returns alternative candidates with notice. |
+| **Federal Authority & Safety Gating** | *"Check the FMCSA operating authority and safety audit status for USDOT 3780770."* | `check_fmcsa_authority` | Queries the federal QCMobile REST service (or internal registry fallback) to enforce mandatory compliance gating (`PASS`, `WARNING`, or `FAIL — DO NOT DISPATCH`). |
+| **Deterministic NMFC Classification** | *"Calculate the freight class for a 1,200 lbs pallet measuring 48x48x48 inches."* | `freight_class_calculator` | Computes shipment density ($18.75\text{ lb/cu ft}$), maps to NMFC Class 70, and evaluates 3-word negation windows for commodity exceptions (e.g. insulation). |
+| **Live Freight Market Intelligence** | *"What is the current average national dry van spot rate per mile in 2026?"* | `web_search` | Retrieves live spot market indices and corridor updates via Tavily API with automatic DuckDuckGo (`ddgs`) fallback. |
 
 ---
 
@@ -294,6 +298,7 @@ cp .env.example .env
 | `GROQ_API_KEY` | Conditional | Groq API key (required when using Groq provider) | — |
 | `OPENAI_API_KEY` | Conditional | OpenAI API key (required when using OpenAI provider) | — |
 | `AGENT_MODEL` | No | Active model ID | `qwen/qwen3.8-27b` (fallback: `qwen/qwen3.6-27b`) |
+| `MAX_OUTPUT_TOKENS` | No | Maximum token ceiling for model generation | `1024` |
 | `FMCSA_WEB_KEY` | No | FMCSA QCMobile API web key | Optional (live check requires key, otherwise falls back to verified internal DB) |
 | `TAVILY_API_KEY` | No | Tavily Search API key for freight market intelligence | Falls back to DuckDuckGo (`ddgs`) |
 | `LANGCHAIN_TRACING_V2` | No | Enable LangSmith distributed execution tracing | `false` |
@@ -302,10 +307,11 @@ cp .env.example .env
 
 ### 4. Database Seeding
 ```bash
-python scripts/seed_db.py          # Seed if not already populated
-python scripts/seed_db.py --force  # Force regenerate synthetic profiles & re-index
+python scripts/seed_db.py                    # Seed if not already populated
+python scripts/seed_db.py --force            # Force re-seed SQLite database & ChromaDB vector index
+python scripts/seed_db.py --regenerate-data  # Regenerate synthetic dataset profiles from scratch
 ```
-Generates 500 carrier profiles in `data/carriers.db` and populates `data/chroma_db`.
+Populates 500 carrier profiles in `data/carriers.db` (with real-time FTS5 triggers) and builds `data/chroma_db`.
 
 ### 5. Running the Application
 ```bash
