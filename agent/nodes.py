@@ -125,6 +125,11 @@ def switch_to_sibling(current_model_name: str = "", configurable: Optional[dict]
         )
         
         configurable["model"] = alt_model
+        if "session_state" in configurable and hasattr(configurable["session_state"], "__setitem__"):
+            try:
+                configurable["session_state"]["session_model"] = alt_model
+            except Exception:
+                pass
         
         base_alt, tool_alt = create_model_instance(
             provider=provider,
@@ -278,6 +283,20 @@ def agent_node(state: AgentState, config: Optional[RunnableConfig] = None):
                     loop_break_directive = (
                         f"Repeat tool call detected for '{last_call['name']}'. "
                         "Do not invoke this tool again. Synthesize your final answer directly in plain text using the results already retrieved."
+                    )
+                    messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + _prepare_context_messages(messages) + [HumanMessage(content=loop_break_directive)]
+                    response = _invoke_with_retry(False, messages_with_warning, configurable=configurable)
+                    return {"messages": [response]}
+
+            # Check for alternating tool ping-pong loop (e.g., A -> B -> A)
+            if len(prev_ai_msgs) >= 3:
+                last_name = prev_ai_msgs[-1].tool_calls[0]["name"] if prev_ai_msgs[-1].tool_calls else ""
+                antepenultimate_name = prev_ai_msgs[-3].tool_calls[0]["name"] if prev_ai_msgs[-3].tool_calls else ""
+                if last_name and last_name == antepenultimate_name:
+                    logger.warning(f"Alternating tool loop detected for '{last_name}'. Injecting loop guardrail.")
+                    loop_break_directive = (
+                        f"Alternating tool calls detected for '{last_name}'. "
+                        "Do not invoke any further tools. Synthesize your final answer directly in plain text using the data already retrieved."
                     )
                     messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + _prepare_context_messages(messages) + [HumanMessage(content=loop_break_directive)]
                     response = _invoke_with_retry(False, messages_with_warning, configurable=configurable)

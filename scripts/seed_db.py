@@ -15,7 +15,8 @@ def main():
         print("[INFO] Force re-seeding enabled via --force.")
     
     json_path = config.CARRIERS_JSON_PATH
-    if force or not os.path.exists(json_path):
+    regenerate = "--regenerate-data" in sys.argv
+    if regenerate or not os.path.exists(json_path):
         print(f"Generating synthetic carrier dataset at {json_path}...")
         from rag.generate_carriers import main as generate_data
         generate_data()

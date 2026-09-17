@@ -50,20 +50,23 @@ def _split_sql_and_conditions(where_clause: str) -> list[str]:
                 between_pending = True
                 current.append(where_clause[i:i+7])
                 i += 7
-            elif where_clause[i:i+5].upper() in (" AND ", "\nAND ", "\tAND "):
-                if between_pending:
-                    between_pending = False
-                    current.append(where_clause[i:i+5])
-                    i += 5
-                else:
-                    part_str = "".join(current).strip()
-                    if part_str:
-                        parts.append(part_str)
-                    current = []
-                    i += 4
             else:
-                current.append(ch)
-                i += 1
+                and_match = re.match(r'^\s+AND\s+', where_clause[i:], re.IGNORECASE)
+                if and_match:
+                    match_len = and_match.end()
+                    if between_pending:
+                        between_pending = False
+                        current.append(where_clause[i:i+match_len])
+                        i += match_len
+                    else:
+                        part_str = "".join(current).strip()
+                        if part_str:
+                            parts.append(part_str)
+                        current = []
+                        i += match_len
+                else:
+                    current.append(ch)
+                    i += 1
         else:
             current.append(ch)
             i += 1
@@ -129,7 +132,9 @@ def carrier_sql_query(query: str) -> str:
     - SELECT * FROM carriers WHERE hq_state = 'FL' AND EXISTS (SELECT 1 FROM json_each(cargo_specializations) WHERE value = 'fresh produce')
     """
     # Security: Only allow SELECT and WITH queries, reject anything else
-    clean = query.strip().rstrip(";").strip()
+    # Strip single-line and multi-line SQL comments before AST check and wrapping
+    clean = re.sub(r'/\*.*?\*/', '', query, flags=re.DOTALL)
+    clean = re.sub(r'--.*$', '', clean, flags=re.MULTILINE).strip().rstrip(";").strip()
     upper_clean = clean.upper()
     if not (upper_clean.startswith("SELECT") or upper_clean.startswith("WITH")):
         return "Error: Only SELECT queries are permitted on the carriers database."
@@ -140,8 +145,8 @@ def carrier_sql_query(query: str) -> str:
 
     res = query_carriers_sql(wrapped_query)
     if res == "No matching records found in the SQL database.":
-        # Check if query had multiple AND clauses in WHERE
-        where_match = re.search(r'\bWHERE\b\s+(.*)', clean, re.IGNORECASE)
+        # Check if query had multiple AND clauses in WHERE (re.DOTALL matches across newlines)
+        where_match = re.search(r'\bWHERE\b\s+(.*)', clean, re.IGNORECASE | re.DOTALL)
         if where_match:
             where_clause = where_match.group(1)
             where_conditions, trailing = _strip_trailing_sql_clauses(where_clause)
@@ -149,12 +154,13 @@ def carrier_sql_query(query: str) -> str:
             
             # Safety constraints must NEVER be dropped during zero-row relaxation
             is_safety_cond = lambda p: bool(re.search(r'\bsafety_rating\b', p, re.IGNORECASE))
-            relaxable_parts = [p for p in and_parts if not is_safety_cond(p)]
+            relaxable_indices = [i for i, p in enumerate(and_parts) if not is_safety_cond(p)]
 
-            if len(relaxable_parts) >= 1 and len(and_parts) > 1:
+            if len(relaxable_indices) >= 1 and len(and_parts) > 1:
                 # Drop the last non-safety condition while preserving safety rating compliance
-                dropped_part = relaxable_parts[-1]
-                kept_parts = [p for p in and_parts if p != dropped_part]
+                drop_idx = relaxable_indices[-1]
+                dropped_part = and_parts[drop_idx]
+                kept_parts = [p for i, p in enumerate(and_parts) if i != drop_idx]
                 relaxed_where = " AND ".join(kept_parts)
                 prefix = clean[:where_match.start()]
                 suffix = f" {trailing}" if trailing else ""
@@ -249,12 +255,13 @@ def freight_class_calculator(weight_lbs: float, length_in: float, width_in: floa
     applied_exception = None
     if cargo_description:
         desc_lower = cargo_description.lower()
-        negations = {"no", "not", "non", "without", "except"}
+        negations = {"no", "not", "non", "without", "except", "free"}
         for keyword, ex_class in exceptions.items():
             for m in re.finditer(rf'\b{re.escape(keyword)}\b', desc_lower):
                 preceding = desc_lower[:m.start()].rstrip()
-                last_word = re.sub(r'[^\w]', '', preceding.split()[-1]) if preceding.split() else ""
-                if last_word not in negations:
+                preceding_words = [re.sub(r'[^\w]', '', w) for w in preceding.split()]
+                recent_words = set(preceding_words[-3:]) if preceding_words else set()
+                if not (recent_words & negations):
                     applied_exception = (keyword, ex_class)
                     break
             if applied_exception:
@@ -408,9 +415,9 @@ def check_fmcsa_authority(dot_number: str) -> str:
             f"HQ State: {hq_state}\n"
             f"Years Operating: {years_operating}\n"
             f"Safety Rating: {safety_rating}\n"
-            f"Operating Authority Status: Internal database profile verified (Active Motor Carrier Record). Live federal operating authority must be verified on SAFER when registry service is restored.\n"
+            f"Operating Authority Status: Profile verified in internal registry database. Real-time federal authority filings must be verified directly on SAFER (safer.fmcsa.dot.gov).\n"
             f"Federal Safety Audit: {audit_str}\n"
-            f"BIPD Insurance Status: Internal registry record active. Live BMC-91X filing required prior to dispatch.\n"
+            f"BIPD Insurance Status: Insurance limits are not stored in the local registry database. Active BMC-91X filing verification on SAFER is required prior to dispatch.\n"
             f"FreightIQ Verification: {verif_status}"
         )
     else:

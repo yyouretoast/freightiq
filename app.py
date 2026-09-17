@@ -33,8 +33,12 @@ class StreamlitTokenCallbackHandler(BaseCallbackHandler):
     def on_llm_new_token(self, token: str, **kwargs) -> None:
         try:
             chunk = kwargs.get("chunk")
-            if chunk and hasattr(chunk, "message") and hasattr(chunk.message, "tool_call_chunks") and chunk.message.tool_call_chunks:
-                return
+            if chunk:
+                if hasattr(chunk, "message") and hasattr(chunk.message, "tool_call_chunks") and chunk.message.tool_call_chunks:
+                    return
+                if hasattr(chunk, "message") and hasattr(chunk.message, "additional_kwargs"):
+                    if "tool_calls" in chunk.message.additional_kwargs:
+                        return
         except Exception as e:
             logger.debug(f"Error checking tool call chunk: {e}")
         
@@ -647,7 +651,8 @@ if user_query:
                 "configurable": {
                     "provider": session_provider,
                     "model": st.session_state.get("session_model", "qwen/qwen3.8-27b"),
-                    "api_key": st.session_state.get(f"custom_key_{session_provider}") or None
+                    "api_key": st.session_state.get(f"custom_key_{session_provider}") or None,
+                    "session_state": st.session_state
                 }
             }
 
@@ -670,14 +675,10 @@ if user_query:
                                 })
                                 status_box.write(f"{t_meta['icon']} **{t_meta['label']}**: {t_meta['desc']}")
                                 
-                                # Clean mid-word truncation using textwrap.shorten
+                                # Newline-preserving truncation to maintain table and bullet formatting
                                 raw_output = str(msg.content)
                                 if len(raw_output) > config.TOOL_TRUNCATION_LIMIT:
-                                    truncated_output = textwrap.shorten(
-                                        raw_output, 
-                                        width=config.TOOL_TRUNCATION_LIMIT, 
-                                        placeholder="..."
-                                    )
+                                    truncated_output = raw_output[:config.TOOL_TRUNCATION_LIMIT] + "\n\n... [Output truncated to stay within UI display limit]"
                                 else:
                                     truncated_output = raw_output
                                 

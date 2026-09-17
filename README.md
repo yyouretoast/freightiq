@@ -179,8 +179,8 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **SQLite Exact Query** | **0.967** | **0.967** | **0.967** | **0.967** | **0.31 ms** |
 | **ChromaDB Base Vector** | 0.300 | 0.550 | 0.667 | 0.429 | 270.60 ms |
-| **FTS5 Lexical Search (BM25)** | 0.450 | 0.583 | 0.667 | 0.527 | **0.22 ms** |
-| **Reranked Search (Cosine Fallback)** | 0.300 | 0.550 | 0.683 | 0.433 | 271.00 ms |
+| **FTS5 Lexical Search (BM25)** | 0.467 | 0.583 | 0.667 | 0.535 | **0.22 ms** |
+| **Reranked Search (Cosine Fallback)** | 0.300 | 0.550 | 0.683 | 0.432 | 271.00 ms |
 | **Reranked Hybrid (Cross-Encoder + RRF)** | **0.700** | **0.817** | **0.867** | **0.764** | **499.37 ms** |
 
 <p align="center">
@@ -198,7 +198,7 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 | Category | Description | Base Vector R@1 (MRR) | FTS5 BM25 R@1 (MRR) | Hybrid Cross-Encoder R@1 (MRR) |
 | :--- | :--- | :---: | :---: | :---: |
 | **Structured (20 queries)** | Hard attributes (state, safety rating, equipment) | 0.350 (0.508) | 0.650 (0.756) | **0.900 (0.942)** |
-| **Qualitative (20 queries)** | Freight jargon, certifications, service capabilities (natural language) | 0.450 (0.568) | 0.550 (0.585) | **0.650 (0.727)** |
+| **Qualitative (20 queries)** | Freight jargon, certifications, service capabilities (natural language) | 0.450 (0.568) | 0.600 (0.610) | **0.650 (0.727)** |
 | **Multi-Constraint Hybrid (20 queries)** | Geographic/equipment filter + qualitative need | 0.100 (0.210) | 0.150 (0.239) | **0.550 (0.625)** |
 
 </details>
@@ -218,7 +218,7 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 - **Single-Vendor Sibling Failover**: Intra-provider failover switches between `qwen/qwen3.8-27b` and `qwen/qwen3.6-27b` on Groq. While this protects against per-model rate limits and transient 503s with sub-second inference speeds and identical tool-binding semantics, an upstream platform outage or account-level quota exhaustion on Groq affects both siblings simultaneously. Production systems can configure alternative providers (e.g. OpenAI or local Ollama).
 - **Single-Turn Single-Tool Principle (`parallel_tool_calls=False`)**: To prevent redundant API calls and keep token usage within the 950-token budget (Groq OTPM safety ceiling), the model is bound with `parallel_tool_calls=False`. For multi-part questions requiring multiple tools, the agent addresses the primary intent first and relies on follow-up user turns rather than parallel execution.
 - **Synthetic Dataset**: 500 fictional carrier profiles are deterministically generated to avoid real-carrier compliance or data-quality misrepresentation while preserving authentic freight domain complexity (TWIC badges, GDP cold chain, Moffett forklifts, RGN lowboys, Carrier Vector chillers).
-- **Groq Free-Tier Token Budgets (200k TPD)**: Free-tier Groq API accounts enforce daily token limits. FreightIQ mitigates this via automatic sibling failover (`qwen/qwen3.8-27b` $\leftrightarrow$ `qwen/qwen3.6-27b`), tool output length bounding (2,000 characters), and turn-aligned 8-message context truncation.
+- **Groq Free-Tier Token Budgets (200k TPD)**: Free-tier Groq API accounts enforce daily token limits. FreightIQ mitigates this via automatic sibling failover (`qwen/qwen3.8-27b` $\leftrightarrow$ `qwen/qwen3.6-27b`), tool output length bounding (8,000 characters), and turn-aligned 8-message context truncation.
 - **SQLite Write Serialization**: SQLite in WAL mode provides lock-free concurrent reads, but writes are serialized. High-volume multi-user writes in enterprise production would necessitate PostgreSQL.
 - **FMCSA Public API Availability & Compliance Gating**: The tool queries the FMCSA QCMobile JSON REST service. If external network timeouts occur, it falls back to local database records while strictly enforcing carrier safety ratings (rejecting unsatisfactory carriers). Direct BMC-91X insurance filing checks are redirected to SAFER.
 

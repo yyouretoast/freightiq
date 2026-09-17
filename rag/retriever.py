@@ -41,11 +41,12 @@ def sanitize_fts5_query(raw_query: str) -> str | None:
     """
     Extracts alphanumeric tokens, strips conversational stop words,
     escapes reserved words, and wraps tokens in quotes to prevent FTS5 syntax errors.
+    Preserves single-digit numerical codes (e.g. Class 3/8/9 hazard designations).
     """
     tokens = re.findall(r'[A-Za-z0-9]+', raw_query)
-    clean = [t for t in tokens if t.lower() not in STOP_WORDS and len(t) > 1]
+    clean = [t for t in tokens if t.lower() not in STOP_WORDS and (len(t) > 1 or t.isdigit())]
     if not clean:
-        clean = [t for t in tokens if len(t) > 1]
+        clean = [t for t in tokens if (len(t) > 1 or t.isdigit())]
     if not clean:
         return None
     return " OR ".join(f'"{t}"' for t in clean)

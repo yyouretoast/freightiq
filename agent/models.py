@@ -82,7 +82,8 @@ def create_model_instance(
             groq_api_key=key,
             temperature=temperature,
             max_tokens=groq_tokens,
-            streaming=streaming
+            streaming=streaming,
+            request_timeout=30.0
         )
         return llm, bind_tools_safely(llm)
 
@@ -101,7 +102,8 @@ def create_model_instance(
             api_key=key,
             temperature=temperature,
             max_tokens=max_tokens,
-            streaming=streaming
+            streaming=streaming,
+            request_timeout=30.0
         )
         return llm, bind_tools_safely(llm)
 
@@ -120,7 +122,8 @@ def create_model_instance(
             base_url=endpoint,
             temperature=temperature,
             max_tokens=max_tokens,
-            streaming=streaming
+            streaming=streaming,
+            request_timeout=30.0
         )
         return llm, bind_tools_safely(llm)
 

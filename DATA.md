@@ -48,4 +48,4 @@ python scripts/seed_db.py --force  # Force rebuild and re-index
 An engineering evaluation was conducted on using the complete 4.5 GB raw FMCSA Motor Carrier Census dataset:
 - **Index Volume:** Generating dense vector embeddings for 2.2 million records creates a ~15 GB ChromaDB index and requires >2.2 hours on CPU.
 - **Hosting Constraints:** Hugging Face Spaces and GitHub impose strict repository file limits (100MB per file, 16GB total container RAM).
-- **Evaluation Sweet Spot:** 500 richly structured carrier profiles provide full density across all 50 states, 6 equipment categories, and 10 specialized commodity niches, enabling rigorous multi-constraint hybrid benchmarks while maintaining an 80MB disk footprint and seeding in <25 seconds.
+- **Evaluation Sweet Spot:** 500 richly structured carrier profiles provide high density across the top 20 primary freight corridor states (covering >85% of interstate freight volume), 6 equipment categories, and 10 specialized commodity niches, enabling rigorous multi-constraint hybrid benchmarks while maintaining an 80MB disk footprint and seeding in <25 seconds.

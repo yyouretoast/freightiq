@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 import os
 
 # Base & Root Directories
@@ -34,4 +37,4 @@ SEMANTIC_RETRIEVAL_K = 5
 # UI & Agent Session Configuration
 MAX_QUERIES_PER_SESSION = 10
 CONVERSATION_WINDOW = 8
-TOOL_TRUNCATION_LIMIT = 2000
+TOOL_TRUNCATION_LIMIT = 8000

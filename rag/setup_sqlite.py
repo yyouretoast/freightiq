@@ -91,6 +91,28 @@ def setup_sqlite(force=False):
         )
         """)
         cursor.execute("INSERT INTO carriers_fts(carriers_fts) VALUES('rebuild')")
+
+        # FTS5 External Content synchronization triggers to prevent index drift
+        cursor.execute("""
+        CREATE TRIGGER IF NOT EXISTS carriers_ai AFTER INSERT ON carriers BEGIN
+            INSERT INTO carriers_fts(rowid, carrier_name, dot_number, mc_number, hq_state, service_regions, equipment_types, cargo_specializations, notes)
+            VALUES (new.id, new.carrier_name, new.dot_number, new.mc_number, new.hq_state, new.service_regions, new.equipment_types, new.cargo_specializations, new.notes);
+        END;
+        """)
+        cursor.execute("""
+        CREATE TRIGGER IF NOT EXISTS carriers_ad AFTER DELETE ON carriers BEGIN
+            INSERT INTO carriers_fts(carriers_fts, rowid, carrier_name, dot_number, mc_number, hq_state, service_regions, equipment_types, cargo_specializations, notes)
+            VALUES ('delete', old.id, old.carrier_name, old.dot_number, old.mc_number, old.hq_state, old.service_regions, old.equipment_types, old.cargo_specializations, old.notes);
+        END;
+        """)
+        cursor.execute("""
+        CREATE TRIGGER IF NOT EXISTS carriers_au AFTER UPDATE ON carriers BEGIN
+            INSERT INTO carriers_fts(carriers_fts, rowid, carrier_name, dot_number, mc_number, hq_state, service_regions, equipment_types, cargo_specializations, notes)
+            VALUES ('delete', old.id, old.carrier_name, old.dot_number, old.mc_number, old.hq_state, old.service_regions, old.equipment_types, old.cargo_specializations, old.notes);
+            INSERT INTO carriers_fts(rowid, carrier_name, dot_number, mc_number, hq_state, service_regions, equipment_types, cargo_specializations, notes)
+            VALUES (new.id, new.carrier_name, new.dot_number, new.mc_number, new.hq_state, new.service_regions, new.equipment_types, new.cargo_specializations, new.notes);
+        END;
+        """)
         
     print(f"Successfully populated SQLite database and FTS5 index with {len(carriers)} records at {db_path}.")
 

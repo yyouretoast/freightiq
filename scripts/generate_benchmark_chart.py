@@ -19,9 +19,9 @@ def generate_figure_1_retrieval_benchmark():
         "Reranked Hybrid\n(Cross-Encoder)"
     ]
 
-    r1_scores = [0.967, 0.300, 0.450, 0.300, 0.700]
+    r1_scores = [0.967, 0.300, 0.467, 0.300, 0.700]
     r5_scores = [0.967, 0.667, 0.667, 0.683, 0.867]
-    mrr_scores = [0.967, 0.429, 0.527, 0.433, 0.764]
+    mrr_scores = [0.967, 0.429, 0.535, 0.432, 0.764]
 
     x = np.arange(len(strategies))
     width = 0.24
@@ -79,9 +79,9 @@ def generate_figure_2_latency_tradeoff():
 
     data = [
         {"name": "SQLite Exact Relational", "latency": 0.31, "mrr": 0.967, "r1": 0.967, "color": "#2563eb", "marker": "s", "offset": (18, -8), "ha": "left"},
-        {"name": "SQLite FTS5 (BM25)", "latency": 0.22, "mrr": 0.527, "r1": 0.450, "color": "#0284c7", "marker": "o", "offset": (18, -14), "ha": "left"},
+        {"name": "SQLite FTS5 (BM25)", "latency": 0.22, "mrr": 0.535, "r1": 0.467, "color": "#0284c7", "marker": "o", "offset": (18, -14), "ha": "left"},
         {"name": "ChromaDB Base Vector", "latency": 270.60, "mrr": 0.429, "r1": 0.300, "color": "#64748b", "marker": "^", "offset": (-130, -28), "ha": "right"},
-        {"name": "Reranked (Cosine Fallback)", "latency": 271.00, "mrr": 0.433, "r1": 0.300, "color": "#d97706", "marker": "d", "offset": (18, -6), "ha": "left"},
+        {"name": "Reranked (Cosine Fallback)", "latency": 271.00, "mrr": 0.432, "r1": 0.300, "color": "#d97706", "marker": "d", "offset": (18, -6), "ha": "left"},
         {"name": "Reranked Hybrid (Cross-Encoder)", "latency": 499.37, "mrr": 0.764, "r1": 0.700, "color": "#7c3aed", "marker": "*", "offset": (-18, 18), "ha": "right"}
     ]
 
@@ -102,7 +102,7 @@ def generate_figure_2_latency_tradeoff():
 
     # Plot Pareto optimal curve (FTS5 -> SQLite -> Hybrid Cross-Encoder)
     pareto_x = [0.22, 0.31, 499.37]
-    pareto_y = [0.527, 0.967, 0.764]
+    pareto_y = [0.535, 0.967, 0.764]
     ax.plot(pareto_x[:2], pareto_y[:2], linestyle="--", color="#2563eb", linewidth=1.5, alpha=0.5, zorder=3)
     ax.plot([0.31, 499.37], [0.967, 0.764], linestyle=":", color="#7c3aed", linewidth=1.5, alpha=0.4, zorder=3)
 
@@ -174,11 +174,11 @@ def generate_figure_3_stratified_categories():
 
     # Metrics per category [ChromaDB Base, FTS5 BM25, Cross-Encoder Hybrid]
     r1_dense = [0.350, 0.450, 0.100]
-    r1_fts5 = [0.650, 0.550, 0.150]
+    r1_fts5 = [0.650, 0.600, 0.150]
     r1_cross = [0.900, 0.650, 0.550]
 
     mrr_dense = [0.508, 0.568, 0.210]
-    mrr_fts5 = [0.756, 0.585, 0.239]
+    mrr_fts5 = [0.756, 0.610, 0.239]
     mrr_cross = [0.942, 0.727, 0.625]
 
     x = np.arange(len(categories))
