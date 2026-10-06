@@ -6,7 +6,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import config
-from rag.retriever import get_chroma_collection, query_carriers_sql, retrieve_carriers_bm25, reciprocal_rank_fusion
+from rag.retriever import get_chroma_collection, retrieve_carriers_bm25, reciprocal_rank_fusion
 from rag.reranker import rerank_documents, get_embed_model
 
 # Ground truth test cases: (category, query, SQL query used to resolve targets dynamically)

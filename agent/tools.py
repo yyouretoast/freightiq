@@ -234,7 +234,6 @@ def freight_class_calculator(weight_lbs: float, length_in: float, width_in: floa
     Calculate the NMFC freight class based on shipment weight in pounds, dimensions in inches, and optional cargo description.
     Accurately maps density (lbs/cubic foot) to standard NMFC class, or resolves fixed class exceptions (e.g. insulation).
     """
-    import math
     for val in (weight_lbs, length_in, width_in, height_in):
         if not isinstance(val, (int, float)) or math.isnan(val) or math.isinf(val) or val <= 0:
             return "Error: All inputs (weight, length, width, height) must be positive, finite numerical values greater than zero."
@@ -336,18 +335,22 @@ def check_fmcsa_authority(dot_number: str) -> str:
     # 1. Query structured carrier record directly from SQLite (prevents text-dump regex injection)
     local_row = None
     if os.path.exists(config.DB_PATH):
+        conn = None
         try:
             import sqlite3
-            with sqlite3.connect(f"file:{config.DB_PATH}?mode=ro", uri=True, timeout=5.0) as conn:
-                conn.row_factory = sqlite3.Row
-                cursor = conn.cursor()
-                cursor.execute(
-                    "SELECT carrier_name, mc_number, hq_state, safety_rating, years_operating FROM carriers WHERE dot_number = ? LIMIT 1",
-                    (clean_dot,)
-                )
-                local_row = cursor.fetchone()
+            conn = sqlite3.connect(f"file:{config.DB_PATH}?mode=ro", uri=True, timeout=5.0)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT carrier_name, mc_number, hq_state, safety_rating, years_operating FROM carriers WHERE dot_number = ? LIMIT 1",
+                (clean_dot,)
+            )
+            local_row = cursor.fetchone()
         except Exception as e:
             logger.debug(f"Local database check failed: {e}")
+        finally:
+            if conn:
+                conn.close()
 
     # 2. Attempt live query to public FMCSA QCMobile endpoint if key is provided
     fmcsa_key = getattr(config, "FMCSA_WEB_KEY", None) or os.getenv("FMCSA_WEB_KEY")

@@ -60,42 +60,46 @@ def retrieve_carriers_bm25(query: str, limit: int = 25) -> list[dict]:
     expr = sanitize_fts5_query(query)
     if not expr:
         return []
+    conn = None
     try:
-        with sqlite3.connect(f"file:{config.DB_PATH}?mode=ro", uri=True, timeout=10.0) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute("""
-            SELECT c.*, f.rank
-            FROM carriers c
-            JOIN carriers_fts f ON c.id = f.rowid
-            WHERE carriers_fts MATCH ?
-            ORDER BY f.rank
-            LIMIT ?
-            """, (expr, limit))
-            rows = cursor.fetchall()
+        conn = sqlite3.connect(f"file:{config.DB_PATH}?mode=ro", uri=True, timeout=10.0)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("""
+        SELECT c.*, f.rank
+        FROM carriers c
+        JOIN carriers_fts f ON c.id = f.rowid
+        WHERE carriers_fts MATCH ?
+        ORDER BY f.rank
+        LIMIT ?
+        """, (expr, limit))
+        rows = cursor.fetchall()
 
-            candidates = []
-            for r in rows:
-                row_dict = dict(r)
-                doc_text = format_carrier_document(row_dict)
-                dot_num = str(row_dict["dot_number"])
-                candidates.append({
+        candidates = []
+        for r in rows:
+            row_dict = dict(r)
+            doc_text = format_carrier_document(row_dict)
+            dot_num = str(row_dict["dot_number"])
+            candidates.append({
+                "dot_number": dot_num,
+                "carrier_name": row_dict["carrier_name"],
+                "hq_state": row_dict["hq_state"],
+                "safety_rating": row_dict["safety_rating"],
+                "document": doc_text,
+                "metadata": {
                     "dot_number": dot_num,
                     "carrier_name": row_dict["carrier_name"],
                     "hq_state": row_dict["hq_state"],
-                    "safety_rating": row_dict["safety_rating"],
-                    "document": doc_text,
-                    "metadata": {
-                        "dot_number": dot_num,
-                        "carrier_name": row_dict["carrier_name"],
-                        "hq_state": row_dict["hq_state"],
-                        "safety_rating": row_dict["safety_rating"]
-                    }
-                })
-            return candidates
+                    "safety_rating": row_dict["safety_rating"]
+                }
+            })
+        return candidates
     except Exception as e:
         logger.error(f"FTS5 BM25 retrieval error: {e}")
         return []
+    finally:
+        if conn:
+            conn.close()
 
 def reciprocal_rank_fusion(bm25_cands: list[dict], dense_cands: list[dict], k: int = 60, top_n: int = 15) -> list[dict]:
     """

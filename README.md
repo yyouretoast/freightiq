@@ -286,7 +286,7 @@ cp .env.example .env
 | `GROQ_API_KEY` | Conditional | Groq API key (required when using Groq provider) | — |
 | `OPENAI_API_KEY` | Conditional | OpenAI API key (required when using OpenAI provider) | — |
 | `AGENT_MODEL` | No | Active model ID | `qwen/qwen3.8-27b` (fallback: `qwen/qwen3.6-27b`) |
-| `MAX_OUTPUT_TOKENS` | No | Maximum token ceiling for model generation | `1024` |
+| `MAX_OUTPUT_TOKENS` | No | Maximum token ceiling for model generation | `950` |
 | `FMCSA_WEB_KEY` | No | FMCSA QCMobile API web key | Optional (live check requires key, otherwise falls back to verified internal DB) |
 | `TAVILY_API_KEY` | No | Tavily Search API key for freight market intelligence | Falls back to DuckDuckGo (`ddgs`) |
 | `LANGCHAIN_TRACING_V2` | No | Enable LangSmith distributed execution tracing | `false` |
@@ -339,7 +339,8 @@ freightiq/
 │   └── sync_to_hf.yml             # Automated Hugging Face Spaces sync
 ├── agent/                         # Agent orchestration
 │   ├── graph.py                   # LangGraph definition & conditional edges
-│   ├── nodes.py                   # Reasoning node, guardrails, model failover
+│   ├── models.py                  # Multi-provider LLM factory & failover
+│   ├── nodes.py                   # Reasoning node, guardrails, loop breaker
 │   ├── state.py                   # AgentState schema
 │   └── tools.py                   # 5 domain tools
 ├── docs/
@@ -352,12 +353,15 @@ freightiq/
 │   ├── reranker.py                # Cross-Encoder with cosine fallback
 │   └── utils.py                   # Text formatting & sanitization
 ├── scripts/
+│   ├── generate_benchmark_chart.py # Retrieval benchmark chart generator
 │   └── seed_db.py                 # Primary database seeder
 ├── tests/
 │   ├── verify_system.py           # Integration smoke test
 │   ├── evaluate_retrieval.py      # 60-query retrieval benchmark
 │   ├── evaluate_agent_trajectories.py # 20-case trajectory & guardrail test
 │   └── stress_test_concurrency.py # SQLite concurrency test
+├── utils/
+│   └── locks.py                   # Process-safe concurrency locks
 ├── app.py                         # Streamlit UI
 ├── config.py                      # Global configuration
 ├── AGENTS.md                      # Operational guidelines for AI coding agents
