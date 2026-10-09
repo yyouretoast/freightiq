@@ -19,9 +19,26 @@ def generate_figure_1_retrieval_benchmark():
         "Reranked Hybrid\n(Cross-Encoder)"
     ]
 
-    r1_scores = [0.967, 0.300, 0.467, 0.300, 0.700]
-    r5_scores = [0.967, 0.667, 0.667, 0.683, 0.867]
-    mrr_scores = [0.967, 0.429, 0.535, 0.432, 0.764]
+    # Dynamic loading from evaluated benchmark results if available
+    results_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "benchmark_results.json")
+    if os.path.exists(results_path):
+        import json
+        with open(results_path, "r", encoding="utf-8") as f:
+            bench_data = json.load(f).get("overall", {})
+        strat_keys = [
+            "SQLite Exact Query",
+            "ChromaDB Base Vector",
+            "FTS5 Lexical Search (BM25)",
+            "Reranked Search (Cosine)",
+            "Reranked Hybrid (Cross-Encoder)"
+        ]
+        r1_scores = [bench_data.get(k, {}).get("hit@1", 0.0) for k in strat_keys]
+        r5_scores = [bench_data.get(k, {}).get("hit@5", 0.0) for k in strat_keys]
+        mrr_scores = [bench_data.get(k, {}).get("mrr", 0.0) for k in strat_keys]
+    else:
+        r1_scores = [1.000, 0.300, 0.467, 0.300, 0.700]
+        r5_scores = [1.000, 0.667, 0.667, 0.683, 0.867]
+        mrr_scores = [1.000, 0.429, 0.535, 0.432, 0.764]
 
     x = np.arange(len(strategies))
     width = 0.24
@@ -35,8 +52,8 @@ def generate_figure_1_retrieval_benchmark():
     c_r5 = "#7c3aed"   # Purple
     c_mrr = "#0d9488"  # Teal
 
-    rects1 = ax.bar(x - width, r1_scores, width, label="Recall@1", color=c_r1, alpha=0.92, edgecolor="#000000", linewidth=0.8)
-    rects2 = ax.bar(x, r5_scores, width, label="Recall@5", color=c_r5, alpha=0.92, edgecolor="#000000", linewidth=0.8)
+    rects1 = ax.bar(x - width, r1_scores, width, label="Hit@1", color=c_r1, alpha=0.92, edgecolor="#000000", linewidth=0.8)
+    rects2 = ax.bar(x, r5_scores, width, label="Hit@5", color=c_r5, alpha=0.92, edgecolor="#000000", linewidth=0.8)
     rects3 = ax.bar(x + width, mrr_scores, width, label="MRR (Mean Reciprocal Rank)", color=c_mrr, alpha=0.92, edgecolor="#000000", linewidth=0.8)
 
     for rects in [rects1, rects2, rects3]:
@@ -172,14 +189,27 @@ def generate_figure_3_stratified_categories():
         "Multi-Constraint Hybrid\n(20 cases: Filter + Jargon)"
     ]
 
-    # Metrics per category [ChromaDB Base, FTS5 BM25, Cross-Encoder Hybrid]
-    r1_dense = [0.350, 0.450, 0.100]
-    r1_fts5 = [0.650, 0.600, 0.150]
-    r1_cross = [0.900, 0.650, 0.550]
-
-    mrr_dense = [0.508, 0.568, 0.210]
-    mrr_fts5 = [0.756, 0.610, 0.239]
-    mrr_cross = [0.942, 0.727, 0.625]
+    # Dynamic loading from evaluated benchmark categories if available
+    results_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "benchmark_results.json")
+    if os.path.exists(results_path):
+        import json
+        with open(results_path, "r", encoding="utf-8") as f:
+            cat_data = json.load(f).get("categories", {})
+        cat_keys = ["Structured", "Qualitative", "Hybrid"]
+        r1_dense = [cat_data.get(k, {}).get("ChromaDB Base Vector", {}).get("hit@1", 0.0) for k in cat_keys]
+        r1_fts5 = [cat_data.get(k, {}).get("FTS5 Lexical Search (BM25)", {}).get("hit@1", 0.0) for k in cat_keys]
+        r1_cross = [cat_data.get(k, {}).get("Reranked Hybrid (Cross-Encoder)", {}).get("hit@1", 0.0) for k in cat_keys]
+        mrr_dense = [cat_data.get(k, {}).get("ChromaDB Base Vector", {}).get("mrr", 0.0) for k in cat_keys]
+        mrr_fts5 = [cat_data.get(k, {}).get("FTS5 Lexical Search (BM25)", {}).get("mrr", 0.0) for k in cat_keys]
+        mrr_cross = [cat_data.get(k, {}).get("Reranked Hybrid (Cross-Encoder)", {}).get("mrr", 0.0) for k in cat_keys]
+    else:
+        # Fallback default values
+        r1_dense = [0.350, 0.450, 0.100]
+        r1_fts5 = [0.650, 0.600, 0.150]
+        r1_cross = [0.900, 0.650, 0.550]
+        mrr_dense = [0.508, 0.568, 0.210]
+        mrr_fts5 = [0.756, 0.610, 0.239]
+        mrr_cross = [0.942, 0.727, 0.625]
 
     x = np.arange(len(categories))
     width = 0.25

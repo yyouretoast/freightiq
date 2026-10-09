@@ -234,7 +234,7 @@ EVAL_CASES = [
     {
         "category": "Hybrid",
         "query": "North Carolina trucking companies capable of transporting permitted massive infrastructure pieces with police escorts.",
-        "sql": "SELECT dot_number FROM carriers WHERE hq_state = 'NC' AND notes LIKE '%heavy-haul%'"
+        "sql": "SELECT dot_number FROM carriers WHERE hq_state = 'NC' AND (notes LIKE '%superload%' OR notes LIKE '%police escorts%')"
     },
     {
         "category": "Hybrid",
@@ -288,8 +288,8 @@ EVAL_CASES = [
     },
     {
         "category": "Hybrid",
-        "query": "Pennsylvania carriers providing sanitary dry box trailers monitored via real-time satellite telemetry for grocery distribution.",
-        "sql": "SELECT dot_number FROM carriers WHERE hq_state = 'PA' AND notes LIKE '%food-grade%'"
+        "query": "Wisconsin carriers providing sanitary dry box trailers monitored via real-time satellite telemetry for grocery distribution.",
+        "sql": "SELECT dot_number FROM carriers WHERE hq_state = 'WI' AND notes LIKE '%food-grade%'"
     },
     {
         "category": "Hybrid",
@@ -407,11 +407,15 @@ def run_reranked_hybrid_search(query, k=5, force_cosine=False):
     return [str(r["metadata"]["dot_number"]) for r in ranked]
 
 def calculate_metrics(retrieved_list, targets):
+    """
+    Computes Hit@k (Success@k) and MRR (Mean Reciprocal Rank).
+    Hit@k evaluates whether at least one qualified carrier appears in the top-k results.
+    """
     if not targets:
         return 0.0, 0.0, 0.0, 0.0
-    recall_1 = 1.0 if any(t in retrieved_list[:1] for t in targets) else 0.0
-    recall_3 = 1.0 if any(t in retrieved_list[:3] for t in targets) else 0.0
-    recall_5 = 1.0 if any(t in retrieved_list[:5] for t in targets) else 0.0
+    hit_1 = 1.0 if any(t in retrieved_list[:1] for t in targets) else 0.0
+    hit_3 = 1.0 if any(t in retrieved_list[:3] for t in targets) else 0.0
+    hit_5 = 1.0 if any(t in retrieved_list[:5] for t in targets) else 0.0
     
     mrr = 0.0
     for idx, item in enumerate(retrieved_list):
@@ -419,9 +423,10 @@ def calculate_metrics(retrieved_list, targets):
             mrr = 1.0 / (idx + 1)
             break
             
-    return recall_1, recall_3, recall_5, mrr
+    return hit_1, hit_3, hit_5, mrr
 
 def main():
+    import json
     print("=== FREIGHTIQ RETRIEVAL BENCHMARK & EVALUATION HARNESS ===")
     
     # Dynamically resolve ground-truth targets from DB first
@@ -438,60 +443,101 @@ def main():
     results = {}
     category_results = {}
     for name in strategies:
-        results[name] = {"r@1": [], "r@3": [], "r@5": [], "mrr": []}
+        results[name] = {"h@1": [], "h@3": [], "h@5": [], "mrr": []}
         
     for case in EVAL_CASES:
         cat = case.get("category", "General")
         if cat not in category_results:
-            category_results[cat] = {name: {"r@1": [], "r@3": [], "r@5": [], "mrr": []} for name in strategies}
+            category_results[cat] = {name: {"h@1": [], "h@3": [], "h@5": [], "mrr": []} for name in strategies}
 
         print(f"\nEvaluating [{cat}] Query: '{case['query']}'")
         for name, search_fn in strategies.items():
             retrieved = search_fn(case)
-            r1, r3, r5, mrr = calculate_metrics(retrieved, case.get("targets", []))
+            h1, h3, h5, mrr = calculate_metrics(retrieved, case.get("targets", []))
             
-            results[name]["r@1"].append(r1)
-            results[name]["r@3"].append(r3)
-            results[name]["r@5"].append(r5)
+            results[name]["h@1"].append(h1)
+            results[name]["h@3"].append(h3)
+            results[name]["h@5"].append(h5)
             results[name]["mrr"].append(mrr)
 
-            category_results[cat][name]["r@1"].append(r1)
-            category_results[cat][name]["r@3"].append(r3)
-            category_results[cat][name]["r@5"].append(r5)
+            category_results[cat][name]["h@1"].append(h1)
+            category_results[cat][name]["h@3"].append(h3)
+            category_results[cat][name]["h@5"].append(h5)
             category_results[cat][name]["mrr"].append(mrr)
             
-            print(f"  - {name:<32} | Targets: {len(case.get('targets', [])):<3} | Retrieved: {len(retrieved):<2} | Recall@5: {r5:.1f} | MRR: {mrr:.3f}")
+            print(f"  - {name:<32} | Targets: {len(case.get('targets', [])):<3} | Retrieved: {len(retrieved):<2} | Hit@5: {h5:.1f} | MRR: {mrr:.3f}")
             
     # Print Per-Category Breakdown Tables
+    category_summary = {}
     for cat, cat_metrics in category_results.items():
-        print(f"\n\n=== CATEGORY SUMMARY: {cat.upper()} ({len(cat_metrics[list(strategies.keys())[0]]['r@1'])} queries) ===")
-        print(f"| {'Strategy':<32} | {'Recall@1':<10} | {'Recall@3':<10} | {'Recall@5':<10} | {'MRR':<8} |")
+        print(f"\n\n=== CATEGORY SUMMARY: {cat.upper()} ({len(cat_metrics[list(strategies.keys())[0]]['h@1'])} queries) ===")
+        print(f"| {'Strategy':<32} | {'Hit@1':<10} | {'Hit@3':<10} | {'Hit@5':<10} | {'MRR':<8} |")
         print(f"| {'-'*32} | {'-'*10} | {'-'*10} | {'-'*10} | {'-'*8} |")
+        category_summary[cat] = {}
         for name, metrics in cat_metrics.items():
-            if not metrics["r@1"]:
+            if not metrics["h@1"]:
                 continue
-            avg_r1 = sum(metrics["r@1"]) / len(metrics["r@1"])
-            avg_r3 = sum(metrics["r@3"]) / len(metrics["r@3"])
-            avg_r5 = sum(metrics["r@5"]) / len(metrics["r@5"])
+            avg_h1 = sum(metrics["h@1"]) / len(metrics["h@1"])
+            avg_h3 = sum(metrics["h@3"]) / len(metrics["h@3"])
+            avg_h5 = sum(metrics["h@5"]) / len(metrics["h@5"])
             avg_mrr = sum(metrics["mrr"]) / len(metrics["mrr"])
-            print(f"| {name:<32} | {avg_r1:<10.3f} | {avg_r3:<10.3f} | {avg_r5:<10.3f} | {avg_mrr:<8.3f} |")
+            category_summary[cat][name] = {
+                "hit@1": round(avg_h1, 3), "hit@3": round(avg_h3, 3),
+                "hit@5": round(avg_h5, 3), "mrr": round(avg_mrr, 3)
+            }
+            print(f"| {name:<32} | {avg_h1:<10.3f} | {avg_h3:<10.3f} | {avg_h5:<10.3f} | {avg_mrr:<8.3f} |")
 
     # Print Overall Summary Table
     print(f"\n\n=== OVERALL RETRIEVAL METRICS SUMMARY ({len(EVAL_CASES)} queries) ===")
-    print(f"| {'Strategy':<32} | {'Recall@1':<10} | {'Recall@3':<10} | {'Recall@5':<10} | {'MRR':<8} |")
+    print(f"| {'Strategy':<32} | {'Hit@1':<10} | {'Hit@3':<10} | {'Hit@5':<10} | {'MRR':<8} |")
     print(f"| {'-'*32} | {'-'*10} | {'-'*10} | {'-'*10} | {'-'*8} |")
     
+    overall_summary = {}
     for name, metrics in results.items():
-        if not metrics["r@1"]: # Skip if empty
+        if not metrics["h@1"]:
             continue
-        avg_r1 = sum(metrics["r@1"]) / len(metrics["r@1"])
-        avg_r3 = sum(metrics["r@3"]) / len(metrics["r@3"])
-        avg_r5 = sum(metrics["r@5"]) / len(metrics["r@5"])
+        avg_h1 = sum(metrics["h@1"]) / len(metrics["h@1"])
+        avg_h3 = sum(metrics["h@3"]) / len(metrics["h@3"])
+        avg_h5 = sum(metrics["h@5"]) / len(metrics["h@5"])
         avg_mrr = sum(metrics["mrr"]) / len(metrics["mrr"])
-        print(f"| {name:<32} | {avg_r1:<10.3f} | {avg_r3:<10.3f} | {avg_r5:<10.3f} | {avg_mrr:<8.3f} |")
+        overall_summary[name] = {
+            "hit@1": round(avg_h1, 3), "hit@3": round(avg_h3, 3),
+            "hit@5": round(avg_h5, 3), "mrr": round(avg_mrr, 3)
+        }
+        print(f"| {name:<32} | {avg_h1:<10.3f} | {avg_h3:<10.3f} | {avg_h5:<10.3f} | {avg_mrr:<8.3f} |")
         
-    print("\n=== Evaluation Harness Complete ===")
+    print("\nNote: Hit@k (Success@k) measures whether >=1 valid carrier is discovered in top-k.")
+    
+    # Export dynamic results payload for chart generation and CI verification
+    benchmark_payload = {
+        "overall": overall_summary,
+        "categories": category_summary,
+        "total_queries": len(EVAL_CASES)
+    }
+    benchmark_export_path = os.path.join(config.DATA_DIR, "benchmark_results.json")
+    try:
+        os.makedirs(os.path.dirname(benchmark_export_path), exist_ok=True)
+        with open(benchmark_export_path, "w", encoding="utf-8") as f:
+            json.dump(benchmark_payload, f, indent=2)
+        print(f"[OK] Exported benchmark results to {benchmark_export_path}")
+    except Exception as e:
+        print(f"[WARNING] Failed to export benchmark results JSON: {e}")
 
+    # Enforce quality gate assertions
+    sqlite_h1 = overall_summary["SQLite Exact Query"]["hit@1"]
+    assert sqlite_h1 >= 0.98, f"SQLite Exact Query Hit@1 regression: {sqlite_h1:.3f}"
+
+    hybrid_h1 = overall_summary["Reranked Hybrid (Cross-Encoder)"]["hit@1"]
+    assert hybrid_h1 >= 0.65, f"Cross-Encoder Hit@1 regression: {hybrid_h1:.3f}"
+
+    hybrid_h5 = overall_summary["Reranked Hybrid (Cross-Encoder)"]["hit@5"]
+    assert hybrid_h5 >= 0.80, f"Cross-Encoder Hit@5 regression: {hybrid_h5:.3f}"
+
+    hybrid_mrr = overall_summary["Reranked Hybrid (Cross-Encoder)"]["mrr"]
+    assert hybrid_mrr >= 0.70, f"Cross-Encoder MRR regression: {hybrid_mrr:.3f}"
+
+    print("\n[PASSED] All retrieval benchmark thresholds verified successfully!")
+    print("=== Evaluation Harness Complete ===")
 
 if __name__ == "__main__":
     main()

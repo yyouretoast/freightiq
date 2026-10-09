@@ -28,7 +28,9 @@ jobs:
       run: |
         python scripts/seed_db.py
 
-    - name: Verify offline system & domain tools
+    - name: Verify system & domain tools
+      env:
+        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
       run: |
         python -m tests.verify_system
 
@@ -39,3 +41,10 @@ jobs:
     - name: Run concurrency stress test
       run: |
         python -m tests.stress_test_concurrency
+
+    - name: Run agent trajectory evaluation
+      if: env.GROQ_API_KEY != ''
+      env:
+        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      run: |
+        python -m tests.evaluate_agent_trajectories

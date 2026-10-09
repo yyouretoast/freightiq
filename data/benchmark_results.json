@@ -1,0 +1,133 @@
+{
+  "overall": {
+    "SQLite Exact Query": {
+      "hit@1": 1.0,
+      "hit@3": 1.0,
+      "hit@5": 1.0,
+      "mrr": 1.0
+    },
+    "ChromaDB Base Vector": {
+      "hit@1": 0.317,
+      "hit@3": 0.567,
+      "hit@5": 0.683,
+      "mrr": 0.445
+    },
+    "FTS5 Lexical Search (BM25)": {
+      "hit@1": 0.467,
+      "hit@3": 0.583,
+      "hit@5": 0.667,
+      "mrr": 0.535
+    },
+    "Reranked Search (Cosine)": {
+      "hit@1": 0.317,
+      "hit@3": 0.567,
+      "hit@5": 0.7,
+      "mrr": 0.449
+    },
+    "Reranked Hybrid (Cross-Encoder)": {
+      "hit@1": 0.717,
+      "hit@3": 0.833,
+      "hit@5": 0.883,
+      "mrr": 0.781
+    }
+  },
+  "categories": {
+    "Structured": {
+      "SQLite Exact Query": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "hit@5": 1.0,
+        "mrr": 1.0
+      },
+      "ChromaDB Base Vector": {
+        "hit@1": 0.35,
+        "hit@3": 0.65,
+        "hit@5": 0.75,
+        "mrr": 0.508
+      },
+      "FTS5 Lexical Search (BM25)": {
+        "hit@1": 0.65,
+        "hit@3": 0.85,
+        "hit@5": 0.95,
+        "mrr": 0.756
+      },
+      "Reranked Search (Cosine)": {
+        "hit@1": 0.35,
+        "hit@3": 0.65,
+        "hit@5": 0.8,
+        "mrr": 0.518
+      },
+      "Reranked Hybrid (Cross-Encoder)": {
+        "hit@1": 0.9,
+        "hit@3": 1.0,
+        "hit@5": 1.0,
+        "mrr": 0.942
+      }
+    },
+    "Qualitative": {
+      "SQLite Exact Query": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "hit@5": 1.0,
+        "mrr": 1.0
+      },
+      "ChromaDB Base Vector": {
+        "hit@1": 0.45,
+        "hit@3": 0.65,
+        "hit@5": 0.85,
+        "mrr": 0.568
+      },
+      "FTS5 Lexical Search (BM25)": {
+        "hit@1": 0.6,
+        "hit@3": 0.6,
+        "hit@5": 0.65,
+        "mrr": 0.61
+      },
+      "Reranked Search (Cosine)": {
+        "hit@1": 0.45,
+        "hit@3": 0.65,
+        "hit@5": 0.85,
+        "mrr": 0.568
+      },
+      "Reranked Hybrid (Cross-Encoder)": {
+        "hit@1": 0.65,
+        "hit@3": 0.8,
+        "hit@5": 0.85,
+        "mrr": 0.727
+      }
+    },
+    "Hybrid": {
+      "SQLite Exact Query": {
+        "hit@1": 1.0,
+        "hit@3": 1.0,
+        "hit@5": 1.0,
+        "mrr": 1.0
+      },
+      "ChromaDB Base Vector": {
+        "hit@1": 0.15,
+        "hit@3": 0.4,
+        "hit@5": 0.45,
+        "mrr": 0.26
+      },
+      "FTS5 Lexical Search (BM25)": {
+        "hit@1": 0.15,
+        "hit@3": 0.3,
+        "hit@5": 0.4,
+        "mrr": 0.239
+      },
+      "Reranked Search (Cosine)": {
+        "hit@1": 0.15,
+        "hit@3": 0.4,
+        "hit@5": 0.45,
+        "mrr": 0.26
+      },
+      "Reranked Hybrid (Cross-Encoder)": {
+        "hit@1": 0.6,
+        "hit@3": 0.7,
+        "hit@5": 0.8,
+        "mrr": 0.675
+      }
+    }
+  },
+  "total_queries": 60
+}

@@ -163,13 +163,15 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 
 ### Overall Metrics (60 Queries)
 
-| Retrieval Strategy | Recall@1 | Recall@3 | Recall@5 | MRR | Latency |
+| Retrieval Strategy | Hit@1 | Hit@3 | Hit@5 | MRR | Latency |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **SQLite Exact Query** | **0.967** | **0.967** | **0.967** | **0.967** | **0.31 ms** |
-| **ChromaDB Base Vector** | 0.300 | 0.550 | 0.667 | 0.429 | 270.60 ms |
+| **SQLite Exact Query** | **1.000** | **1.000** | **1.000** | **1.000** | **0.31 ms** |
+| **ChromaDB Base Vector** | 0.317 | 0.567 | 0.683 | 0.445 | 270.60 ms |
 | **FTS5 Lexical Search (BM25)** | 0.467 | 0.583 | 0.667 | 0.535 | **0.22 ms** |
-| **Reranked Search (Cosine Fallback)** | 0.300 | 0.550 | 0.683 | 0.432 | 271.00 ms |
-| **Reranked Hybrid (Cross-Encoder + RRF)** | **0.700** | **0.817** | **0.867** | **0.764** | **499.37 ms** |
+| **Reranked Search (Cosine Fallback)** | 0.317 | 0.567 | 0.700 | 0.449 | 271.00 ms |
+| **Reranked Hybrid (Cross-Encoder + RRF)** | **0.717** | **0.833** | **0.883** | **0.781** | **499.37 ms** |
+
+> *Note on Metrics:* Evaluated as Hit@k (Success@k), measuring whether at least one qualified carrier appears in the top-$k$ candidates. In freight dispatch routing, operators require top viable candidates rather than full database sweeps; with qualitative queries matching 18–163 carriers in the synthetic corpus, Hit@5 measures candidate discovery success.
 
 <p align="center">
   <img src="docs/assets/retrieval_latency_tradeoff.png" alt="FreightIQ Retrieval Latency vs Accuracy Pareto Trade-Off" width="100%">
@@ -183,32 +185,32 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
   <img src="docs/assets/retrieval_stratified_categories.png" alt="FreightIQ Stratified Retrieval Performance Across Query Categories" width="100%">
 </p>
 
-| Category | Description | Base Vector R@1 (MRR) | FTS5 BM25 R@1 (MRR) | Hybrid Cross-Encoder R@1 (MRR) |
+| Category | Description | Base Vector Hit@1 (MRR) | FTS5 BM25 Hit@1 (MRR) | Hybrid Cross-Encoder Hit@1 (MRR) |
 | :--- | :--- | :---: | :---: | :---: |
 | **Structured (20 queries)** | Hard attributes (state, safety rating, equipment) | 0.350 (0.508) | 0.650 (0.756) | **0.900 (0.942)** |
 | **Qualitative (20 queries)** | Freight jargon, certifications, service capabilities (natural language) | 0.450 (0.568) | 0.600 (0.610) | **0.650 (0.727)** |
-| **Multi-Constraint Hybrid (20 queries)** | Geographic/equipment filter + qualitative need | 0.100 (0.210) | 0.150 (0.239) | **0.550 (0.625)** |
+| **Multi-Constraint Hybrid (20 queries)** | Geographic/equipment filter + qualitative need | 0.150 (0.260) | 0.150 (0.239) | **0.600 (0.675)** |
 
 </details>
 
 ### Key Findings
 1. **Lexical Retrieval Impact:** FTS5 BM25 retrieves exact domain tokens with sub-millisecond latency (0.22ms), outperforming dense vector search on structured constraint terms.
 2. **Consensus Ranking:** RRF ($k=60$) successfully balances lexical keyword recall with dense semantic breadth.
-3. **Cross-Encoder Re-Ranking Impact:** Cross-encoder re-ranking increases **Overall Recall@1 from 0.300 to 0.700 (+133.3%)** and **MRR from 0.429 to 0.764 (+78.1%)** across the 60 benchmark queries.
-4. **Pareto Trade-Off Justification:** As shown in Figure 2, deterministic relational queries are resolved in 0.31 ms with 0.967 MRR via SQLite, preventing unnecessary invocation of the ~500 ms neural cross-encoder pipeline.
+3. **Cross-Encoder Re-Ranking Impact:** Cross-encoder re-ranking increases **Overall Hit@1 from 0.317 to 0.717 (+126.2%)** and **MRR from 0.445 to 0.781 (+75.5%)** across the 60 benchmark queries.
+4. **Pareto Trade-Off Justification:** As shown in Figure 2, deterministic relational queries are resolved in 0.31 ms with 1.000 MRR via SQLite, preventing unnecessary invocation of the ~500 ms neural cross-encoder pipeline.
 
 ---
 
 ## Engineering Trade-offs & Limitations
 
 - **Cross-Encoder Compute Latency (~500ms)**: Cross-encoder scoring over the top-15 candidate pool takes ~400–500ms on CPU (compared to 0.3ms for SQLite queries and 0.2ms for FTS5 BM25). For interactive use, this is within normal turn thresholds; batch retrieval workloads would require GPU acceleration or pre-filtering.
-- **Multi-Constraint Semantic Falloff (0.550 Recall@1)**: When queries combine discrete attributes with free-form requirements (e.g., *"California flatbed carriers specializing in semiconductors"*), unranked dense and lexical search drop to 0.100–0.150 R@1, while the cross-encoder reaches 0.550 R@1 (0.750 Recall@5). This is why discrete constraints are routed to SQLite, reserving semantic search for unstructured descriptions (Figure 3).
-- **Single-Vendor Sibling Failover**: Intra-provider failover switches between `qwen/qwen3.8-27b` and `qwen/qwen3.6-27b` on Groq. While this protects against per-model rate limits and transient 503s with sub-second inference speeds and identical tool-binding semantics, an upstream platform outage or account-level quota exhaustion on Groq affects both siblings simultaneously. Production systems can configure alternative providers (e.g. OpenAI or local Ollama).
+- **Multi-Constraint Semantic Falloff (0.600 Hit@1)**: When queries combine discrete attributes with free-form requirements (e.g., *"California flatbed carriers specializing in semiconductors"*), unranked dense and lexical search drop to 0.150 Hit@1, while the cross-encoder reaches 0.600 Hit@1 (0.800 Hit@5). This is why discrete constraints are routed to SQLite, reserving semantic search for unstructured descriptions (Figure 3).
+- **Single-Vendor Sibling Failover**: Intra-provider failover switches between `qwen/qwen3.8-27b` and `qwen/qwen3.6-27b` on Groq with an automated 5-minute self-healing recovery window. While this protects against per-model rate limits and transient 503s with sub-second inference speeds and identical tool-binding semantics, an upstream platform outage or account-level quota exhaustion on Groq affects both siblings simultaneously. Production systems can configure alternative providers (e.g. OpenAI or local Ollama).
 - **Single-Turn Single-Tool Principle (`parallel_tool_calls=False`)**: To prevent redundant API calls and keep token usage within the 950-token budget (Groq OTPM safety ceiling), the model is bound with `parallel_tool_calls=False`. For multi-part questions requiring multiple tools, the agent addresses the primary intent first and relies on follow-up user turns rather than parallel execution.
-- **Synthetic Dataset**: 500 fictional carrier profiles are deterministically generated to avoid real-carrier compliance or data-quality misrepresentation while preserving authentic freight domain complexity (TWIC badges, GDP cold chain, Moffett forklifts, RGN lowboys, Carrier Vector chillers).
-- **Groq Free-Tier Token Budgets (200k TPD)**: Free-tier Groq API accounts enforce daily token limits. FreightIQ mitigates this via automatic sibling failover (`qwen/qwen3.8-27b` $\leftrightarrow$ `qwen/qwen3.6-27b`), tool output length bounding (8,000 characters), and turn-aligned 8-message context truncation.
+- **Synthetic Dataset**: 500 fictional carrier profiles are deterministically generated to avoid real-carrier compliance or data-quality misrepresentation while preserving authentic freight domain complexity (TWIC badges, GDP cold chain, Moffett forklifts, RGN lowboys, Carrier Vector chillers). Risk distribution (20% conditional, 20% unsatisfactory) is intentionally elevated compared to real-world averages (<3%) to stress-test safety compliance gating.
+- **Groq Free-Tier Token Budgets (200k TPD)**: Free-tier Groq API accounts enforce daily token limits. FreightIQ mitigates this via automatic sibling failover (`qwen/qwen3.8-27b` $\leftrightarrow$ `qwen/qwen3.6-27b`), tool output length bounding (12,000 characters), and turn-aligned 8-message context truncation.
 - **SQLite Write Serialization**: SQLite in WAL mode provides lock-free concurrent reads, but writes are serialized. High-volume multi-user writes in enterprise production would necessitate PostgreSQL.
-- **FMCSA Public API Availability & Compliance Gating**: The tool queries the FMCSA QCMobile JSON REST service. If external network timeouts occur, it falls back to local database records while strictly enforcing carrier safety ratings (rejecting unsatisfactory carriers). Direct BMC-91X insurance filing checks are redirected to SAFER.
+- **FMCSA Public API Availability & Compliance Gating**: The tool queries the FMCSA QCMobile JSON REST service. If external network timeouts occur or credentials are omitted, it falls back to internal demonstration registry records while strictly enforcing carrier safety ratings (rejecting unsatisfactory carriers). Direct BMC-91X insurance filing checks are redirected to SAFER.
 
 ---
 
@@ -216,14 +218,14 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 
 | Failure Mode | Control | Implementation |
 | :--- | :--- | :--- |
-| **SQL Mutation / Data Corruption** | Engine-level read-only URI + AST check | `file:DB?mode=ro`; queries must start with `SELECT` or `WITH`; comments stripped |
+| **SQL Mutation / Data Corruption** | Engine-level read-only URI + prefix gate | `file:DB?mode=ro`; queries must start with `SELECT` or `WITH`; comments stripped |
 | **FTS5 Syntax Crash on Special Characters** | Tokenizer & query sanitizer | `sanitize_fts5_query()` strips punctuation/stop words while preserving single-digit Hazmat codes |
 | **Tool Loops & Thrashing** | Turn-scoped loop breaker | Detects duplicate consecutive calls and alternating ping-pong cycles ($A \to B \to A$); forces synthesis |
 | **Context Window Exhaustion** | History sliding window & turn alignment | Truncates context to last 8 messages while walking back to ensure valid conversation turns |
-| **Payload Bloat & SQL Truncation** | Tool output length bounding | Bounded at 8,000 characters per tool response (fits all 25 candidate rows cleanly) |
+| **Payload Bloat & SQL Truncation** | Tool output length bounding | Bounded at 12,000 characters with row-aware notes truncation (cleanly accommodates up to 25 candidate rows) |
 | **API Socket Hang / Network Freeze** | Client-level request timeout | Enforced 30.0s hard socket timeout on `ChatGroq` and `ChatOpenAI` constructors |
-| **Groq 429 Daily Quota Exhaustion** | Sibling model failover | Automatically switches active inference between `qwen3.8-27b` and `qwen3.6-27b` |
-| **Zero-Row Relational Miss** | Constraint relaxation | Drops the last non-safety `WHERE` constraint across multi-line queries and retrieves partial matches |
+| **Groq 429 Daily Quota Exhaustion** | Sibling model failover + cooldown | Automatically switches active inference between `qwen3.8-27b` and `qwen3.6-27b` with 5-minute self-healing recovery |
+| **Zero-Row Relational Miss** | Constraint relaxation | Drops the last non-compliance `WHERE` constraint; strictly preserves safety ratings and hazmat cargo filters |
 | **Prompt Injection / Jailbreak** | Grounding prompt & safety refusal | Rejects system prompt leaks; refuses hazardous cargo override directives |
 | **Search API Unavailability** | Provider fallback | Tavily fails over to DuckDuckGo (`ddgs`) without throwing unhandled exceptions |
 | **Cross-Encoder Weights Missing** | Metric fallback & failure cache | NumPy vectorized cosine fallback ($<5\mu\text{s}$) with `_CROSS_ENCODER_FAILED` fail-fast memory caching |
@@ -236,9 +238,9 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 | Routing Modality | Example Query | Active Path | Execution & Precision Rationale |
 | :--- | :--- | :--- | :--- |
 | **Deterministic Relational Filter** | *"Find flatbed carriers in Ohio with a satisfactory safety rating."* | `carrier_sql_query` | Evaluates discrete constraints (`hq_state = 'OH'`, `equipment_types`, `safety_rating`) in $<1\text{ ms}$ with exact matching, avoiding approximate nearest-neighbor errors on discrete attributes. |
-| **Unstructured Domain Jargon** | *"Carriers specializing in perishable pharmaceutical cold chain with continuous temp monitoring."* | `carrier_semantic_search` | FTS5 BM25 + dense ChromaDB embeddings fused via RRF ($k=60$) and re-ranked with `cross-encoder/ms-marco-MiniLM-L-6-v2` (1.000 MRR). |
-| **Automated Zero-Row Relaxation** | *"Find carriers headquartered in Alaska with refrigerated units handling hazmat."* | `carrier_sql_query` | Zero rows match strict multi-clause conditions; tool automatically drops the last non-safety constraint and returns alternative candidates with notice. |
-| **Federal Authority & Safety Gating** | *"Check the FMCSA operating authority and safety audit status for USDOT 3780770."* | `check_fmcsa_authority` | Queries the federal QCMobile REST service (or internal registry fallback) to enforce mandatory compliance gating (`PASS`, `WARNING`, or `FAIL — DO NOT DISPATCH`). |
+| **Unstructured Domain Jargon** | *"Carriers specializing in perishable pharmaceutical cold chain with continuous temp monitoring."* | `carrier_semantic_search` | FTS5 BM25 + dense ChromaDB embeddings fused via RRF ($k=60$) and re-ranked with `cross-encoder/ms-marco-MiniLM-L-6-v2` (0.727 MRR). |
+| **Automated Zero-Row Relaxation** | *"Find carriers headquartered in Alaska with refrigerated units handling hazmat."* | `carrier_sql_query` | Zero rows match strict multi-clause conditions; tool preserves compliance/hazmat constraints and returns alternative candidates with notice. |
+| **Federal Authority & Safety Gating** | *"Check the FMCSA operating authority and safety audit status for USDOT 3780770."* | `check_fmcsa_authority` | Queries the federal QCMobile REST service (or simulated demonstration registry fallback) to enforce mandatory compliance gating (`PASS`, `WARNING`, or `FAIL — DO NOT DISPATCH`). |
 | **Deterministic NMFC Classification** | *"Calculate the freight class for a 1,200 lbs pallet measuring 48x48x48 inches."* | `freight_class_calculator` | Computes shipment density ($18.75\text{ lb/cu ft}$), maps to NMFC Class 70, and evaluates 3-word negation windows for commodity exceptions (e.g. insulation). |
 | **Live Freight Market Intelligence** | *"What is the current average national dry van spot rate per mile in 2026?"* | `web_search` | Retrieves live spot market indices and corridor updates via Tavily API with automatic DuckDuckGo (`ddgs`) fallback. |
 

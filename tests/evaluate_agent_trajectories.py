@@ -16,6 +16,9 @@ from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 # Ensure project root is in path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import re
+import sqlite3
+import config
 from agent.graph import build_graph
 
 # Configure logging to clean stdout
@@ -180,7 +183,7 @@ def main():
             is_valid = True
             reasons = []
             
-            # 1. Expected tool check
+            # 1. Expected tool check & NL-to-SQL validation
             if case.get("expected_tool"):
                 if case["expected_tool"] not in called_tools:
                     if case.get("allow_refusal") and len(called_tools) == 0:
@@ -188,6 +191,26 @@ def main():
                     else:
                         is_valid = False
                         reasons.append(f"Expected tool '{case['expected_tool']}' was not executed.")
+                elif case["expected_tool"] == "carrier_sql_query":
+                    # NL-to-SQL Validation: Verify generated query compiles in SQLite
+                    ai_tool_msgs = [m for m in messages if isinstance(m, AIMessage) and getattr(m, "tool_calls", None)]
+                    for aim in ai_tool_msgs:
+                        for tc in aim.tool_calls:
+                            if tc.get("name") == "carrier_sql_query":
+                                gen_sql = tc.get("args", {}).get("query", "")
+                                if gen_sql:
+                                    clean_check = re.sub(r'/\*.*?\*/', '', gen_sql, flags=re.DOTALL)
+                                    clean_check = re.sub(r'--.*$', '', clean_check, flags=re.MULTILINE).strip().rstrip(";").strip()
+                                    if clean_check.upper().startswith("SELECT") or clean_check.upper().startswith("WITH"):
+                                        try:
+                                            with sqlite3.connect(f"file:{config.DB_PATH}?mode=ro", uri=True) as conn:
+                                                conn.execute(f"EXPLAIN QUERY PLAN {clean_check}")
+                                            print("  - [OK] NL-to-SQL Verification: Generated SQL query successfully compiled by SQLite.")
+                                        except Exception as sql_e:
+                                            # Injection tests may intentionally pass invalid SQL that gets rejected
+                                            if "injection" not in case["type"].lower():
+                                                is_valid = False
+                                                reasons.append(f"Generated SQL failed SQLite syntax compilation: {sql_e} (SQL: '{clean_check[:80]}')")
 
             
             # 2. Unexpected tool check
@@ -244,6 +267,26 @@ def main():
         print("[SUCCESS] All agent trajectories and loop-breaker guardrails verified successfully!")
     else:
         sys.exit(1)
+    
+def test_loop_breaker_guardrail_unit():
+    """Deterministic unit verification of agent_node loop breaker guardrail."""
+    print("\n--- Verifying Loop Breaker Guardrail (Deterministic Unit Test) ---")
+    from agent.nodes import agent_node
+    mock_messages = [
+        HumanMessage(content="Find Ohio carriers"),
+        AIMessage(content="", tool_calls=[{"name": "carrier_sql_query", "args": {"query": "SELECT * FROM carriers WHERE hq_state = 'OH'"}, "id": "call_1"}]),
+        ToolMessage(content="Carrier 1", tool_call_id="call_1", name="carrier_sql_query"),
+        AIMessage(content="", tool_calls=[{"name": "carrier_sql_query", "args": {"query": "SELECT * FROM carriers WHERE hq_state = 'OH'"}, "id": "call_2"}]),
+        ToolMessage(content="Carrier 1", tool_call_id="call_2", name="carrier_sql_query"),
+    ]
+    state = {"messages": mock_messages}
+    res = agent_node(state)
+    assert res and "messages" in res and len(res["messages"]) > 0, "Loop breaker returned empty output"
+    ai_resp = res["messages"][-1]
+    assert not getattr(ai_resp, "tool_calls", None), "Loop breaker failed to prevent repeated tool call"
+    assert len(str(ai_resp.content)) > 0, "Loop breaker synthesis text was empty"
+    print("  - [OK] Loop breaker successfully intercepted duplicate calls and enforced direct synthesis.")
 
 if __name__ == "__main__":
+    test_loop_breaker_guardrail_unit()
     main()

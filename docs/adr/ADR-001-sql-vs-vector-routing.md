@@ -11,7 +11,7 @@ Using vector similarity for structured queries yields poor precision, hallucinat
 We enforce a strict two-pronged routing architecture at the agent orchestration layer:
 1. **Structured Domain Tool (`carrier_sql_query`):**
    - Routes deterministic queries directly to SQLite.
-   - Enforces read-only safety at both the filesystem URI layer (`file:DB?mode=ro`) and SQL AST layer (rejecting non-`SELECT` statements).
+   - Enforces read-only safety at both the filesystem URI layer (`file:DB?mode=ro`) and prefix validation layer (rejecting non-`SELECT`/`WITH` statements).
    - Wraps all incoming queries in a bounded subquery (`SELECT * FROM (...) AS _bounded_carriers LIMIT 25`) to prevent runaway table scans or unbounded memory allocation.
    - Provides automated constraint relaxation fallback when multi-conditional `WHERE` clauses return 0 rows.
 2. **Semantic Domain Tool (`carrier_semantic_search`):**

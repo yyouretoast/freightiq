@@ -22,6 +22,7 @@ Rules:
 3. Single Tool Principle: Select the single most appropriate tool for the inquiry. Synthesize and present the final answer immediately once results are returned from that tool; do not chain or invoke secondary tools unless the user explicitly requested multiple distinct lookups.
 4. Presentation: Format carrier results cleanly using markdown tables or bullet points with key attributes (Name, DOT/MC, HQ, Equipment, Safety). For multi-part queries, address every component directly and concisely without repeating raw tool dumps verbatim so answers complete cleanly within token limits.
 """
+import time
 import threading
 from typing import Optional
 from langchain_core.runnables import RunnableConfig
@@ -30,16 +31,19 @@ from agent.models import create_model_instance
 _model_lock = threading.Lock()
 _active_llm = None
 _active_llm_with_tools = None
+_last_failover_time = 0.0
+FAILOVER_COOLDOWN_SECONDS = 300.0  # 5 minutes cooldown to restore primary model
 
 # Session-scoped cache for multi-user web sessions: (provider, model, key) -> (base_llm, tool_llm)
 _session_cache = {}
 _session_cache_lock = threading.Lock()
 
 def reset_active_models():
-    global _active_llm, _active_llm_with_tools
+    global _active_llm, _active_llm_with_tools, _last_failover_time
     with _model_lock:
         _active_llm = None
         _active_llm_with_tools = None
+        _last_failover_time = 0.0
     with _session_cache_lock:
         _session_cache.clear()
 
@@ -71,6 +75,17 @@ def get_active_models(configurable: Optional[dict] = None):
             return base_m, tool_m
 
     # 2. Process-global default instance
+    global _active_llm, _active_llm_with_tools, _last_failover_time
+    # Circuit breaker: if failover cooldown has elapsed, attempt to restore primary model
+    if _active_llm is not None and _last_failover_time > 0.0:
+        if time.time() - _last_failover_time > FAILOVER_COOLDOWN_SECONDS:
+            with _model_lock:
+                if _active_llm is not None and time.time() - _last_failover_time > FAILOVER_COOLDOWN_SECONDS:
+                    logger.info("Failover cooldown elapsed. Attempting to restore primary model.")
+                    _active_llm = None
+                    _active_llm_with_tools = None
+                    _last_failover_time = 0.0
+
     if _active_llm is None:
         with _model_lock:
             if _active_llm is None:
@@ -144,6 +159,7 @@ def switch_to_sibling(current_model_name: str = "", configurable: Optional[dict]
         return base_alt, tool_alt
 
     # 2. Process-global failover
+    global _last_failover_time
     with _model_lock:
         provider = (getattr(config, "LLM_PROVIDER", "groq")).lower()
         current = (
@@ -156,6 +172,7 @@ def switch_to_sibling(current_model_name: str = "", configurable: Optional[dict]
         logger.warning(
             f"Switching active inference model from '{current}' to sibling '{alt_model}' (provider: {provider})."
         )
+        _last_failover_time = time.time()
         _active_llm, _active_llm_with_tools = create_model_instance(
             provider=provider,
             model_name=alt_model,
@@ -246,7 +263,7 @@ def _prepare_context_messages(messages):
     within model token quotas.
     """
     truncated = get_windowed_messages(messages, getattr(config, "CONVERSATION_WINDOW", 8))
-    truncation_limit = getattr(config, "TOOL_TRUNCATION_LIMIT", 2000)
+    truncation_limit = getattr(config, "TOOL_TRUNCATION_LIMIT", 12000)
     cleaned = []
     for m in truncated:
         if isinstance(m, ToolMessage) and len(str(m.content)) > truncation_limit:

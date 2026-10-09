@@ -152,12 +152,15 @@ def carrier_sql_query(query: str) -> str:
             where_conditions, trailing = _strip_trailing_sql_clauses(where_clause)
             and_parts = _split_sql_and_conditions(where_conditions)
             
-            # Safety constraints must NEVER be dropped during zero-row relaxation
-            is_safety_cond = lambda p: bool(re.search(r'\bsafety_rating\b', p, re.IGNORECASE))
-            relaxable_indices = [i for i, p in enumerate(and_parts) if not is_safety_cond(p)]
+            # Safety and compliance constraints must NEVER be dropped during zero-row relaxation
+            is_protected_cond = lambda p: bool(re.search(
+                r'\b(safety_rating|hazardous\s+materials|hazmat|class\s+[389]|spill\s+kits)\b', 
+                p, re.IGNORECASE
+            ))
+            relaxable_indices = [i for i, p in enumerate(and_parts) if not is_protected_cond(p)]
 
             if len(relaxable_indices) >= 1 and len(and_parts) > 1:
-                # Drop the last non-safety condition while preserving safety rating compliance
+                # Drop the last non-compliance condition while strictly preserving safety/hazmat constraints
                 drop_idx = relaxable_indices[-1]
                 dropped_part = and_parts[drop_idx]
                 kept_parts = [p for i, p in enumerate(and_parts) if i != drop_idx]
@@ -169,9 +172,9 @@ def carrier_sql_query(query: str) -> str:
                 relaxed_res = query_carriers_sql(relaxed_wrapped)
                 if relaxed_res and not relaxed_res.startswith("No matching") and not relaxed_res.startswith("SQLite Error"):
                     return (
-                        "Notice: 0 carriers matched all strict query constraints. "
-                        f"Relaxed search (omitting '{dropped_part.strip()}'):\n\n{relaxed_res}\n\n"
-                        "Note: You may also invoke carrier_semantic_search if looking for broader similarity."
+                        "Notice: 0 carriers matched all strict query constraints.\n"
+                        f"Relaxed partial search (omitting non-compliance constraint '{dropped_part.strip()}'):\n\n{relaxed_res}\n\n"
+                        "Note: These relaxed results do not satisfy the omitted constraint. You may also invoke carrier_semantic_search for broader similarity."
                     )
         return (
             "No matching records found in the SQL database. "
@@ -378,13 +381,17 @@ def check_fmcsa_authority(dot_number: str) -> str:
                     else:
                         verif_status = "PASS (Active Operating Authority Verified)"
 
+                    name_discrepancy = ""
+                    if local_row and local_row["carrier_name"].lower() not in legal_name.lower():
+                        name_discrepancy = f"\nNotice: Local registry name ('{local_row['carrier_name']}') differs from federal registration ('{legal_name}'). Simulated demonstration IDs may collide with active motor carriers."
+
                     return (
                         f"=== FMCSA QCMOBILE VERIFICATION FOR USDOT #{clean_dot} ===\n"
                         f"Legal Entity Name: {legal_name}\n"
                         f"Operating Authority Status: {status_str}\n"
                         f"Federal Safety Rating: {safety}\n"
                         f"BIPD & Cargo Insurance: Basic endpoint does not provide policy limits. Verify BMC-91X filing directly on SAFER.\n"
-                        f"FreightIQ Verification: {verif_status}"
+                        f"FreightIQ Verification: {verif_status}{name_discrepancy}"
                     )
         except Exception as e:
             logger.debug(f"Live FMCSA request fallback: {e}")
@@ -405,22 +412,23 @@ def check_fmcsa_authority(dot_number: str) -> str:
             verif_status = "WARNING — Supervisory Review Required (Conditional Safety Rating)"
         elif safety_rating == "satisfactory":
             audit_str = "Satisfactory Compliance"
-            verif_status = "PASS (Verified in internal database - Satisfactory Safety Rating)"
+            verif_status = "PASS (Simulated Registry: Satisfactory Safety Rating)"
         else:
             audit_str = "Unrated / Record Pending"
             verif_status = "CONDITIONAL (Verify active certificate directly on SAFER)"
 
         return (
-            f"=== FMCSA REGISTRY RECORD FOR USDOT #{clean_dot} (LOCAL DATABASE FALLBACK) ===\n"
+            f"=== FMCSA REGISTRY RECORD FOR USDOT #{clean_dot} (DEMONSTRATION REGISTRY FALLBACK) ===\n"
             f"Carrier Registry Profile:\n"
             f"Carrier Name: {carrier_name}\n"
             f"MC Number: {mc_number}\n"
             f"HQ State: {hq_state}\n"
             f"Years Operating: {years_operating}\n"
             f"Safety Rating: {safety_rating}\n"
-            f"Operating Authority Status: Profile verified in internal registry database. Real-time federal authority filings must be verified directly on SAFER (safer.fmcsa.dot.gov).\n"
+            f"Operating Authority Status: Profile verified in internal demonstration registry. Real-time federal authority filings must be verified directly on SAFER (safer.fmcsa.dot.gov).\n"
             f"Federal Safety Audit: {audit_str}\n"
             f"BIPD Insurance Status: Insurance limits are not stored in the local registry database. Active BMC-91X filing verification on SAFER is required prior to dispatch.\n"
+            f"Environment Note: Simulated demonstration carrier record. Live production verification requires external FMCSA credentials.\n"
             f"FreightIQ Verification: {verif_status}"
         )
     else:

@@ -205,12 +205,16 @@ def query_carriers_sql(sql_query):
             return "No matching records found in the SQL database."
 
         results = []
+        truncate_notes = len(rows) > 3
         for row in rows:
             record_dict = dict(row)
             fields = []
             for k, v in record_dict.items():
+                # Truncate lengthy narrative notes when multiple records are returned to bound payload size
+                if k == "notes" and truncate_notes and isinstance(v, str) and len(v) > 100:
+                    v = v[:100] + "..."
                 # Pretty-print JSON array columns (service_regions, equipment_types, cargo_specializations)
-                if isinstance(v, str) and v.startswith("["):
+                elif isinstance(v, str) and v.startswith("["):
                     try:
                         v = ", ".join(json.loads(v))
                     except (json.JSONDecodeError, TypeError):
