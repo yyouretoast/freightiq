@@ -13,7 +13,7 @@ We implement a two-stage retrieval pipeline:
 
 ## Consequences
 ### Positive
-- **Metric Gains:** Empirical benchmarks across 60 queries demonstrated a leap in Recall@1 from 0.300 (dense baseline) to **0.700** (+133.3%) and Overall MRR from 0.429 to **0.764** (+78.1%), with 0.650 Recall@1 and 0.727 MRR on qualitative domain queries (see [Figure 1: Multi-Strategy Retrieval Benchmark](../assets/retrieval_benchmark.png) and [Figure 3: Stratified Retrieval Performance](../assets/retrieval_stratified_categories.png)).
+- **Metric Gains:** Benchmarks across 60 queries showed an increase in Hit@1 from 0.317 (dense baseline) to **0.717** (+126.2%) and Overall MRR from 0.445 to **0.781** (+75.5%), with 0.650 Hit@1 and 0.727 MRR on qualitative domain queries (see [Figure 1: Multi-Strategy Retrieval Benchmark](../assets/retrieval_benchmark.png) and [Figure 3: Stratified Retrieval Performance](../assets/retrieval_stratified_categories.png)).
 - **Bounded Latency:** Scoring 15 candidate pairs adds ~35ms compute latency on CPU (~499ms total pipeline), staying well within interactive conversational turn thresholds while trading off compute for semantic precision (see [Figure 2: Latency vs. Accuracy Pareto Trade-Off](../assets/retrieval_latency_tradeoff.png)).
 
 ### Trade-offs & Mitigations

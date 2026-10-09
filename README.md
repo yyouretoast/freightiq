@@ -48,18 +48,17 @@ https://github.com/user-attachments/assets/87267c8e-72b0-4862-9c19-cc56a6c3b4f8
 ---
 
 ## Overview & Query Routing Rationale
-
-Commercial freight inquiries fall into two fundamentally distinct retrieval classes:
+Commercial freight inquiries fall into two distinct retrieval categories:
 
 - **Deterministic Relational Queries** (e.g., *"Find flatbed carriers in Ohio with a satisfactory safety rating"*):  
-  Dense vector search approximates semantic closeness and frequently returns carriers in adjacent states or with missing certifications. These queries are routed to **SQLite**, where discrete constraints evaluate with 100% precision in under $1\text{ ms}$.
+  Dense vector search approximates semantic similarity and can retrieve carriers in adjacent states or with missing certifications. These queries route to **SQLite**, where discrete constraints evaluate with 100% precision in under $1\text{ ms}$.
 
 - **Qualitative Domain Queries** (e.g., *"Carriers specializing in perishable pharmaceutical cold chain with continuous monitoring"*):  
-  Relational schemas cannot cleanly express nuanced operational capabilities, equipment phrasing, or special certifications. These queries are routed to a **two-stage hybrid search pipeline** (FTS5 BM25 + dense ChromaDB embeddings fused via RRF and re-ranked with a neural Cross-Encoder).
+  Relational schemas cannot easily filter descriptive operational capabilities, equipment details, or specialized handling terms. These queries route to a **hybrid search pipeline** (FTS5 BM25 + dense ChromaDB embeddings fused via RRF and re-ranked with a neural Cross-Encoder).
 
-Orchestration is handled by a stateful **LangGraph** ReAct workflow supporting multiple LLM backends (Groq `qwen/qwen3.8-27b` with automatic fallback to `qwen/qwen3.6-27b`, OpenAI, and local Ollama) that dynamically routes incoming requests across specialized tools.
+Workflows are orchestrated via **LangGraph** using Groq (`qwen/qwen3.8-27b` with automatic failover to `qwen/qwen3.6-27b`, OpenAI, or local Ollama).
 
-For detailed design rationale, see [ADR-001: SQL vs. Vector Routing](docs/adr/ADR-001-sql-vs-vector-routing.md).
+Design details are documented in [ADR-001: SQL vs. Vector Routing](docs/adr/ADR-001-sql-vs-vector-routing.md).
 
 ---
 
@@ -202,15 +201,14 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 ---
 
 ## Engineering Trade-offs & Limitations
-
-- **Cross-Encoder Compute Latency (~500ms)**: Cross-encoder scoring over the top-15 candidate pool takes ~400–500ms on CPU (compared to 0.3ms for SQLite queries and 0.2ms for FTS5 BM25). For interactive use, this is within normal turn thresholds; batch retrieval workloads would require GPU acceleration or pre-filtering.
-- **Multi-Constraint Semantic Falloff (0.600 Hit@1)**: When queries combine discrete attributes with free-form requirements (e.g., *"California flatbed carriers specializing in semiconductors"*), unranked dense and lexical search drop to 0.150 Hit@1, while the cross-encoder reaches 0.600 Hit@1 (0.800 Hit@5). This is why discrete constraints are routed to SQLite, reserving semantic search for unstructured descriptions (Figure 3).
-- **Single-Vendor Sibling Failover**: Intra-provider failover switches between `qwen/qwen3.8-27b` and `qwen/qwen3.6-27b` on Groq with an automated 5-minute self-healing recovery window. While this protects against per-model rate limits and transient 503s with sub-second inference speeds and identical tool-binding semantics, an upstream platform outage or account-level quota exhaustion on Groq affects both siblings simultaneously. Production systems can configure alternative providers (e.g. OpenAI or local Ollama).
-- **Single-Turn Single-Tool Principle (`parallel_tool_calls=False`)**: To prevent redundant API calls and keep token usage within the 950-token budget (Groq OTPM safety ceiling), the model is bound with `parallel_tool_calls=False`. For multi-part questions requiring multiple tools, the agent addresses the primary intent first and relies on follow-up user turns rather than parallel execution.
-- **Synthetic Dataset**: 500 fictional carrier profiles are deterministically generated to avoid real-carrier compliance or data-quality misrepresentation while preserving authentic freight domain complexity (TWIC badges, GDP cold chain, Moffett forklifts, RGN lowboys, Carrier Vector chillers). Risk distribution (20% conditional, 20% unsatisfactory) is intentionally elevated compared to real-world averages (<3%) to stress-test safety compliance gating.
+- **Cross-Encoder Compute Latency (~500ms)**: Cross-encoder scoring over the top-15 candidate pool takes ~400–500ms on CPU (compared to 0.3ms for SQLite queries and 0.2ms for FTS5 BM25). For interactive single-query usage, this is within acceptable latency thresholds; batch retrieval requires GPU acceleration or earlier candidate pruning.
+- **Multi-Constraint Semantic Falloff (0.600 Hit@1)**: When queries combine discrete attributes with free-form requirements (e.g., *"California flatbed carriers specializing in semiconductors"*), unranked dense and lexical search drop to 0.150 Hit@1, while the cross-encoder reaches 0.600 Hit@1 (0.800 Hit@5). Discrete constraints are routed to SQLite to avoid semantic approximation on structured terms (Figure 3).
+- **Single-Vendor Sibling Failover**: Intra-provider failover switches between `qwen/qwen3.8-27b` and `qwen/qwen3.6-27b` on Groq with an automated 5-minute recovery cooldown. This mitigates per-model rate limits and transient 503s, but account-level quota exhaustion affects both siblings. Production deployments can configure fallback providers (OpenAI or local Ollama).
+- **Single-Turn Tool Binding (`parallel_tool_calls=False`)**: To prevent duplicate tool executions and fit within the 950-token output budget (Groq OTPM safety cap), models are configured with `parallel_tool_calls=False`. For multi-part queries, the agent executes the primary tool first and handles follow-up requests in subsequent turns.
+- **Synthetic Evaluation Dataset**: 500 carrier profiles are generated deterministically to avoid publishing private carrier contact details while maintaining freight domain terminology (TWIC credentials, GDP cold chain, Moffett forklifts, RGN lowboys, Carrier Vector chillers). Risk distribution (20% conditional, 20% unsatisfactory) is intentionally elevated above real-world industry averages (<3%) to test safety rating compliance gating.
 - **Groq Free-Tier Token Budgets (200k TPD)**: Free-tier Groq API accounts enforce daily token limits. FreightIQ mitigates this via automatic sibling failover (`qwen/qwen3.8-27b` $\leftrightarrow$ `qwen/qwen3.6-27b`), tool output length bounding (12,000 characters), and turn-aligned 8-message context truncation.
 - **SQLite Write Serialization**: SQLite in WAL mode provides lock-free concurrent reads, but writes are serialized. High-volume multi-user writes in enterprise production would necessitate PostgreSQL.
-- **FMCSA Public API Availability & Compliance Gating**: The tool queries the FMCSA QCMobile JSON REST service. If external network timeouts occur or credentials are omitted, it falls back to internal demonstration registry records while strictly enforcing carrier safety ratings (rejecting unsatisfactory carriers). Direct BMC-91X insurance filing checks are redirected to SAFER.
+- **FMCSA Public API Availability & Compliance Gating**: Queries the FMCSA QCMobile JSON REST service. If external network timeouts occur or credentials are omitted, it falls back to internal demonstration registry records while strictly enforcing carrier safety ratings (rejecting unsatisfactory carriers). Direct BMC-91X insurance filing checks are redirected to SAFER.
 
 ---
 

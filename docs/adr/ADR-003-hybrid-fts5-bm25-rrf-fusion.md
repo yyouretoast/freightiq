@@ -13,8 +13,8 @@ We implement a unified hybrid retrieval layer fusing SQLite FTS5 (BM25) and Chro
 
 ## Consequences
 ### Positive
-- **High Recall Across All Query Modalities:** On 60 stratified benchmark queries (Structured, Qualitative, and Multi-Constraint Hybrid), hybrid fusion with Cross-Encoder re-ranking achieved 0.900 Recall@1 (0.942 MRR) on structured queries, 0.650 Recall@1 (0.727 MRR) on qualitative queries, 0.550 Recall@1 (0.625 MRR) on multi-constraint queries, and 0.764 overall MRR.
-- **Zero External Search Engine Dependency:** Purely embedded within SQLite and ChromaDB—no ElasticSearch, OpenSearch, or external Java services required.
+- **Candidate Discovery Across Modalities:** On 60 stratified benchmark queries (Structured, Qualitative, and Multi-Constraint Hybrid), hybrid fusion with Cross-Encoder re-ranking reached 0.900 Hit@1 (0.942 MRR) on structured queries, 0.650 Hit@1 (0.727 MRR) on qualitative queries, 0.600 Hit@1 (0.675 MRR) on multi-constraint queries, and 0.781 overall MRR.
+- **Embedded Architecture:** Runs directly in-process via SQLite and ChromaDB without external search engine services.
 
 ### Trade-offs & Mitigations
 - FTS5 external content tables must stay in sync with the primary `carriers` table. Handled deterministically in `rag/setup_sqlite.py` and `scripts/seed_db.py` during seeding.
