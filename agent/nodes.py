@@ -20,7 +20,7 @@ Rules:
    - NMFC density and freight class lookups: use `freight_class_calculator`.
    - USDOT safety compliance, operating authority, and FMCSA insurance checks: use `check_fmcsa_authority`.
 3. Single Tool Principle: Select the single most appropriate tool for the inquiry. Synthesize and present the final answer immediately once results are returned from that tool; do not chain or invoke secondary tools unless the user explicitly requested multiple distinct lookups.
-4. Presentation: Format carrier results cleanly using markdown tables or bullet points with key attributes (Name, DOT/MC, HQ, Equipment, Safety). For multi-part queries, address every component directly and concisely without repeating raw tool dumps verbatim so answers complete cleanly within token limits.
+4. Presentation: Format carrier results using markdown tables or bullet points with key attributes (Name, DOT/MC, HQ, Equipment, Safety). For multi-part queries, address each component directly and concisely; do not output raw serialized tool dumps.
 """
 import time
 import threading
@@ -297,7 +297,7 @@ def agent_node(state: AgentState, config: Optional[RunnableConfig] = None):
                     logger.warning(f"Loop detected on tool '{last_call['name']}'. Injecting loop guardrail.")
                     loop_break_directive = (
                         f"Repeat tool call detected for '{last_call['name']}'. "
-                        "Do not invoke this tool again. Synthesize your final answer directly in plain text using the results already retrieved."
+                        "Do not invoke this tool again. Output final answer in plain text using retrieved data."
                     )
                     messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + _prepare_context_messages(messages) + [HumanMessage(content=loop_break_directive)]
                     response = _invoke_with_retry(False, messages_with_warning, configurable=configurable)
@@ -311,7 +311,7 @@ def agent_node(state: AgentState, config: Optional[RunnableConfig] = None):
                     logger.warning(f"Alternating tool loop detected for '{last_name}'. Injecting loop guardrail.")
                     loop_break_directive = (
                         f"Alternating tool calls detected for '{last_name}'. "
-                        "Do not invoke any further tools. Synthesize your final answer directly in plain text using the data already retrieved."
+                        "Do not invoke further tools. Output final answer in plain text using retrieved data."
                     )
                     messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + _prepare_context_messages(messages) + [HumanMessage(content=loop_break_directive)]
                     response = _invoke_with_retry(False, messages_with_warning, configurable=configurable)
@@ -336,8 +336,8 @@ def agent_node(state: AgentState, config: Optional[RunnableConfig] = None):
         if consecutive_tool_count >= 3:
             logger.warning(f"Excessive repeated calls detected for tool '{last_tool_name}' ({consecutive_tool_count}). Injecting loop guardrail.")
             loop_break_directive = (
-                f"Multiple repeated calls executed for tool '{last_tool_name}'. "
-                "Do not invoke any tools again. Synthesize your final answer now in plain text using the results retrieved so far, or state that data is unavailable."
+                f"Tool invocation limit reached for '{last_tool_name}'. "
+                "Do not invoke further tools. Output final answer in plain text using retrieved data."
             )
             messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + _prepare_context_messages(messages) + [HumanMessage(content=loop_break_directive)]
             response = _invoke_with_retry(False, messages_with_warning, configurable=configurable)

@@ -427,7 +427,7 @@ def calculate_metrics(retrieved_list, targets):
 
 def main():
     import json
-    print("=== FREIGHTIQ RETRIEVAL BENCHMARK & EVALUATION HARNESS ===")
+    print("=== RETRIEVAL BENCHMARK EVALUATION ===")
     
     # Dynamically resolve ground-truth targets from DB first
     resolve_ground_truth_targets()
@@ -536,8 +536,8 @@ def main():
     hybrid_mrr = overall_summary["Reranked Hybrid (Cross-Encoder)"]["mrr"]
     assert hybrid_mrr >= 0.70, f"Cross-Encoder MRR regression: {hybrid_mrr:.3f}"
 
-    print("\n[PASSED] All retrieval benchmark thresholds verified successfully!")
-    print("=== Evaluation Harness Complete ===")
+    print("\n[PASSED] All retrieval benchmark thresholds verified successfully.")
+    print("=== Evaluation Complete ===")
 
 if __name__ == "__main__":
     main()

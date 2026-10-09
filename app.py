@@ -149,7 +149,7 @@ html, body, [class*="css"] {
     height: 1px;
 }
 
-/* Modality 1: SQL (Electric Blue) */
+/* SQL tool styling */
 .tool-card.tool-sql {
     background: linear-gradient(135deg, rgba(0, 132, 255, 0.08) 0%, rgba(0, 132, 255, 0.02) 100%);
     border: 1px solid rgba(0, 132, 255, 0.28);
@@ -159,7 +159,7 @@ html, body, [class*="css"] {
 .tool-card.tool-sql .tool-badge { background: rgba(0, 132, 255, 0.20); color: #00a2ff; }
 .tool-card.tool-sql .tool-name { color: #00a2ff; }
 
-/* Modality 2: Hybrid Semantic (Neon Purple) */
+/* Hybrid semantic search styling */
 .tool-card.tool-semantic {
     background: linear-gradient(135deg, rgba(179, 71, 255, 0.08) 0%, rgba(179, 71, 255, 0.02) 100%);
     border: 1px solid rgba(179, 71, 255, 0.28);
@@ -169,7 +169,7 @@ html, body, [class*="css"] {
 .tool-card.tool-semantic .tool-badge { background: rgba(179, 71, 255, 0.20); color: #ca75ff; }
 .tool-card.tool-semantic .tool-name { color: #ca75ff; }
 
-/* Modality 3: FMCSA SAFER (Emerald Green) */
+/* FMCSA SAFER tool styling */
 .tool-card.tool-fmcsa {
     background: linear-gradient(135deg, rgba(0, 230, 118, 0.08) 0%, rgba(0, 230, 118, 0.02) 100%);
     border: 1px solid rgba(0, 230, 118, 0.28);
@@ -179,7 +179,7 @@ html, body, [class*="css"] {
 .tool-card.tool-fmcsa .tool-badge { background: rgba(0, 230, 118, 0.20); color: #00e676; }
 .tool-card.tool-fmcsa .tool-name { color: #00e676; }
 
-/* Modality 4: Calculator (Amber Orange) */
+/* NMFC calculator tool styling */
 .tool-card.tool-calc {
     background: linear-gradient(135deg, rgba(255, 145, 0, 0.08) 0%, rgba(255, 145, 0, 0.02) 100%);
     border: 1px solid rgba(255, 145, 0, 0.28);
@@ -189,7 +189,7 @@ html, body, [class*="css"] {
 .tool-card.tool-calc .tool-badge { background: rgba(255, 145, 0, 0.20); color: #ffaa33; }
 .tool-card.tool-calc .tool-name { color: #ffaa33; }
 
-/* Modality 5: Web API (Cyan) */
+/* Web API tool styling */
 .tool-card.tool-web {
     background: linear-gradient(135deg, rgba(0, 229, 255, 0.08) 0%, rgba(0, 229, 255, 0.02) 100%);
     border: 1px solid rgba(0, 229, 255, 0.28);
@@ -326,7 +326,7 @@ html, body, [class*="css"] {
 ::-webkit-scrollbar-thumb { background: rgba(0, 212, 255, 0.2); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(0, 212, 255, 0.4); }
 
-/* Premium Table Styling for structured carrier tables */
+/* Table styling for carrier outputs */
 table {
     width: 100% !important;
     border-collapse: collapse !important;
@@ -357,7 +357,7 @@ tr:hover {
     background-color: rgba(0, 212, 255, 0.03) !important;
 }
 
-/* Premium Markdown Links styling */
+/* Link styling */
 a {
     color: #00d4ff !important;
     text-decoration: none !important;
@@ -368,7 +368,7 @@ a:hover {
     text-decoration: underline !important;
 }
 
-/* Premium suggestion chips and buttons styling */
+/* Suggestion chip and button styling */
 div[data-testid="stButton"] button {
     background: rgba(255, 255, 255, 0.02) !important;
     border: 1px solid rgba(0, 212, 255, 0.15) !important;
@@ -601,7 +601,7 @@ if not st.session_state.messages:
     clicked_query = None
     with col1:
         if st.button("🚛 FL Produce & Freight Class", key="chip_fl", use_container_width=True):
-            clicked_query = "Find a carrier located in Florida (FL) that handles fresh produce. What are their DOT and MC numbers, and how many years have they been operating? Also, what is the freight class for a 220 lbs crate of fresh produce measuring 36x36x36 inches? Be detailed."
+            clicked_query = "Find a carrier located in Florida (FL) that handles fresh produce. What are their DOT and MC numbers, and how many years have they been operating? Also, what is the freight class for a 220 lbs crate of fresh produce measuring 36x36x36 inches?"
     with col2:
         if st.button("🛡️ FMCSA Authority Verification", key="chip_fmcsa", use_container_width=True):
             clicked_query = "Verify the FMCSA operating authority, active insurance, and safety rating for USDOT 2942444."

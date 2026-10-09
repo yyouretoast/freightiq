@@ -8,7 +8,7 @@ In freight logistics, subtle distinctions—such as "temperature monitoring for 
 ## Decision
 We implement a two-stage retrieval pipeline:
 1. **First-Stage Hybrid Recall:** Retrieve candidate pool of $N=15$ documents using Reciprocal Rank Fusion (RRF) combining SQLite FTS5 BM25 and ChromaDB vector search.
-2. **Second-Stage Precision Re-Ranking:** Re-rank the candidate documents using a pre-trained neural Cross-Encoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`). The cross-encoder performs full cross-attention over `(query, document)` token pairs simultaneously, scoring passage relevance with high discriminatory fidelity.
+2. **Second-Stage Precision Re-Ranking:** Re-rank the candidate documents using a pre-trained neural Cross-Encoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`). The cross-encoder performs full cross-attention over `(query, document)` token pairs simultaneously, scoring passage relevance directly over token cross-attention.
 3. **Resilient Fallback:** If the Cross-Encoder model fails to download or initialize (e.g., HuggingFace Hub rate limits, offline air-gapped environments), the reranker automatically falls back to dense embedding cosine similarity without throwing unhandled exceptions.
 
 ## Consequences

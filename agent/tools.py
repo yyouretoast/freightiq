@@ -177,8 +177,7 @@ def carrier_sql_query(query: str) -> str:
                         "Note: These relaxed results do not satisfy the omitted constraint. You may also invoke carrier_semantic_search for broader similarity."
                     )
         return (
-            "No matching records found in the SQL database. "
-            "Tip: Consider relaxing filter constraints or calling carrier_semantic_search with a natural language query."
+            "No matching records found in the SQL database. 0 rows returned."
         )
     return res
 
@@ -229,13 +228,13 @@ def web_search(query: str) -> str:
         return "\n\n".join(formatted)
     except Exception as e:
         logger.error(f"Web search error: {e}")
-        return "Web search is temporarily unavailable due to upstream network limits. Do not retry web search; answer the query directly based on available information or state that live market search is currently unavailable."
+        return "Error: Web search temporarily unavailable due to upstream network limits."
 
 @tool
 def freight_class_calculator(weight_lbs: float, length_in: float, width_in: float, height_in: float, cargo_description: str = "") -> str:
     """
     Calculate the NMFC freight class based on shipment weight in pounds, dimensions in inches, and optional cargo description.
-    Accurately maps density (lbs/cubic foot) to standard NMFC class, or resolves fixed class exceptions (e.g. insulation).
+    Maps density (lbs/cubic foot) to standard NMFC class, or resolves fixed class exceptions (e.g. insulation).
     """
     for val in (weight_lbs, length_in, width_in, height_in):
         if not isinstance(val, (int, float)) or math.isnan(val) or math.isinf(val) or val <= 0:

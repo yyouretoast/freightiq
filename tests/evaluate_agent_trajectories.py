@@ -153,7 +153,7 @@ TRAJECTORY_CASES = [
 ]
 
 def main():
-    print("=== FREIGHTIQ AGENT TRAJECTORY & ROUTING EVALUATION ===")
+    print("=== AGENT TRAJECTORY EVALUATION ===")
     
     # Load agent graph
     graph = build_graph()

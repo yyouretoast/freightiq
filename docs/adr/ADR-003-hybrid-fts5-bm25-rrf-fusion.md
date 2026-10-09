@@ -6,7 +6,7 @@ Dense semantic retrieval alone fails when queries contain exact domain jargon, e
 ## Decision
 We implement a unified hybrid retrieval layer fusing SQLite FTS5 (BM25) and ChromaDB (dense vectors):
 1. **SQLite FTS5 Inverted Index:** An external content virtual table `carriers_fts` indexing `carrier_name`, `service_regions`, `equipment_types`, `cargo_specializations`, and `notes`.
-2. **Robust Query Sanitization:** Natural language queries are tokenized via regex, stripped of conversational stop words, and wrapped in double-quoted disjunctions (`"token1" OR "token2"`) to prevent SQLite FTS5 syntax crashes on punctuation (`-`, `/`, `:`, `?`, `()`).
+2. **Query Sanitization:** Natural language queries are tokenized via regex, stripped of conversational stop words, and wrapped in double-quoted disjunctions (`"token1" OR "token2"`) to prevent SQLite FTS5 syntax crashes on punctuation (`-`, `/`, `:`, `?`, `()`).
 3. **Reciprocal Rank Fusion (RRF):** Results from BM25 ($R_{bm25}$) and ChromaDB ($R_{dense}$) are merged into a single ranked list using the standard RRF formula with smoothing constant $k=60$:
    $$RRF(d) = \sum_{m \in \{bm25, dense\}} \frac{1}{k + rank_m(d)}$$
 4. Top $N=15$ fused candidates are passed directly into the neural Cross-Encoder.
