@@ -12,14 +12,13 @@ def generate_figure_1_retrieval_benchmark():
     """Figure 1: Multi-Strategy Retrieval Benchmark Across 60 Ground-Truth Queries."""
     out_path = os.path.join(out_dir, "retrieval_benchmark.png")
     strategies = [
-        "SQLite Exact\nRelational",
-        "ChromaDB Base\nDense Vector",
-        "SQLite FTS5\nLexical (BM25)",
+        "SQLite Exact\n(Relational Filter)",
+        "ChromaDB Base\n(Dense Vector)",
+        "SQLite FTS5\n(Lexical BM25)",
         "Reranked Cosine\n(Dense Fallback)",
         "Reranked Hybrid\n(Cross-Encoder)"
     ]
 
-    # Dynamic loading from evaluated benchmark results if available
     results_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "benchmark_results.json")
     if os.path.exists(results_path):
         import json
@@ -32,46 +31,58 @@ def generate_figure_1_retrieval_benchmark():
             "Reranked Search (Cosine)",
             "Reranked Hybrid (Cross-Encoder)"
         ]
-        r1_scores = [bench_data.get(k, {}).get("hit@1", 0.0) for k in strat_keys]
-        r5_scores = [bench_data.get(k, {}).get("hit@5", 0.0) for k in strat_keys]
-        mrr_scores = [bench_data.get(k, {}).get("mrr", 0.0) for k in strat_keys]
+        h1 = [bench_data.get(k, {}).get("hit@1", 0.0) for k in strat_keys]
+        h3 = [bench_data.get(k, {}).get("hit@3", 0.0) for k in strat_keys]
+        h5 = [bench_data.get(k, {}).get("hit@5", 0.0) for k in strat_keys]
+        mrr = [bench_data.get(k, {}).get("mrr", 0.0) for k in strat_keys]
     else:
-        r1_scores = [1.000, 0.300, 0.467, 0.300, 0.700]
-        r5_scores = [1.000, 0.667, 0.667, 0.683, 0.867]
-        mrr_scores = [1.000, 0.429, 0.535, 0.432, 0.764]
+        h1 = [1.000, 0.317, 0.467, 0.317, 0.717]
+        h3 = [1.000, 0.567, 0.583, 0.567, 0.833]
+        h5 = [1.000, 0.683, 0.667, 0.700, 0.883]
+        mrr = [1.000, 0.445, 0.535, 0.449, 0.781]
 
     x = np.arange(len(strategies))
-    width = 0.24
+    width = 0.18
 
     plt.style.use("default")
-    fig, ax = plt.subplots(figsize=(11, 5.8), dpi=300)
+    fig, ax = plt.subplots(figsize=(12.0, 6.2), dpi=300)
     fig.patch.set_facecolor("#ffffff")
     ax.set_facecolor("#ffffff")
 
-    c_r1 = "#2563eb"   # Royal Blue
-    c_r5 = "#7c3aed"   # Purple
+    c_h1 = "#2563eb"   # Royal Blue
+    c_h3 = "#3b82f6"   # Sky Blue
+    c_h5 = "#7c3aed"   # Purple
     c_mrr = "#0d9488"  # Teal
 
-    rects1 = ax.bar(x - width, r1_scores, width, label="Hit@1", color=c_r1, alpha=0.92, edgecolor="#000000", linewidth=0.8)
-    rects2 = ax.bar(x, r5_scores, width, label="Hit@5", color=c_r5, alpha=0.92, edgecolor="#000000", linewidth=0.8)
-    rects3 = ax.bar(x + width, mrr_scores, width, label="MRR (Mean Reciprocal Rank)", color=c_mrr, alpha=0.92, edgecolor="#000000", linewidth=0.8)
+    rects1 = ax.bar(x - 1.5 * width, h1, width, label="Hit@1", color=c_h1, alpha=0.92, edgecolor="#0f172a", linewidth=0.6)
+    rects2 = ax.bar(x - 0.5 * width, h3, width, label="Hit@3", color=c_h3, alpha=0.92, edgecolor="#0f172a", linewidth=0.6)
+    rects3 = ax.bar(x + 0.5 * width, h5, width, label="Hit@5", color=c_h5, alpha=0.92, edgecolor="#0f172a", linewidth=0.6)
+    rects4 = ax.bar(x + 1.5 * width, mrr, width, label="MRR", color=c_mrr, alpha=0.92, edgecolor="#0f172a", linewidth=0.6)
 
-    for rects in [rects1, rects2, rects3]:
+    # Clean non-overlapping data labels
+    for rects in [rects1, rects2, rects3, rects4]:
         for rect in rects:
             height = rect.get_height()
-            ax.annotate(f"{height:.3f}",
+            ax.annotate(f"{height:.2f}",
                         xy=(rect.get_x() + rect.get_width() / 2, height),
                         xytext=(0, 3),
                         textcoords="offset points",
                         ha="center", va="bottom",
-                        fontsize=7.5, fontweight="600",
+                        fontsize=7.0, fontweight="600",
                         color="#0f172a")
 
     ax.set_ylabel("Metric Score (0.00 - 1.00)", fontsize=10, fontweight="600", color="#1e293b", labelpad=10)
     ax.set_xticks(x)
-    ax.set_xticklabels(strategies, fontsize=9.5, fontweight="600", color="#0f172a")
-    ax.set_ylim(0, 1.18)
+    ax.set_xticklabels(strategies, fontsize=9.2, fontweight="600", color="#0f172a")
+    ax.set_ylim(0, 1.20)
     ax.set_xlim(-0.6, len(strategies) - 0.4)
+
+    # Demarcation line separating deterministic vs statistical retrieval
+    ax.axvline(0.5, color="#cbd5e1", linestyle="--", linewidth=1.2, zorder=1)
+    ax.text(0.0, 1.13, "Deterministic Filter", ha="center", fontsize=8.0, fontweight="700", color="#1e293b",
+            bbox=dict(boxstyle="square,pad=0.25", facecolor="#f1f5f9", edgecolor="#cbd5e1", linewidth=0.8))
+    ax.text(2.5, 1.13, "Statistical Retrieval & Neural Ranking Pipelines", ha="center", fontsize=8.0, fontweight="700", color="#1e293b",
+            bbox=dict(boxstyle="square,pad=0.25", facecolor="#f1f5f9", edgecolor="#cbd5e1", linewidth=0.8))
 
     ax.grid(axis="y", linestyle=":", alpha=0.6, color="#cbd5e1")
     ax.set_axisbelow(True)
@@ -80,8 +91,8 @@ def generate_figure_1_retrieval_benchmark():
     ax.spines["left"].set_color("#94a3b8")
     ax.spines["bottom"].set_color("#94a3b8")
 
-    ax.legend(frameon=True, facecolor="#f8fafc", edgecolor="#e2e8f0", fontsize=8.8, loc="upper right", ncol=3)
-    ax.set_title("Figure 1: Multi-Strategy Retrieval Benchmark Across 60 Ground-Truth Queries (500 Carrier Profiles)",
+    ax.legend(frameon=True, facecolor="#f8fafc", edgecolor="#e2e8f0", fontsize=8.5, loc="upper right", ncol=4)
+    ax.set_title("Figure 1: Multi-Strategy Retrieval Benchmark Across 60 Ground-Truth Queries",
                  fontsize=11.5, fontweight="700", color="#0f172a", pad=14)
 
     plt.tight_layout()
@@ -117,74 +128,51 @@ def generate_figure_2_latency_tradeoff():
         cross_mrr, cross_h1 = 0.781, 0.717
 
     data = [
-        {"name": "SQLite Exact Relational", "latency": 0.31, "mrr": sqlite_mrr, "h1": sqlite_h1, "color": "#2563eb", "marker": "s", "offset": (18, -8), "ha": "left"},
-        {"name": "SQLite FTS5 (BM25)", "latency": 0.22, "mrr": fts5_mrr, "h1": fts5_h1, "color": "#0284c7", "marker": "o", "offset": (18, -14), "ha": "left"},
-        {"name": "ChromaDB Base Vector", "latency": 270.60, "mrr": dense_mrr, "h1": dense_h1, "color": "#64748b", "marker": "^", "offset": (-130, -28), "ha": "right"},
-        {"name": "Reranked (Cosine Fallback)", "latency": 271.00, "mrr": cosine_mrr, "h1": cosine_h1, "color": "#d97706", "marker": "d", "offset": (18, -6), "ha": "left"},
-        {"name": "Reranked Hybrid (Cross-Encoder)", "latency": 499.37, "mrr": cross_mrr, "h1": cross_h1, "color": "#7c3aed", "marker": "*", "offset": (-18, 18), "ha": "right"}
+        {"name": "SQLite Exact (Relational)", "latency": 0.31, "mrr": sqlite_mrr, "h1": sqlite_h1, "color": "#2563eb", "marker": "s", "offset": (16, 6), "ha": "left"},
+        {"name": "SQLite FTS5 (BM25)", "latency": 0.22, "mrr": fts5_mrr, "h1": fts5_h1, "color": "#0284c7", "marker": "o", "offset": (16, -16), "ha": "left"},
+        {"name": "ChromaDB Base Vector", "latency": 270.60, "mrr": dense_mrr, "h1": dense_h1, "color": "#64748b", "marker": "^", "offset": (-14, -22), "ha": "right"},
+        {"name": "Reranked (Cosine Fallback)", "latency": 271.00, "mrr": cosine_mrr, "h1": cosine_h1, "color": "#d97706", "marker": "d", "offset": (16, -14), "ha": "left"},
+        {"name": "Reranked Hybrid (Cross-Encoder)", "latency": 499.37, "mrr": cross_mrr, "h1": cross_h1, "color": "#7c3aed", "marker": "*", "offset": (16, 6), "ha": "left"}
     ]
 
     plt.style.use("default")
-    fig, ax = plt.subplots(figsize=(11.5, 6.4), dpi=300)
+    fig, ax = plt.subplots(figsize=(11.0, 6.2), dpi=300)
     fig.patch.set_facecolor("#ffffff")
     ax.set_facecolor("#ffffff")
 
-    # Shaded operational zones
-    ax.axvspan(0.12, 1.8, color="#eff6ff", alpha=0.8, zorder=1)
-    ax.axvspan(150, 900, color="#faf5ff", alpha=0.8, zorder=1)
-
-    ax.text(0.15, 0.08, "SUB-MILLISECOND RELATIONAL & LEXICAL ZONE\n(< 1 ms latency | SQLite WAL & FTS5 BM25)",
-            fontsize=8.2, fontweight="700", color="#1d4ed8", alpha=0.85, zorder=2)
-
-    ax.text(170, 0.08, "NEURAL SEMANTIC & CROSS-ENCODER ZONE\n(250 - 500 ms latency | Dense Embedding & Cross-Encoder)",
-            fontsize=8.2, fontweight="700", color="#6d28d9", alpha=0.85, zorder=2)
-
-    # Plot Pareto optimal curve (FTS5 -> SQLite -> Hybrid Cross-Encoder)
-    pareto_x = [0.22, 0.31, 499.37]
-    pareto_y = [fts5_mrr, sqlite_mrr, cross_mrr]
-    ax.plot(pareto_x[:2], pareto_y[:2], linestyle="--", color="#2563eb", linewidth=1.5, alpha=0.5, zorder=3)
-    ax.plot([0.31, 499.37], [sqlite_mrr, cross_mrr], linestyle=":", color="#7c3aed", linewidth=1.5, alpha=0.4, zorder=3)
+    # True Pareto Frontier: connects FTS5 -> SQLite (which strictly dominates at 0.31ms / 1.000 MRR)
+    # The Cross-Encoder is not connected via a false downward slope; it is annotated as the qualitative frontier.
+    ax.plot([0.22, 0.31], [fts5_mrr, sqlite_mrr], linestyle="-", color="#2563eb", linewidth=2.0, alpha=0.8, zorder=3, label="Deterministic Pareto Frontier")
 
     for item in data:
-        size = 280 if item["marker"] == "*" else 180
+        size = 240 if item["marker"] == "*" else 160
         ax.scatter(item["latency"], item["mrr"], s=size, color=item["color"],
-                   marker=item["marker"], edgecolor="#0f172a", linewidth=1.2, zorder=5)
+                   marker=item["marker"], edgecolor="#0f172a", linewidth=1.0, zorder=5)
 
-        # Annotations with callouts
-        label_text = f"{item['name']}\nLatency: {item['latency']:.2f} ms | MRR: {item['mrr']:.3f} | Hit@1: {item['h1']:.3f}"
+        label_text = f"{item['name']}\n{item['latency']:.2f} ms | MRR: {item['mrr']:.3f} | Hit@1: {item['h1']:.3f}"
         ax.annotate(
             label_text,
             xy=(item["latency"], item["mrr"]),
             xytext=item["offset"],
             textcoords="offset points",
-            fontsize=8.2,
+            fontsize=8.0,
             fontweight="600",
             color="#0f172a",
             ha=item.get("ha", "left"),
-            bbox=dict(boxstyle="round,pad=0.35", facecolor="#ffffff", edgecolor=item["color"], alpha=0.92, linewidth=1.1),
-            arrowprops=dict(arrowstyle="->", color=item["color"], lw=1.0, alpha=0.8)
+            bbox=dict(boxstyle="round,pad=0.3", facecolor="#ffffff", edgecolor=item["color"], alpha=0.95, linewidth=1.0),
+            arrowprops=dict(arrowstyle="->", color=item["color"], lw=0.9, alpha=0.8)
         )
 
-    # Architectural takeaway callout box
-    callout_text = (
-        "Core Architectural Rationale (ADR-001 & ADR-002):\n"
-        f"• SQLite resolves discrete constraint queries in 0.31 ms with {sqlite_mrr:.3f} MRR (1,600x faster than Cross-Encoder).\n"
-        "• The 499 ms Cross-Encoder re-ranker is reserved exclusively for qualitative queries, where dense search alone fails."
-    )
-    ax.text(0.04, 0.95, callout_text, transform=ax.transAxes, fontsize=8.4, fontweight="500",
-            color="#1e293b", va="top",
-            bbox=dict(boxstyle="round,pad=0.5", facecolor="#f8fafc", edgecolor="#cbd5e1", linewidth=1.0))
-
     ax.set_xscale("log")
-    ax.set_xlim(0.08, 1600)
-    ax.set_ylim(0.0, 1.15)
+    ax.set_xlim(0.10, 1500)
+    ax.set_ylim(0.2, 1.12)
 
     ax.set_xlabel("Retrieval Latency in Milliseconds (log scale)", fontsize=10, fontweight="600", color="#1e293b", labelpad=10)
     ax.set_ylabel("Mean Reciprocal Rank (MRR)", fontsize=10, fontweight="600", color="#1e293b", labelpad=10)
 
     ax.get_xaxis().set_major_formatter(ticker.FuncFormatter(lambda y, _: f"{y:g} ms"))
     ax.grid(True, which="major", linestyle=":", alpha=0.6, color="#cbd5e1")
-    ax.grid(True, which="minor", linestyle=":", alpha=0.3, color="#e2e8f0")
+    ax.grid(True, which="minor", linestyle=":", alpha=0.25, color="#e2e8f0")
     ax.set_axisbelow(True)
 
     ax.spines["top"].set_visible(False)
@@ -192,7 +180,8 @@ def generate_figure_2_latency_tradeoff():
     ax.spines["left"].set_color("#94a3b8")
     ax.spines["bottom"].set_color("#94a3b8")
 
-    ax.set_title("Figure 2: Retrieval Latency vs. Accuracy Pareto Trade-Off (60 Ground-Truth Queries)",
+    ax.legend(frameon=True, facecolor="#f8fafc", edgecolor="#e2e8f0", fontsize=8.5, loc="lower right")
+    ax.set_title("Figure 2: Retrieval Latency vs. Accuracy Trade-Off (60 Ground-Truth Queries)",
                  fontsize=11.5, fontweight="700", color="#0f172a", pad=14)
 
     plt.tight_layout()
@@ -206,38 +195,30 @@ def generate_figure_3_stratified_categories():
     out_path = os.path.join(out_dir, "retrieval_stratified_categories.png")
 
     categories = [
-        "Structured Queries\n(20 cases: State, Equip, Safety)",
-        "Qualitative Queries\n(20 cases: Freight Jargon & Notes)",
-        "Multi-Constraint Hybrid\n(20 cases: Filter + Jargon)"
+        "Structured Queries\n(State, Equip, Safety)",
+        "Qualitative Queries\n(Freight Jargon & Notes)",
+        "Multi-Constraint Hybrid\n(Filter + Jargon)"
     ]
 
-    # Dynamic loading from evaluated benchmark categories if available
     results_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "benchmark_results.json")
     if os.path.exists(results_path):
         import json
         with open(results_path, "r", encoding="utf-8") as f:
             cat_data = json.load(f).get("categories", {})
         cat_keys = ["Structured", "Qualitative", "Hybrid"]
-        r1_dense = [cat_data.get(k, {}).get("ChromaDB Base Vector", {}).get("hit@1", 0.0) for k in cat_keys]
-        r1_fts5 = [cat_data.get(k, {}).get("FTS5 Lexical Search (BM25)", {}).get("hit@1", 0.0) for k in cat_keys]
-        r1_cross = [cat_data.get(k, {}).get("Reranked Hybrid (Cross-Encoder)", {}).get("hit@1", 0.0) for k in cat_keys]
-        mrr_dense = [cat_data.get(k, {}).get("ChromaDB Base Vector", {}).get("mrr", 0.0) for k in cat_keys]
-        mrr_fts5 = [cat_data.get(k, {}).get("FTS5 Lexical Search (BM25)", {}).get("mrr", 0.0) for k in cat_keys]
-        mrr_cross = [cat_data.get(k, {}).get("Reranked Hybrid (Cross-Encoder)", {}).get("mrr", 0.0) for k in cat_keys]
+        h1_dense = [cat_data.get(k, {}).get("ChromaDB Base Vector", {}).get("hit@1", 0.0) for k in cat_keys]
+        h1_fts5 = [cat_data.get(k, {}).get("FTS5 Lexical Search (BM25)", {}).get("hit@1", 0.0) for k in cat_keys]
+        h1_cross = [cat_data.get(k, {}).get("Reranked Hybrid (Cross-Encoder)", {}).get("hit@1", 0.0) for k in cat_keys]
     else:
-        # Fallback default values
-        r1_dense = [0.350, 0.450, 0.100]
-        r1_fts5 = [0.650, 0.600, 0.150]
-        r1_cross = [0.900, 0.650, 0.550]
-        mrr_dense = [0.508, 0.568, 0.210]
-        mrr_fts5 = [0.756, 0.610, 0.239]
-        mrr_cross = [0.942, 0.727, 0.625]
+        h1_dense = [0.350, 0.450, 0.150]
+        h1_fts5 = [0.650, 0.600, 0.150]
+        h1_cross = [0.900, 0.650, 0.600]
 
     x = np.arange(len(categories))
-    width = 0.25
+    width = 0.24
 
     plt.style.use("default")
-    fig, ax = plt.subplots(figsize=(11.5, 6.0), dpi=300)
+    fig, ax = plt.subplots(figsize=(11.0, 5.8), dpi=300)
     fig.patch.set_facecolor("#ffffff")
     ax.set_facecolor("#ffffff")
 
@@ -245,43 +226,29 @@ def generate_figure_3_stratified_categories():
     c_fts5 = "#0284c7"   # Cyan / Blue
     c_cross = "#7c3aed"  # Royal Violet
 
-    rects1 = ax.bar(x - width, r1_dense, width, label="ChromaDB Base Vector (Dense)", color=c_dense, alpha=0.92, edgecolor="#000000", linewidth=0.8)
-    rects2 = ax.bar(x, r1_fts5, width, label="SQLite FTS5 Lexical (BM25)", color=c_fts5, alpha=0.92, edgecolor="#000000", linewidth=0.8)
-    rects3 = ax.bar(x + width, r1_cross, width, label="Reranked Hybrid (Cross-Encoder)", color=c_cross, alpha=0.92, edgecolor="#000000", linewidth=0.8)
+    rects1 = ax.bar(x - width, h1_dense, width, label="ChromaDB Base Vector (Dense)", color=c_dense, alpha=0.92, edgecolor="#0f172a", linewidth=0.6)
+    rects2 = ax.bar(x, h1_fts5, width, label="SQLite FTS5 Lexical (BM25)", color=c_fts5, alpha=0.92, edgecolor="#0f172a", linewidth=0.6)
+    rects3 = ax.bar(x + width, h1_cross, width, label="Reranked Hybrid (Cross-Encoder)", color=c_cross, alpha=0.92, edgecolor="#0f172a", linewidth=0.6)
 
-    def autolabel_multiline(rects, mrr_list):
-        for rect, mrr_val in zip(rects, mrr_list):
+    def autolabel(rects):
+        for rect in rects:
             height = rect.get_height()
-            ax.annotate(f"Hit@1: {height:.2f}\n(MRR: {mrr_val:.2f})",
+            ax.annotate(f"{height:.2f}",
                         xy=(rect.get_x() + rect.get_width() / 2, height),
-                        xytext=(0, 4),
+                        xytext=(0, 3),
                         textcoords="offset points",
                         ha="center", va="bottom",
                         fontsize=7.8, fontweight="600",
                         color="#0f172a")
 
-    autolabel_multiline(rects1, mrr_dense)
-    autolabel_multiline(rects2, mrr_fts5)
-    autolabel_multiline(rects3, mrr_cross)
+    autolabel(rects1)
+    autolabel(rects2)
+    autolabel(rects3)
 
-    # Highlight Callout for Multi-Constraint Collapse
-    cross_hybrid_h1 = r1_cross[2] if len(r1_cross) > 2 else 0.60
-    ax.annotate(
-        f"Dense & Lexical Collapse (0.15 Hit@1)\nCross-Encoder Rescues to {cross_hybrid_h1:.2f} (+300% gain)",
-        xy=(x[2] + width, cross_hybrid_h1),
-        xytext=(-85, 45),
-        textcoords="offset points",
-        fontsize=8.2,
-        fontweight="700",
-        color="#7c3aed",
-        bbox=dict(boxstyle="round,pad=0.4", facecolor="#faf5ff", edgecolor="#7c3aed", linewidth=1.2),
-        arrowprops=dict(arrowstyle="->", color="#7c3aed", lw=1.2)
-    )
-
-    ax.set_ylabel("Metric Score (0.00 - 1.00)", fontsize=10, fontweight="600", color="#1e293b", labelpad=10)
+    ax.set_ylabel("Hit@1 Score (0.00 - 1.00)", fontsize=10, fontweight="600", color="#1e293b", labelpad=10)
     ax.set_xticks(x)
-    ax.set_xticklabels(categories, fontsize=9.5, fontweight="600", color="#0f172a")
-    ax.set_ylim(0, 1.18)
+    ax.set_xticklabels(categories, fontsize=9.2, fontweight="600", color="#0f172a")
+    ax.set_ylim(0, 1.15)
     ax.set_xlim(-0.6, len(categories) - 0.4)
 
     ax.grid(axis="y", linestyle=":", alpha=0.6, color="#cbd5e1")
@@ -291,7 +258,7 @@ def generate_figure_3_stratified_categories():
     ax.spines["left"].set_color("#94a3b8")
     ax.spines["bottom"].set_color("#94a3b8")
 
-    ax.legend(frameon=True, facecolor="#f8fafc", edgecolor="#e2e8f0", fontsize=8.8, loc="upper right", ncol=3)
+    ax.legend(frameon=True, facecolor="#f8fafc", edgecolor="#e2e8f0", fontsize=8.8, loc="upper right")
     ax.set_title("Figure 3: Stratified Retrieval Performance Across Distinct Query Categories",
                  fontsize=11.5, fontweight="700", color="#0f172a", pad=14)
 
@@ -306,12 +273,12 @@ def generate_figure_4_trajectory_matrix():
     out_path = os.path.join(out_dir, "agent_trajectory_matrix.png")
 
     labels_in = [
-        "Structured Relational (5)",
-        "Qualitative Semantic (5)",
-        "NMFC Freight Class (2)",
-        "FMCSA Safety Audit (3)",
-        "Market Spot Rates (2)",
-        "Guardrail & Safety (3)"
+        "Structured Relational (n=5)",
+        "Qualitative Semantic (n=5)",
+        "NMFC Freight Class (n=2)",
+        "FMCSA Safety Audit (n=3)",
+        "Market Spot Rates (n=2)",
+        "Guardrail & Safety (n=3)"
     ]
 
     labels_out = [
@@ -323,7 +290,6 @@ def generate_figure_4_trajectory_matrix():
         "Guardrail Refusal"
     ]
 
-    # 6x6 Matrix (100% adherence: 5, 5, 2, 3, 2, 3)
     matrix = np.array([
         [5, 0, 0, 0, 0, 0],
         [0, 5, 0, 0, 0, 0],
@@ -334,23 +300,19 @@ def generate_figure_4_trajectory_matrix():
     ])
 
     plt.style.use("default")
-    fig, ax = plt.subplots(figsize=(10.5, 6.8), dpi=300)
+    fig, ax = plt.subplots(figsize=(10.5, 6.2), dpi=300)
     fig.patch.set_facecolor("#ffffff")
     ax.set_facecolor("#ffffff")
 
-    # Heatmap color rendering
-    im = ax.imshow(matrix, cmap="Blues", vmin=0, vmax=6, aspect="auto")
+    ax.imshow(matrix, cmap="Blues", vmin=0, vmax=6, aspect="auto")
 
-    # Annotate numbers in cells
+    # Annotate numbers in cells, suppressing zeros for readability
     for i in range(len(labels_in)):
         for j in range(len(labels_out)):
             val = matrix[i, j]
             if val > 0:
                 ax.text(j, i, f"{val}\n(100%)", ha="center", va="center",
-                        fontsize=10.5, fontweight="700", color="#ffffff" if val >= 3 else "#0f172a")
-            else:
-                ax.text(j, i, "0", ha="center", va="center",
-                        fontsize=9.5, fontweight="400", color="#94a3b8")
+                        fontsize=9.5, fontweight="700", color="#ffffff" if val >= 3 else "#0f172a")
 
     ax.set_xticks(np.arange(len(labels_out)))
     ax.set_yticks(np.arange(len(labels_in)))
@@ -358,18 +320,11 @@ def generate_figure_4_trajectory_matrix():
     ax.set_yticklabels(labels_in, fontsize=9.0, fontweight="600", color="#0f172a")
 
     ax.set_xlabel("Selected Execution Tool / Output Action", fontsize=10, fontweight="600", color="#1e293b", labelpad=10)
-    ax.set_ylabel("Incoming Query Intent / Evaluated Category", fontsize=10, fontweight="600", color="#1e293b", labelpad=10)
+    ax.set_ylabel("Evaluated Query Intent / Category", fontsize=10, fontweight="600", color="#1e293b", labelpad=10)
 
-    # Success Badge below Title
-    badge_text = "Overall Trajectory Fidelity: 100.0% (20 / 20 Cases Passed) · Zero False Routing · Zero Leaks"
-    ax.text(0.5, 1.03, badge_text, transform=ax.transAxes, ha="center", va="bottom",
-            fontsize=9.0, fontweight="700", color="#047857",
-            bbox=dict(boxstyle="round,pad=0.4", facecolor="#ecfdf5", edgecolor="#10b981", linewidth=1.2))
+    ax.set_title("Figure 4: Agent Routing Trajectory & Guardrail Compliance Matrix (N=20)",
+                 fontsize=11.5, fontweight="700", color="#0f172a", pad=16)
 
-    ax.set_title("Figure 4: Agent Routing Trajectory & Guardrail Compliance Matrix",
-                 fontsize=11.5, fontweight="700", color="#0f172a", pad=38)
-
-    # Clean borders
     for edge, spine in ax.spines.items():
         spine.set_color("#cbd5e1")
         spine.set_linewidth(1.0)
@@ -395,4 +350,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
