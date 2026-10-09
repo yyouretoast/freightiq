@@ -94,12 +94,34 @@ def generate_figure_2_latency_tradeoff():
     """Figure 2: Retrieval Latency vs. Accuracy Pareto Trade-Off."""
     out_path = os.path.join(out_dir, "retrieval_latency_tradeoff.png")
 
+    results_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "benchmark_results.json")
+    if os.path.exists(results_path):
+        import json
+        with open(results_path, "r", encoding="utf-8") as f:
+            bench_data = json.load(f).get("overall", {})
+        sqlite_mrr = bench_data.get("SQLite Exact Query", {}).get("mrr", 1.0)
+        sqlite_h1 = bench_data.get("SQLite Exact Query", {}).get("hit@1", 1.0)
+        fts5_mrr = bench_data.get("FTS5 Lexical Search (BM25)", {}).get("mrr", 0.535)
+        fts5_h1 = bench_data.get("FTS5 Lexical Search (BM25)", {}).get("hit@1", 0.467)
+        dense_mrr = bench_data.get("ChromaDB Base Vector", {}).get("mrr", 0.445)
+        dense_h1 = bench_data.get("ChromaDB Base Vector", {}).get("hit@1", 0.317)
+        cosine_mrr = bench_data.get("Reranked Search (Cosine)", {}).get("mrr", 0.449)
+        cosine_h1 = bench_data.get("Reranked Search (Cosine)", {}).get("hit@1", 0.317)
+        cross_mrr = bench_data.get("Reranked Hybrid (Cross-Encoder)", {}).get("mrr", 0.781)
+        cross_h1 = bench_data.get("Reranked Hybrid (Cross-Encoder)", {}).get("hit@1", 0.717)
+    else:
+        sqlite_mrr, sqlite_h1 = 1.000, 1.000
+        fts5_mrr, fts5_h1 = 0.535, 0.467
+        dense_mrr, dense_h1 = 0.445, 0.317
+        cosine_mrr, cosine_h1 = 0.449, 0.317
+        cross_mrr, cross_h1 = 0.781, 0.717
+
     data = [
-        {"name": "SQLite Exact Relational", "latency": 0.31, "mrr": 0.967, "r1": 0.967, "color": "#2563eb", "marker": "s", "offset": (18, -8), "ha": "left"},
-        {"name": "SQLite FTS5 (BM25)", "latency": 0.22, "mrr": 0.535, "r1": 0.467, "color": "#0284c7", "marker": "o", "offset": (18, -14), "ha": "left"},
-        {"name": "ChromaDB Base Vector", "latency": 270.60, "mrr": 0.429, "r1": 0.300, "color": "#64748b", "marker": "^", "offset": (-130, -28), "ha": "right"},
-        {"name": "Reranked (Cosine Fallback)", "latency": 271.00, "mrr": 0.432, "r1": 0.300, "color": "#d97706", "marker": "d", "offset": (18, -6), "ha": "left"},
-        {"name": "Reranked Hybrid (Cross-Encoder)", "latency": 499.37, "mrr": 0.764, "r1": 0.700, "color": "#7c3aed", "marker": "*", "offset": (-18, 18), "ha": "right"}
+        {"name": "SQLite Exact Relational", "latency": 0.31, "mrr": sqlite_mrr, "h1": sqlite_h1, "color": "#2563eb", "marker": "s", "offset": (18, -8), "ha": "left"},
+        {"name": "SQLite FTS5 (BM25)", "latency": 0.22, "mrr": fts5_mrr, "h1": fts5_h1, "color": "#0284c7", "marker": "o", "offset": (18, -14), "ha": "left"},
+        {"name": "ChromaDB Base Vector", "latency": 270.60, "mrr": dense_mrr, "h1": dense_h1, "color": "#64748b", "marker": "^", "offset": (-130, -28), "ha": "right"},
+        {"name": "Reranked (Cosine Fallback)", "latency": 271.00, "mrr": cosine_mrr, "h1": cosine_h1, "color": "#d97706", "marker": "d", "offset": (18, -6), "ha": "left"},
+        {"name": "Reranked Hybrid (Cross-Encoder)", "latency": 499.37, "mrr": cross_mrr, "h1": cross_h1, "color": "#7c3aed", "marker": "*", "offset": (-18, 18), "ha": "right"}
     ]
 
     plt.style.use("default")
@@ -119,9 +141,9 @@ def generate_figure_2_latency_tradeoff():
 
     # Plot Pareto optimal curve (FTS5 -> SQLite -> Hybrid Cross-Encoder)
     pareto_x = [0.22, 0.31, 499.37]
-    pareto_y = [0.535, 0.967, 0.764]
+    pareto_y = [fts5_mrr, sqlite_mrr, cross_mrr]
     ax.plot(pareto_x[:2], pareto_y[:2], linestyle="--", color="#2563eb", linewidth=1.5, alpha=0.5, zorder=3)
-    ax.plot([0.31, 499.37], [0.967, 0.764], linestyle=":", color="#7c3aed", linewidth=1.5, alpha=0.4, zorder=3)
+    ax.plot([0.31, 499.37], [sqlite_mrr, cross_mrr], linestyle=":", color="#7c3aed", linewidth=1.5, alpha=0.4, zorder=3)
 
     for item in data:
         size = 280 if item["marker"] == "*" else 180
@@ -129,7 +151,7 @@ def generate_figure_2_latency_tradeoff():
                    marker=item["marker"], edgecolor="#0f172a", linewidth=1.2, zorder=5)
 
         # Annotations with callouts
-        label_text = f"{item['name']}\nLatency: {item['latency']:.2f} ms | MRR: {item['mrr']:.3f} | R@1: {item['r1']:.3f}"
+        label_text = f"{item['name']}\nLatency: {item['latency']:.2f} ms | MRR: {item['mrr']:.3f} | Hit@1: {item['h1']:.3f}"
         ax.annotate(
             label_text,
             xy=(item["latency"], item["mrr"]),
@@ -146,7 +168,7 @@ def generate_figure_2_latency_tradeoff():
     # Architectural takeaway callout box
     callout_text = (
         "Core Architectural Rationale (ADR-001 & ADR-002):\n"
-        "• SQLite resolves discrete constraint queries in 0.31 ms with 0.967 MRR (1,600x faster than Cross-Encoder).\n"
+        f"• SQLite resolves discrete constraint queries in 0.31 ms with {sqlite_mrr:.3f} MRR (1,600x faster than Cross-Encoder).\n"
         "• The 499 ms Cross-Encoder re-ranker is reserved exclusively for qualitative queries, where dense search alone fails."
     )
     ax.text(0.04, 0.95, callout_text, transform=ax.transAxes, fontsize=8.4, fontweight="500",
@@ -230,7 +252,7 @@ def generate_figure_3_stratified_categories():
     def autolabel_multiline(rects, mrr_list):
         for rect, mrr_val in zip(rects, mrr_list):
             height = rect.get_height()
-            ax.annotate(f"R@1: {height:.2f}\n(MRR: {mrr_val:.2f})",
+            ax.annotate(f"Hit@1: {height:.2f}\n(MRR: {mrr_val:.2f})",
                         xy=(rect.get_x() + rect.get_width() / 2, height),
                         xytext=(0, 4),
                         textcoords="offset points",
@@ -243,9 +265,10 @@ def generate_figure_3_stratified_categories():
     autolabel_multiline(rects3, mrr_cross)
 
     # Highlight Callout for Multi-Constraint Collapse
+    cross_hybrid_h1 = r1_cross[2] if len(r1_cross) > 2 else 0.60
     ax.annotate(
-        "Dense & Lexical Collapse (0.10 & 0.15 R@1)\nCross-Encoder Rescues to 0.550 (+450% gain)",
-        xy=(x[2] + width, 0.550),
+        f"Dense & Lexical Collapse (0.15 Hit@1)\nCross-Encoder Rescues to {cross_hybrid_h1:.2f} (+300% gain)",
+        xy=(x[2] + width, cross_hybrid_h1),
         xytext=(-85, 45),
         textcoords="offset points",
         fontsize=8.2,
