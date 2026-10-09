@@ -74,14 +74,14 @@ def generate_figure_1_retrieval_benchmark():
     ax.set_ylabel("Metric Score (0.00 - 1.00)", fontsize=10, fontweight="600", color="#1e293b", labelpad=10)
     ax.set_xticks(x)
     ax.set_xticklabels(strategies, fontsize=9.2, fontweight="600", color="#0f172a")
-    ax.set_ylim(0, 1.20)
+    ax.set_ylim(0, 1.25)
     ax.set_xlim(-0.6, len(strategies) - 0.4)
 
     # Demarcation line separating deterministic vs statistical retrieval
     ax.axvline(0.5, color="#cbd5e1", linestyle="--", linewidth=1.2, zorder=1)
-    ax.text(0.0, 1.13, "Deterministic Filter", ha="center", fontsize=8.0, fontweight="700", color="#1e293b",
+    ax.text(0.0, 1.16, "Deterministic Filter", ha="center", va="center", fontsize=8.0, fontweight="700", color="#1e293b",
             bbox=dict(boxstyle="square,pad=0.25", facecolor="#f1f5f9", edgecolor="#cbd5e1", linewidth=0.8))
-    ax.text(2.5, 1.13, "Statistical Retrieval & Neural Ranking Pipelines", ha="center", fontsize=8.0, fontweight="700", color="#1e293b",
+    ax.text(1.7, 1.16, "Statistical Retrieval & Neural Ranking Pipelines", ha="center", va="center", fontsize=8.0, fontweight="700", color="#1e293b",
             bbox=dict(boxstyle="square,pad=0.25", facecolor="#f1f5f9", edgecolor="#cbd5e1", linewidth=0.8))
 
     ax.grid(axis="y", linestyle=":", alpha=0.6, color="#cbd5e1")
