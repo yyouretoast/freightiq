@@ -20,12 +20,12 @@ Freight carrier query routing engine built with LangGraph. Resolves discrete con
 > **Live Demo:** [huggingface.co/spaces/yyouretoast/freightiq](https://huggingface.co/spaces/yyouretoast/freightiq)  
 > **Repository:** [github.com/yyouretoast/freightiq](https://github.com/yyouretoast/freightiq)
 
-https://github.com/user-attachments/assets/87267c8e-72b0-4862-9c19-cc56a6c3b4f8
-
 <p align="center">
-  <em>Demo: Multi-tool routing across SQLite structured queries, ChromaDB semantic search, NMFC freight calculation, and FMCSA safety verification.</em>
+  <img src="docs/assets/demo.gif" alt="FreightIQ Live Interactive Demo" width="100%">
   <br>
-  <sub><em>If video does not play inline, <a href="https://github.com/user-attachments/assets/87267c8e-72b0-4862-9c19-cc56a6c3b4f8">click here to watch the direct demo recording</a> or try the <a href="https://huggingface.co/spaces/yyouretoast/freightiq">live interactive demo</a>.</em></sub>
+  <em>Multi-tool query routing across SQLite structured queries, ChromaDB semantic search, NMFC freight calculation, and FMCSA safety verification.</em>
+  <br>
+  <sub><a href="https://huggingface.co/spaces/yyouretoast/freightiq"><strong>Launch Live Interactive Demo on Hugging Face</strong></a> · <a href="https://github.com/user-attachments/assets/87267c8e-72b0-4862-9c19-cc56a6c3b4f8">Watch Full HD Recording (MP4)</a></sub>
 </p>
 
 ---
