@@ -66,64 +66,69 @@ Design details are documented in [ADR-001: SQL vs. Vector Routing](docs/adr/ADR-
 
 ```mermaid
 flowchart TD
-    subgraph UI ["Client Interface"]
-        User(["User Query"]) --> App["Streamlit Frontend (app.py)"]
-        App -.-> Return(["Rendered Response & Tool Telemetry"])
+    subgraph Client ["Client Layer"]
+        User(["User Query"]) --> UI["Streamlit UI (app.py)"]
+        UI -.-> Output(["Rendered Response & Tool Telemetry"])
     end
 
-    subgraph LangGraph ["LangGraph State Machine (agent/graph.py)"]
-        AgentNode["Agent Node (agent/nodes.py)
-        • Model: Groq qwen/qwen3.8-27b
-        • Sibling Fallback: qwen3.6-27b
-        • Guardrails: Loop Breaker & Windowing"]
-
+    subgraph Orchestrator ["LangGraph State Machine (agent/graph.py)"]
+        Agent["Agent Node (agent/nodes.py)
+        • Model: Groq qwen/qwen3.8-27b (fallback: qwen3.6-27b)
+        • Guardrails: Loop Breaker & 8-Message Sliding Window"]
+        
         Router{"Tool Call
         Required?"}
-
+        
         ToolNode["Tool Execution Node (ToolNode)
-        • Dispatches single-turn tool calls
-        • Serializes outputs to ToolMessages"]
+        • Enforces parallel_tool_calls=False
+        • Serializes execution outputs into ToolMessages"]
 
-        AgentNode --> Router
+        Agent --> Router
         Router -- "Yes" --> ToolNode
-        ToolNode -- "ToolMessage State Update" --> AgentNode
-        Router -- "No (Synthesis)" --> App
+        ToolNode -- "ToolMessage State Update" --> Agent
+        Router -- "No (Synthesis)" --> UI
     end
 
     subgraph Tools ["Domain Tools (agent/tools.py)"]
-        ToolNode --> T1["carrier_sql_query"]
-        ToolNode --> T2["carrier_semantic_search"]
-        ToolNode --> T3["check_fmcsa_authority"]
-        ToolNode --> T4["freight_class_calculator"]
-        ToolNode --> T5["web_search"]
+        T1["carrier_sql_query"]
+        T2["carrier_semantic_search"]
+        T3["check_fmcsa_authority"]
+        T4["freight_class_calculator"]
+        T5["web_search"]
+
+        ToolNode --> T1 & T2 & T3 & T4 & T5
     end
 
-    subgraph Data ["Storage, Models & External Services"]
-        SQL[("SQLite carriers.db
+    subgraph Backends ["Storage, Inference & External APIs"]
+        DB[("SQLite carriers.db
         • WAL mode, file:?mode=ro
         • FTS5 BM25 virtual table")]
+
         Chroma[("ChromaDB Vector Store
         • all-MiniLM-L6-v2 embeddings")]
-        CrossEnc["Cross-Encoder Reranker
+
+        Reranker["Cross-Encoder Reranker
         • ms-marco-MiniLM-L-6-v2
-        • Cosine similarity fallback"]
+        • Fallback: Cosine similarity"]
+
         FMCSA_API["FMCSA QCMobile API
         • Live USDOT REST endpoint"]
+
         Web_API["Search APIs
         • Tavily API
         • DuckDuckGo fallback"]
 
-        T1 -->|"Bounded SELECT (Limit 25)"| SQL
-        T2 -->|"Lexical query"| SQL
-        T2 -->|"Dense vector query"| Chroma
-        SQL -.->|"RRF Candidate Pool (k=60)"| CrossEnc
-        Chroma -.->|"RRF Candidate Pool (k=60)"| CrossEnc
-        T3 -->|"Live verification"| FMCSA_API
-        T3 -.->|"Offline fallback"| SQL
-        T5 -->|"Spot rates & news"| Web_API
+        T1 -->|"Read-only SELECT (LIMIT 25)"| DB
+        T2 -->|"1. Lexical BM25 (top-25)"| DB
+        T2 -->|"2. Dense vector (top-30)"| Chroma
+        T2 -->|"3. RRF Fusion (k=60) & Scoring"| Reranker
+        T3 -->|"Primary: Live authority check"| FMCSA_API
+        T3 -.->|"Fallback: Local registry"| DB
+        T4 ---|"In-memory density formula & NMFC tiers"| T4
+        T5 -->|"Freight spot rates & corridor news"| Web_API
     end
 
-    App -->|"HumanMessage"| AgentNode
+    UI -->|"HumanMessage"| Agent
 ```
 
 ---
