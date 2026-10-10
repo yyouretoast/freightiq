@@ -66,9 +66,9 @@ Design details are documented in [ADR-001: SQL vs. Vector Routing](docs/adr/ADR-
 
 ```mermaid
 flowchart TD
-    subgraph Client ["Client Layer"]
-        User(["User Query"]) --> UI["Streamlit Frontend (app.py)"]
-        Output(["Rendered Output & Tool Telemetry"])
+    subgraph Client ["Client Layer (app.py)"]
+        User(["User Query"]) --> UI["Streamlit Frontend"]
+        Output(["Rendered Response & Tool Telemetry"])
     end
 
     subgraph Orchestrator ["LangGraph State Machine (agent/graph.py)"]
@@ -86,7 +86,6 @@ flowchart TD
         Agent --> Router
         Router -- "Yes" --> ToolNode
         ToolNode -- "ToolMessage State Update" --> Agent
-        Router -- "No (Synthesis)" --> Output
     end
 
     subgraph Tools ["Domain Tools (agent/tools.py)"]
@@ -132,6 +131,7 @@ flowchart TD
     end
 
     UI -->|"HumanMessage"| Agent
+    Router -- "No (Synthesis)" --> Output
 ```
 
 ---
