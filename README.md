@@ -67,36 +67,41 @@ Design details are documented in [ADR-001: SQL vs. Vector Routing](docs/adr/ADR-
 ```mermaid
 flowchart TD
     subgraph Client ["Client Layer"]
-        User(["User Query"]) --> UI["Streamlit UI (app.py)"]
-        UI -.-> Output(["Rendered Response & Tool Telemetry"])
+        User(["User Query"]) --> UI["Streamlit Frontend (app.py)"]
+        Output(["Rendered Output & Tool Telemetry"])
     end
 
     subgraph Orchestrator ["LangGraph State Machine (agent/graph.py)"]
         Agent["Agent Node (agent/nodes.py)
         • Model: Groq qwen/qwen3.8-27b (fallback: qwen3.6-27b)
-        • Guardrails: Loop Breaker & 8-Message Sliding Window"]
+        • Guardrails: Loop Breaker & 8-Message Window"]
         
         Router{"Tool Call
         Required?"}
         
         ToolNode["Tool Execution Node (ToolNode)
-        • Enforces parallel_tool_calls=False
-        • Serializes execution outputs into ToolMessages"]
+        • Dispatches single-turn tool execution
+        • Serializes outputs into ToolMessages"]
 
         Agent --> Router
         Router -- "Yes" --> ToolNode
         ToolNode -- "ToolMessage State Update" --> Agent
-        Router -- "No (Synthesis)" --> UI
+        Router -- "No (Synthesis)" --> Output
     end
 
     subgraph Tools ["Domain Tools (agent/tools.py)"]
         T1["carrier_sql_query"]
         T2["carrier_semantic_search"]
         T3["check_fmcsa_authority"]
-        T4["freight_class_calculator"]
+        T4["freight_class_calculator
+        (In-memory NMFC formula & rules)"]
         T5["web_search"]
 
-        ToolNode --> T1 & T2 & T3 & T4 & T5
+        ToolNode --> T1
+        ToolNode --> T2
+        ToolNode --> T3
+        ToolNode --> T4
+        ToolNode --> T5
     end
 
     subgraph Backends ["Storage, Inference & External APIs"]
@@ -109,23 +114,21 @@ flowchart TD
 
         Reranker["Cross-Encoder Reranker
         • ms-marco-MiniLM-L-6-v2
-        • Fallback: Cosine similarity"]
+        • Cosine fallback"]
 
         FMCSA_API["FMCSA QCMobile API
         • Live USDOT REST endpoint"]
 
         Web_API["Search APIs
-        • Tavily API
-        • DuckDuckGo fallback"]
+        • Tavily API / DuckDuckGo"]
 
         T1 -->|"Read-only SELECT (LIMIT 25)"| DB
         T2 -->|"1. Lexical BM25 (top-25)"| DB
         T2 -->|"2. Dense vector (top-30)"| Chroma
-        T2 -->|"3. RRF Fusion (k=60) & Scoring"| Reranker
-        T3 -->|"Primary: Live authority check"| FMCSA_API
-        T3 -.->|"Fallback: Local registry"| DB
-        T4 ---|"In-memory density formula & NMFC tiers"| T4
-        T5 -->|"Freight spot rates & corridor news"| Web_API
+        T2 -->|"3. RRF Fusion (k=60) & Re-ranking"| Reranker
+        T3 -->|"Live verification"| FMCSA_API
+        T3 -.->|"Local fallback"| DB
+        T5 -->|"Spot rates & corridor news"| Web_API
     end
 
     UI -->|"HumanMessage"| Agent
