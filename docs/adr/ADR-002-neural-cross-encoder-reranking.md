@@ -14,7 +14,7 @@ We implement a two-stage retrieval pipeline:
 ## Consequences
 ### Positive
 - **Metric Gains:** Benchmarks across 60 queries showed an increase in Hit@1 from 0.317 (dense baseline) to **0.717** (+126.2%) and Overall MRR from 0.445 to **0.781** (+75.5%), with 0.650 Hit@1 and 0.727 MRR on qualitative domain queries (see [Figure 1: Multi-Strategy Retrieval Benchmark](../assets/retrieval_benchmark.png) and [Figure 3: Stratified Retrieval Performance](../assets/retrieval_stratified_categories.png)).
-- **Bounded Latency:** Scoring 15 candidate pairs adds ~35ms compute latency on CPU (~499ms total pipeline), staying well within interactive conversational turn thresholds while trading off compute for semantic precision (see [Figure 2: Latency vs. Accuracy Pareto Trade-Off](../assets/retrieval_latency_tradeoff.png)).
+- **Bounded Latency:** Cross-Encoder neural inference over 15 candidate pairs adds ~220ms compute latency on CPU (~499ms total hybrid retrieval pipeline including vector search and FTS5), staying well within interactive conversational turn thresholds while trading off compute for semantic precision (see [Figure 2: Latency vs. Accuracy Pareto Trade-Off](../assets/retrieval_latency_tradeoff.png)).
 
 ### Trade-offs & Mitigations
 - In-process memory footprint increases by ~80MB for model weights. This easily fits within free-tier container limits (HuggingFace Spaces 16GB RAM limit, local workstation ~80MB RAM).

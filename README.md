@@ -243,7 +243,7 @@ Evaluated against 500 commercial carrier profiles using 60 test queries in `test
 | **Zero-Row Relational Miss** | Constraint relaxation | Drops the last non-compliance `WHERE` constraint; strictly preserves safety ratings and hazmat cargo filters |
 | **Prompt Injection / Jailbreak** | Grounding prompt & safety refusal | Rejects system prompt leaks; refuses hazardous cargo override directives |
 | **Search API Unavailability** | Provider fallback | Tavily fails over to DuckDuckGo (`ddgs`) without throwing unhandled exceptions |
-| **Cross-Encoder Weights Missing** | Metric fallback & failure cache | NumPy vectorized cosine fallback ($<5\mu\text{s}$) with `_CROSS_ENCODER_FAILED` fail-fast memory caching |
+| **Cross-Encoder Weights Missing** | Metric fallback & failure cache | Vectorized NumPy cosine score calculation ($<5\mu\text{s}$) over dense vectors with `_CROSS_ENCODER_FAILED` fail-fast memory caching |
 | **Database Concurrency & Drift** | SQLite WAL mode + FTS5 triggers | Real-time index sync triggers (`carriers_ai/ad/au`) + lock-free concurrent readers |
 
 ---
