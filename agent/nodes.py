@@ -1,11 +1,23 @@
 import logging
+import threading
+import time
+
+from groq import (
+    APIConnectionError,
+    APIStatusError,
+    InternalServerError,
+    NotFoundError,
+    RateLimitError,
+)
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.runnables import RunnableConfig
 from langgraph.prebuilt import ToolNode
-from langchain_core.messages import SystemMessage, AIMessage, HumanMessage, ToolMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
-from groq import RateLimitError, InternalServerError, APIConnectionError, NotFoundError, APIStatusError
+
+import config
+from agent.models import create_model_instance
 from agent.state import AgentState
 from agent.tools import tools
-import config
 
 logger = logging.getLogger(__name__)
 
@@ -22,11 +34,6 @@ Rules:
 3. Single Tool Principle: Select the single most appropriate tool for the inquiry. Synthesize and present the final answer immediately once results are returned from that tool; do not chain or invoke secondary tools unless the user explicitly requested multiple distinct lookups.
 4. Presentation: Format carrier results using markdown tables or bullet points with key attributes (Name, DOT/MC, HQ, Equipment, Safety). For multi-part queries, address each component directly and concisely; do not output raw serialized tool dumps.
 """
-import time
-import threading
-from typing import Optional
-from langchain_core.runnables import RunnableConfig
-from agent.models import create_model_instance
 
 _model_lock = threading.Lock()
 _active_llm = None
@@ -38,6 +45,21 @@ FAILOVER_COOLDOWN_SECONDS = 300.0  # 5 minutes cooldown to restore primary model
 _session_cache = {}
 _session_cache_lock = threading.Lock()
 
+def _create_session_models(provider, model, api_key=None, base_url=None):
+    """Create a provider/model instance pair and register it in the session cache."""
+    base_m, tool_m = create_model_instance(
+        provider=provider,
+        model_name=model,
+        api_key=api_key,
+        base_url=base_url,
+        temperature=0.0,
+        max_tokens=config.MAX_OUTPUT_TOKENS,
+        streaming=True
+    )
+    with _session_cache_lock:
+        _session_cache[(provider, model, api_key, base_url)] = (base_m, tool_m)
+    return base_m, tool_m
+
 def reset_active_models():
     global _active_llm, _active_llm_with_tools, _last_failover_time
     with _model_lock:
@@ -47,13 +69,13 @@ def reset_active_models():
     with _session_cache_lock:
         _session_cache.clear()
 
-def get_active_models(configurable: Optional[dict] = None):
+def get_active_models(configurable: dict | None = None):
     global _active_llm, _active_llm_with_tools
     
     # 1. If session-level configuration is passed, use session-scoped instance to prevent crosstalk
     if configurable and any(k in configurable for k in ("provider", "model", "api_key", "base_url")):
-        provider = configurable.get("provider") or getattr(config, "LLM_PROVIDER", "groq")
-        model = configurable.get("model") or getattr(config, "AGENT_MODEL", "qwen/qwen3.8-27b")
+        provider = configurable.get("provider") or config.LLM_PROVIDER
+        model = configurable.get("model") or config.AGENT_MODEL
         api_key = configurable.get("api_key")
         base_url = configurable.get("base_url")
         cache_key = (provider, model, api_key, base_url)
@@ -61,36 +83,26 @@ def get_active_models(configurable: Optional[dict] = None):
         with _session_cache_lock:
             if cache_key in _session_cache:
                 return _session_cache[cache_key]
-            
-            base_m, tool_m = create_model_instance(
-                provider=provider,
-                model_name=model,
-                api_key=api_key,
-                base_url=base_url,
-                temperature=0.0,
-                max_tokens=config.MAX_OUTPUT_TOKENS,
-                streaming=True
-            )
-            _session_cache[cache_key] = (base_m, tool_m)
-            return base_m, tool_m
+        
+        return _create_session_models(provider, model, api_key=api_key, base_url=base_url)
 
     # 2. Process-global default instance
     global _active_llm, _active_llm_with_tools, _last_failover_time
     # Circuit breaker: if failover cooldown has elapsed, attempt to restore primary model
-    if _active_llm is not None and _last_failover_time > 0.0:
-        if time.time() - _last_failover_time > FAILOVER_COOLDOWN_SECONDS:
-            with _model_lock:
-                if _active_llm is not None and time.time() - _last_failover_time > FAILOVER_COOLDOWN_SECONDS:
-                    logger.info("Failover cooldown elapsed. Attempting to restore primary model.")
-                    _active_llm = None
-                    _active_llm_with_tools = None
-                    _last_failover_time = 0.0
+    if (_active_llm is not None and _last_failover_time > 0.0
+            and time.time() - _last_failover_time > FAILOVER_COOLDOWN_SECONDS):
+        with _model_lock:
+            if _active_llm is not None and time.time() - _last_failover_time > FAILOVER_COOLDOWN_SECONDS:
+                logger.info("Failover cooldown elapsed. Attempting to restore primary model.")
+                _active_llm = None
+                _active_llm_with_tools = None
+                _last_failover_time = 0.0
 
     if _active_llm is None:
         with _model_lock:
             if _active_llm is None:
-                provider = getattr(config, "LLM_PROVIDER", "groq")
-                model = getattr(config, "AGENT_MODEL", "qwen/qwen3.8-27b")
+                provider = config.LLM_PROVIDER
+                model = config.AGENT_MODEL
                 _active_llm, _active_llm_with_tools = create_model_instance(
                     provider=provider,
                     model_name=model,
@@ -101,7 +113,9 @@ def get_active_models(configurable: Optional[dict] = None):
     return _active_llm, _active_llm_with_tools
 
 SIBLING_MODEL_MAP = {
-    "groq": lambda curr: "qwen/qwen3.6-27b" if "3.8" in curr else "qwen/qwen3.8-27b",
+    # qwen/qwen3.6-27b does not exist on Groq (verified via GET /openai/v1/models);
+    # the only comparable text sibling is openai/gpt-oss-120b.
+    "groq": lambda curr: "openai/gpt-oss-120b" if "qwen" in curr else "qwen/qwen3.8-27b",
     "openai": lambda curr: "gpt-4o" if "mini" in curr else "gpt-4o-mini",
     "ollama": lambda curr: "llama3.2:latest" if "qwen" in curr else "qwen2.5:14b",
     "local": lambda curr: "llama3.2:latest" if "qwen" in curr else "qwen2.5:14b",
@@ -120,16 +134,16 @@ def _extract_model_name(llm_obj) -> str:
         or ""
     )
 
-def switch_to_sibling(current_model_name: str = "", configurable: Optional[dict] = None):
+def switch_to_sibling(current_model_name: str = "", configurable: dict | None = None):
     global _active_llm, _active_llm_with_tools
     
     # 1. Session-scoped failover
     if configurable and any(k in configurable for k in ("provider", "model", "api_key", "base_url")):
-        provider = (configurable.get("provider") or getattr(config, "LLM_PROVIDER", "groq")).lower()
+        provider = (configurable.get("provider") or config.LLM_PROVIDER).lower()
         current = (
             current_model_name
             or configurable.get("model")
-            or getattr(config, "AGENT_MODEL", "")
+            or config.AGENT_MODEL
         )
         mapper = SIBLING_MODEL_MAP.get(provider, SIBLING_MODEL_MAP["groq"])
         alt_model = mapper(current)
@@ -141,31 +155,24 @@ def switch_to_sibling(current_model_name: str = "", configurable: Optional[dict]
         if "session_state" in configurable and hasattr(configurable["session_state"], "__setitem__"):
             try:
                 configurable["session_state"]["session_model"] = alt_model
-            except Exception:
-                pass
+            except Exception as sess_e:
+                logger.debug(f"Session model state update skipped: {sess_e}")
         
-        base_alt, tool_alt = create_model_instance(
-            provider=provider,
-            model_name=alt_model,
+        return _create_session_models(
+            provider,
+            alt_model,
             api_key=configurable.get("api_key"),
-            base_url=configurable.get("base_url"),
-            temperature=0.0,
-            max_tokens=config.MAX_OUTPUT_TOKENS,
-            streaming=True
+            base_url=configurable.get("base_url")
         )
-        cache_key = (provider, alt_model, configurable.get("api_key"), configurable.get("base_url"))
-        with _session_cache_lock:
-            _session_cache[cache_key] = (base_alt, tool_alt)
-        return base_alt, tool_alt
 
     # 2. Process-global failover
     global _last_failover_time
     with _model_lock:
-        provider = (getattr(config, "LLM_PROVIDER", "groq")).lower()
+        provider = (config.LLM_PROVIDER).lower()
         current = (
             current_model_name
             or _extract_model_name(_active_llm)
-            or getattr(config, "AGENT_MODEL", "")
+            or config.AGENT_MODEL
         )
         mapper = SIBLING_MODEL_MAP.get(provider, SIBLING_MODEL_MAP["groq"])
         alt_model = mapper(current)
@@ -189,11 +196,15 @@ def _is_rate_limit_or_not_found(exc):
     if status_code in (404, 429):
         return True
     exc_type_name = type(exc).__name__
-    if any(term in exc_type_name for term in ("RateLimit", "NotFound", "ResourceExhausted")):
-        return True
-    return False
+    return any(term in exc_type_name for term in ("RateLimit", "NotFound", "ResourceExhausted"))
 
 def _is_retryable_error(exc):
+    # Groq-side transient failure: the provider intermittently rejects its own
+    # generated tool call ("tool call validation failed ... missing properties")
+    # before any tokens stream (verified: error arrives with zero stream chunks,
+    # at both the 950 and 2048 token caps). Identical requests succeed on retry.
+    if "tool call validation failed" in str(exc):
+        return True
     if isinstance(exc, (RateLimitError, InternalServerError, APIConnectionError)):
         return True
     if isinstance(exc, APIStatusError) and getattr(exc, "status_code", None) in (413, 429, 500, 502, 503, 504):
@@ -202,9 +213,7 @@ def _is_retryable_error(exc):
     if status_code in (413, 429, 500, 502, 503, 504):
         return True
     exc_type_name = type(exc).__name__
-    if any(term in exc_type_name for term in ("RateLimit", "InternalServer", "APIConnection", "ServiceUnavailable")):
-        return True
-    return False
+    return any(term in exc_type_name for term in ("RateLimit", "InternalServer", "APIConnection", "ServiceUnavailable"))
 
 @retry(
     retry=_is_retryable_error,
@@ -228,10 +237,8 @@ def _invoke_with_retry(is_tool_bound, messages, configurable=None):
                 return target_alt.invoke(messages)
             except Exception as alt_err:
                 logger.error(f"Sibling model failover to '{alt_model}' also failed: {alt_err}")
-                raise RuntimeError(
-                    f"Both primary model '{curr_model}' and failover sibling model '{alt_model}' failed: {alt_err}"
-                ) from alt_err
-        raise e
+                raise
+        raise
 
 
 
@@ -243,17 +250,26 @@ def get_windowed_messages(messages, max_messages=None):
     max_msgs = max_messages or getattr(config, "CONVERSATION_WINDOW", 8)
     if len(messages) <= max_msgs:
         return list(messages)
-    slice_idx = -max_msgs
-    while abs(slice_idx) < len(messages):
-        first_msg = messages[slice_idx]
-        if isinstance(first_msg, ToolMessage):
-            slice_idx -= 1
-        elif isinstance(first_msg, AIMessage) and getattr(first_msg, "tool_calls", None):
-            slice_idx -= 1
-        else:
+    
+    # Start at -max_msgs cutoff
+    start_idx = len(messages) - max_msgs
+    
+    # 1. Look for the nearest HumanMessage at or after start_idx
+    forward_human_idx = None
+    for i in range(start_idx, len(messages)):
+        if isinstance(messages[i], HumanMessage):
+            forward_human_idx = i
             break
-    while abs(slice_idx) < len(messages) and not isinstance(messages[slice_idx], HumanMessage):
+            
+    # 2. If a forward HumanMessage exists, use it to ensure the window stays <= max_msgs
+    if forward_human_idx is not None and forward_human_idx > 0:
+        return list(messages[forward_human_idx:])
+        
+    # 3. Otherwise, walk backward to find the nearest preceding HumanMessage
+    slice_idx = start_idx
+    while slice_idx > 0 and not isinstance(messages[slice_idx], HumanMessage):
         slice_idx -= 1
+        
     return list(messages[slice_idx:])
 
 def _prepare_context_messages(messages):
@@ -274,7 +290,15 @@ def _prepare_context_messages(messages):
     return cleaned
 
 
-def agent_node(state: AgentState, config: Optional[RunnableConfig] = None):
+def _invoke_loop_guardrail(messages, directive: str, configurable=None) -> dict:
+    """Terminal guardrail response: re-invoke the *unbound* LLM with a directive forcing
+    plain-text synthesis, bypassing further tool routing for the current turn."""
+    messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + _prepare_context_messages(messages) + [HumanMessage(content=directive)]
+    response = _invoke_with_retry(False, messages_with_warning, configurable=configurable)
+    return {"messages": [response]}
+
+
+def agent_node(state: AgentState, config: RunnableConfig | None = None):
     logger.info(f"Agent invoked with {len(state['messages'])} messages in context.")
     configurable = config.get("configurable", {}) if config else {}
     messages = state["messages"]
@@ -290,32 +314,30 @@ def agent_node(state: AgentState, config: Optional[RunnableConfig] = None):
             penultimate_calls = prev_ai_msgs[-2].tool_calls
             
             if last_calls and penultimate_calls:
-                last_call = last_calls[0]
-                penultimate_call = penultimate_calls[0]
-                
-                if last_call["name"] == penultimate_call["name"] and last_call["args"] == penultimate_call["args"]:
-                    logger.warning(f"Loop detected on tool '{last_call['name']}'. Injecting loop guardrail.")
+                # Compare full sets of tool calls in case multiple parallel calls were generated
+                last_call_tuples = [(c.get("name"), tuple(sorted((k, str(v)) for k, v in c.get("args", {}).items()))) for c in last_calls]
+                penultimate_tuples = [(c.get("name"), tuple(sorted((k, str(v)) for k, v in c.get("args", {}).items()))) for c in penultimate_calls]
+                if last_call_tuples == penultimate_tuples and last_call_tuples:
+                    tool_name_str = last_calls[0].get("name", "tool")
+                    logger.warning(f"Loop detected on tool '{tool_name_str}'. Injecting loop guardrail.")
                     loop_break_directive = (
-                        f"Repeat tool call detected for '{last_call['name']}'. "
+                        f"Repeat tool call detected for '{tool_name_str}'. "
                         "Do not invoke this tool again. Output final answer in plain text using retrieved data."
                     )
-                    messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + _prepare_context_messages(messages) + [HumanMessage(content=loop_break_directive)]
-                    response = _invoke_with_retry(False, messages_with_warning, configurable=configurable)
-                    return {"messages": [response]}
+                    return _invoke_loop_guardrail(messages, loop_break_directive, configurable=configurable)
 
             # Check for alternating tool ping-pong loop (e.g., A -> B -> A)
             if len(prev_ai_msgs) >= 3:
-                last_name = prev_ai_msgs[-1].tool_calls[0]["name"] if prev_ai_msgs[-1].tool_calls else ""
-                antepenultimate_name = prev_ai_msgs[-3].tool_calls[0]["name"] if prev_ai_msgs[-3].tool_calls else ""
-                if last_name and last_name == antepenultimate_name:
-                    logger.warning(f"Alternating tool loop detected for '{last_name}'. Injecting loop guardrail.")
+                last_names = [c.get("name") for c in prev_ai_msgs[-1].tool_calls if c.get("name")]
+                antepenultimate_names = [c.get("name") for c in prev_ai_msgs[-3].tool_calls if c.get("name")]
+                if last_names and last_names == antepenultimate_names:
+                    loop_name = last_names[0]
+                    logger.warning(f"Alternating tool loop detected for '{loop_name}'. Injecting loop guardrail.")
                     loop_break_directive = (
-                        f"Alternating tool calls detected for '{last_name}'. "
+                        f"Alternating tool calls detected for '{loop_name}'. "
                         "Do not invoke further tools. Output final answer in plain text using retrieved data."
                     )
-                    messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + _prepare_context_messages(messages) + [HumanMessage(content=loop_break_directive)]
-                    response = _invoke_with_retry(False, messages_with_warning, configurable=configurable)
-                    return {"messages": [response]}
+                    return _invoke_loop_guardrail(messages, loop_break_directive, configurable=configurable)
 
         # Check for excessive consecutive calls to ANY single tool (e.g. 3 consecutive calls)
         consecutive_tool_count = 0
@@ -339,9 +361,7 @@ def agent_node(state: AgentState, config: Optional[RunnableConfig] = None):
                 f"Tool invocation limit reached for '{last_tool_name}'. "
                 "Do not invoke further tools. Output final answer in plain text using retrieved data."
             )
-            messages_with_warning = [SystemMessage(content=SYSTEM_PROMPT)] + _prepare_context_messages(messages) + [HumanMessage(content=loop_break_directive)]
-            response = _invoke_with_retry(False, messages_with_warning, configurable=configurable)
-            return {"messages": [response]}
+            return _invoke_loop_guardrail(messages, loop_break_directive, configurable=configurable)
                 
     messages_with_system = [SystemMessage(content=SYSTEM_PROMPT)] + _prepare_context_messages(messages)
     response = _invoke_with_retry(True, messages_with_system, configurable=configurable)
@@ -349,4 +369,4 @@ def agent_node(state: AgentState, config: Optional[RunnableConfig] = None):
 
 
 
-tool_node = ToolNode(tools)
+tool_node = ToolNode(tools, handle_tool_errors=True)

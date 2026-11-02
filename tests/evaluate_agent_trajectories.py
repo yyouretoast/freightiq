@@ -1,23 +1,21 @@
+import logging
 import os
 import sys
 import time
-import logging
+
 from dotenv import load_dotenv
 
 # Load environment variables first
 load_dotenv()
 
-# Ensure AGENT_MODEL is set; default to qwen/qwen3.8-27b if not specified
-if "AGENT_MODEL" not in os.environ:
-    os.environ["AGENT_MODEL"] = "qwen/qwen3.8-27b"
-
-from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 # Ensure project root is in path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import re
 import sqlite3
+
 import config
 from agent.graph import build_graph
 
@@ -160,6 +158,7 @@ def main():
     
     passed_count = 0
     total_count = len(TRAJECTORY_CASES)
+    case_results = []
     
     for idx, case in enumerate(TRAJECTORY_CASES):
         if idx > 0:
@@ -252,9 +251,21 @@ def main():
                 passed_count += 1
             else:
                 print(f"  - Status: [FAILED] -> {', '.join(reasons)}")
+            
+            case_results.append({
+                "type": case["type"],
+                "called_tools": called_tools,
+                "passed": is_valid
+            })
                 
         except Exception as e:
             print(f"  - Status: [FAILED] with execution error: {e}")
+            case_results.append({
+                "type": case["type"],
+                "called_tools": [],
+                "passed": False,
+                "error": str(e)[:200]
+            })
             
     accuracy = (passed_count / total_count) * 100
     print("\n\n=== AGENT TRAJECTORY AUDIT RESULTS SUMMARY ===")
@@ -262,6 +273,22 @@ def main():
     print(f"Passed Trajectory Audits:   {passed_count}")
     print(f"Routing/Guardrail Accuracy:  {accuracy:.1f}%")
     print("==============================================")
+    
+    # Export per-case results for Figure 4 (scripts/generate_benchmark_chart.py) and CI records
+    try:
+        import json
+
+        export_path = os.path.join(config.DATA_DIR, "trajectory_results.json")
+        with open(export_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "total_cases": total_count,
+                "passed": passed_count,
+                "accuracy": round(accuracy, 1),
+                "cases": case_results
+            }, f, indent=2)
+        print(f"[OK] Exported trajectory results to {export_path}")
+    except Exception as export_e:
+        print(f"[WARNING] Failed to export trajectory results JSON: {export_e}")
     
     if passed_count == total_count:
         print("[SUCCESS] All agent trajectories and loop-breaker guardrails verified successfully!")
@@ -286,6 +313,57 @@ def test_loop_breaker_guardrail_unit():
     assert not getattr(ai_resp, "tool_calls", None), "Loop breaker failed to prevent repeated tool call"
     assert len(str(ai_resp.content)) > 0, "Loop breaker synthesis text was empty"
     print("  - [OK] Loop breaker successfully intercepted duplicate calls and enforced direct synthesis.")
+
+    # 1. Test alternating ping-pong loop breaker (A -> B -> A)
+    print("\n--- Verifying Alternating Ping-Pong Guardrail (A -> B -> A) ---")
+    mock_ping_pong = [
+        HumanMessage(content="Check reefer carriers and rates"),
+        AIMessage(content="", tool_calls=[{"name": "carrier_sql_query", "args": {"query": "SELECT * FROM carriers"}, "id": "call_a1"}]),
+        ToolMessage(content="SQL Results", tool_call_id="call_a1", name="carrier_sql_query"),
+        AIMessage(content="", tool_calls=[{"name": "web_search", "args": {"query": "reefer rates"}, "id": "call_b1"}]),
+        ToolMessage(content="Web Results", tool_call_id="call_b1", name="web_search"),
+        AIMessage(content="", tool_calls=[{"name": "carrier_sql_query", "args": {"query": "SELECT * FROM carriers"}, "id": "call_a2"}]),
+        ToolMessage(content="SQL Results", tool_call_id="call_a2", name="carrier_sql_query"),
+    ]
+    res_pp = agent_node({"messages": mock_ping_pong})
+    ai_resp_pp = res_pp["messages"][-1]
+    assert not getattr(ai_resp_pp, "tool_calls", None), "Ping-pong loop breaker failed to prevent alternating tool call"
+    print("  - [OK] Alternating ping-pong guardrail successfully intercepted repeated tool invocation.")
+
+    # 2. Test 3-consecutive calls to single tool with different args
+    print("\n--- Verifying 3-Consecutive Single Tool Invocation Limit ---")
+    mock_consecutive = [
+        HumanMessage(content="Search for different carriers"),
+        AIMessage(content="", tool_calls=[{"name": "carrier_sql_query", "args": {"query": "SELECT 1"}, "id": "c1"}]),
+        ToolMessage(content="Res 1", tool_call_id="c1", name="carrier_sql_query"),
+        AIMessage(content="", tool_calls=[{"name": "carrier_sql_query", "args": {"query": "SELECT 2"}, "id": "c2"}]),
+        ToolMessage(content="Res 2", tool_call_id="c2", name="carrier_sql_query"),
+        AIMessage(content="", tool_calls=[{"name": "carrier_sql_query", "args": {"query": "SELECT 3"}, "id": "c3"}]),
+        ToolMessage(content="Res 3", tool_call_id="c3", name="carrier_sql_query"),
+    ]
+    res_consec = agent_node({"messages": mock_consecutive})
+    ai_resp_consec = res_consec["messages"][-1]
+    assert not getattr(ai_resp_consec, "tool_calls", None), "Consecutive tool limit guardrail failed to fire"
+    print("  - [OK] Consecutive invocation limit successfully intercepted 3rd call.")
+
+    # 3. Test sliding window context truncation turn alignment
+    print("\n--- Verifying Context Sliding Window Alignment ---")
+    from agent.nodes import get_windowed_messages
+    many_messages = [
+        HumanMessage(content="Turn 1 User"),
+        AIMessage(content="", tool_calls=[{"name": "carrier_sql_query", "args": {"query": "SELECT 1"}, "id": "t1"}]),
+        ToolMessage(content="Turn 1 Tool", tool_call_id="t1", name="carrier_sql_query"),
+        AIMessage(content="Turn 1 AI"),
+        HumanMessage(content="Turn 2 User"),
+        AIMessage(content="", tool_calls=[{"name": "web_search", "args": {"query": "rates"}, "id": "t2"}]),
+        ToolMessage(content="Turn 2 Tool", tool_call_id="t2", name="web_search"),
+        AIMessage(content="Turn 2 AI"),
+        HumanMessage(content="Turn 3 User"),
+    ]
+    windowed = get_windowed_messages(many_messages, max_messages=5)
+    assert isinstance(windowed[0], HumanMessage), f"Window should align to HumanMessage, got {type(windowed[0])}"
+    assert len(windowed) <= 5, f"Window length {len(windowed)} exceeds max_messages 5"
+    print("  - [OK] get_windowed_messages safely aligned window to HumanMessage turn.")
 
 if __name__ == "__main__":
     test_loop_breaker_guardrail_unit()

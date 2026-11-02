@@ -1,5 +1,6 @@
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # Load environment variables at the absolute top before importing local modules
@@ -9,16 +10,24 @@ load_dotenv()
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
+    except Exception:  # noqa: S110 — console reconfigure failure is harmless (runs before logging exists)
         pass
 
 # Ensure project root is in path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import config
-from agent.tools import carrier_semantic_search, carrier_sql_query, freight_class_calculator, web_search, check_fmcsa_authority
-from agent.graph import build_graph
 from langchain_core.messages import HumanMessage
+
+import config
+from agent.graph import build_graph
+from agent.tools import (
+    carrier_semantic_search,
+    carrier_sql_query,
+    check_fmcsa_authority,
+    freight_class_calculator,
+    web_search,
+)
+
 
 def test_calculators():
     print("\n--- 1. Testing NMFC Freight Class Calculator ---")
@@ -51,7 +60,14 @@ def test_sql_retrieval():
     result = carrier_sql_query.invoke({"query": query})
     print(result)
     assert "Hq State: OH" in result and "satisfactory" in result, "SQL query failed to return expected OH carrier profiles."
-    print("[OK] SQL read-only retrieval validated successfully.")
+
+    # Test zero-row relaxation and hazmat/safety constraint preservation
+    relaxed_query = "SELECT * FROM carriers WHERE hq_state = 'AK' AND safety_rating = 'satisfactory' AND EXISTS (SELECT 1 FROM json_each(cargo_specializations) WHERE value = 'hazardous materials')"
+    relaxed_res = carrier_sql_query.invoke({"query": relaxed_query})
+    assert "Notice: 0 carriers matched" in relaxed_res, "Zero-row relaxation failed to trigger on multi-clause miss."
+    assert "safety_rating" not in relaxed_res.split("omitting non-compliance constraint")[1].split("')")[0], "Safety constraint was dropped during relaxation!"
+    assert "hazardous materials" not in relaxed_res.split("omitting non-compliance constraint")[1].split("')")[0], "Hazmat constraint was dropped during relaxation!"
+    print("[OK] SQL read-only retrieval and zero-row compliance relaxation validated successfully.")
 
 def test_semantic_retrieval():
     print("\n--- 3. Testing Semantic Vector Retrieval & Cross-Encoder Reranking ---")
@@ -77,16 +93,31 @@ def test_web_search():
 
 def test_fmcsa_authority():
     print("\n--- 5. Testing FMCSA Registry Verification & Safety Compliance ---")
-    result = check_fmcsa_authority.invoke({"dot_number": "2404512"})
-    print(result[:250] + "...")
-    assert "FMCSA" in result and "2404512" in result, "FMCSA authority check returned unexpected output format."
-    
-    # Verify compliance gating: Unsatisfactory safety carriers MUST fail verification
+
+    # Resolve a live DOT from the database (never rely on a hardcoded DOT, which can drift from the seed data)
     import sqlite3
     with sqlite3.connect(f"file:{config.DB_PATH}?mode=ro", uri=True) as conn:
-        row = conn.execute("SELECT dot_number FROM carriers WHERE safety_rating = 'unsatisfactory' LIMIT 1").fetchone()
-        if row:
-            unsat_dot = row[0]
+        probe_row = conn.execute("SELECT dot_number FROM carriers LIMIT 1").fetchone()
+    probe_dot = str(probe_row[0]) if probe_row else "0000000"
+
+    result = check_fmcsa_authority.invoke({"dot_number": probe_dot})
+    print(result[:250] + "...")
+    assert "FMCSA" in result and probe_dot in result, "FMCSA authority check returned unexpected output format."
+    
+    # Verify compliance gating: Unsatisfactory safety carriers MUST fail verification
+    with sqlite3.connect(f"file:{config.DB_PATH}?mode=ro", uri=True) as conn:
+        # 1. Test local database fallback on satisfactory carrier
+        sat_row = conn.execute("SELECT dot_number FROM carriers WHERE safety_rating = 'satisfactory' LIMIT 1").fetchone()
+        if sat_row:
+            sat_dot = sat_row[0]
+            sat_result = check_fmcsa_authority.invoke({"dot_number": sat_dot})
+            assert "PASS" in sat_result, f"FMCSA verification failed for satisfactory carrier #{sat_dot}!"
+            print(f"[OK] Local registry fallback verified: satisfactory carrier #{sat_dot} passed audit.")
+
+        # 2. Test compliance gating on unsatisfactory carrier
+        unsat_row = conn.execute("SELECT dot_number FROM carriers WHERE safety_rating = 'unsatisfactory' LIMIT 1").fetchone()
+        if unsat_row:
+            unsat_dot = unsat_row[0]
             unsat_result = check_fmcsa_authority.invoke({"dot_number": unsat_dot})
             assert "FAIL" in unsat_result or "DO NOT DISPATCH" in unsat_result, f"FMCSA verification failed to flag unsatisfactory carrier #{unsat_dot}!"
             print(f"[OK] Safety rating audit gating verified: carrier #{unsat_dot} properly flagged as FAIL / DO NOT DISPATCH.")
@@ -123,7 +154,11 @@ def test_agent_graph():
 def main():
     print("=== STARTING FREIGHTIQ SYSTEM VERIFICATION ===")
     
-    has_api_key = bool(os.getenv("GROQ_API_KEY"))
+    has_api_key = bool(
+        os.getenv("GROQ_API_KEY") 
+        or os.getenv("OPENAI_API_KEY") 
+        or (os.getenv("LLM_PROVIDER") in ("ollama", "local"))
+    )
     if not has_api_key:
         print("[NOTE] GROQ_API_KEY is not configured in this environment.")
         print("       Tests 1-5 (calculators, SQL, hybrid retrieval, web search, FMCSA compliance) run fully offline.")
@@ -142,7 +177,7 @@ def main():
             print("\n[SKIP] Skipping Test 6: Agent Graph Routing (Requires live GROQ_API_KEY)")
             print("\n[SUCCESS] ALL OFFLINE TESTS (1-5) PASSED: Domain tools, calculations, and safety gating verified.")
     except Exception as e:
-        print(f"\n[ERROR] VERIFICATION FAILED: {str(e)}")
+        print(f"\n[ERROR] VERIFICATION FAILED: {e!s}")
         sys.exit(1)
 
 if __name__ == "__main__":

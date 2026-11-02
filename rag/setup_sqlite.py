@@ -1,7 +1,9 @@
-import sqlite3
 import json
 import os
+import sqlite3
+
 import config
+
 
 def setup_sqlite(force=False):
     json_path = config.CARRIERS_JSON_PATH

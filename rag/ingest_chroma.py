@@ -1,9 +1,12 @@
 import json
 import os
+
 import chromadb
 from sentence_transformers import SentenceTransformer
+
 import config
 from rag.utils import format_carrier_document
+
 
 def ingest_chroma(force=False):
     json_path = config.CARRIERS_JSON_PATH
@@ -21,8 +24,8 @@ def ingest_chroma(force=False):
         try:
             chroma_client.delete_collection(name=config.CHROMA_COLLECTION_NAME)
             print(f"Force re-ingest: deleted existing Chroma collection '{config.CHROMA_COLLECTION_NAME}'.")
-        except Exception:
-            pass
+        except Exception as del_e:
+            print(f"Force re-ingest: no existing collection to delete ({del_e}).")
     else:
         try:
             collection = chroma_client.get_collection(name=config.CHROMA_COLLECTION_NAME)

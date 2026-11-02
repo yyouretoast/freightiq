@@ -1,6 +1,7 @@
 import json
-import random
 import os
+import random
+
 import config
 
 STATES = ["TX", "CA", "IL", "OH", "PA", "GA", "FL", "NC", "MI", "NY", "TN", "IN", "KY", "AL", "MO", "AZ", "WI", "CO", "SC", "OR"]
@@ -142,13 +143,13 @@ def generate_random_carrier(i, used_names=None, used_dots=None, used_mcs=None):
     hq = random.choice(STATES)
 
     num_regions = random.randint(1, 3)
-    serv_regions = list(set(random.choice(REGIONS) for _ in range(num_regions)))
+    serv_regions = list({random.choice(REGIONS) for _ in range(num_regions)})
 
     num_equip = random.randint(1, 3)
-    equip = list(set(random.choice(EQUIPMENT) for _ in range(num_equip)))
+    equip = list({random.choice(EQUIPMENT) for _ in range(num_equip)})
 
     num_specs = random.randint(1, 2)
-    specs = list(set(random.choice(SPECIALIZATIONS) for _ in range(num_specs)))
+    specs = list({random.choice(SPECIALIZATIONS) for _ in range(num_specs)})
 
     safety = random.choice(SAFETY_RATINGS)
     years = random.randint(2, 35)

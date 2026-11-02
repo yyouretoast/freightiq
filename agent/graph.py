@@ -1,7 +1,9 @@
 from langgraph.graph import StateGraph
-from agent.state import AgentState
-from agent.nodes import agent_node, tool_node
 from langgraph.prebuilt import tools_condition
+
+from agent.nodes import agent_node, tool_node
+from agent.state import AgentState
+
 
 def build_graph(checkpointer=None):
     workflow = StateGraph(AgentState)

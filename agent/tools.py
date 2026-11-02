@@ -1,11 +1,17 @@
-import os
-import math
 import logging
+import math
+import os
 import re
+
+from ddgs import DDGS
 from langchain_core.tools import tool
-from duckduckgo_search import DDGS
-from rag.retriever import retrieve_carriers_semantic, query_carriers_sql
+
 import config
+from rag.retriever import (
+    fetch_carrier_by_dot,
+    query_carriers_sql,
+    retrieve_carriers_semantic,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +39,11 @@ def _split_sql_and_conditions(where_clause: str) -> list[str]:
     n = len(where_clause)
     while i < n:
         ch = where_clause[i]
-        if ch == "'" and (i == 0 or where_clause[i-1] != "\\"):
+        if ch == "'":
+            if in_quotes and i + 1 < n and where_clause[i+1] == "'":
+                current.append("''")
+                i += 2
+                continue
             in_quotes = not in_quotes
             current.append(ch)
             i += 1
@@ -75,6 +85,37 @@ def _split_sql_and_conditions(where_clause: str) -> list[str]:
         parts.append(last_str)
     return parts
 
+def _find_top_level_where(sql: str) -> tuple[int, int]:
+    """
+    Finds the start and end indices of the top-level 'WHERE' keyword (depth 0, outside quotes).
+    Returns (start_idx, end_idx) or (-1, -1) if no top-level WHERE exists.
+    """
+    in_quotes = False
+    paren_depth = 0
+    n = len(sql)
+    i = 0
+    while i < n:
+        ch = sql[i]
+        if ch == "'":
+            if in_quotes and i + 1 < n and sql[i+1] == "'":
+                i += 2
+                continue
+            in_quotes = not in_quotes
+            i += 1
+        elif not in_quotes and ch == '(':
+            paren_depth += 1
+            i += 1
+        elif not in_quotes and ch == ')':
+            paren_depth = max(0, paren_depth - 1)
+            i += 1
+        elif not in_quotes and paren_depth == 0:
+            if sql[i:i+5].upper() == "WHERE" and (i == 0 or not sql[i-1].isalnum()) and (i+5 >= n or not sql[i+5].isalnum()):
+                return i, i + 5
+            i += 1
+        else:
+            i += 1
+    return -1, -1
+
 def _strip_trailing_sql_clauses(where_clause: str) -> tuple[str, str]:
     """
     Extracts the WHERE clause conditions and trailing clauses (ORDER BY, GROUP BY, LIMIT),
@@ -82,16 +123,26 @@ def _strip_trailing_sql_clauses(where_clause: str) -> tuple[str, str]:
     Returns (clean_where_conditions, trailing_clauses).
     """
     in_quotes = False
+    paren_depth = 0
     n = len(where_clause)
     i = 0
     split_pos = n
     trailing = ""
     while i < n:
         ch = where_clause[i]
-        if ch == "'" and (i == 0 or where_clause[i-1] != "\\"):
+        if ch == "'":
+            if in_quotes and i + 1 < n and where_clause[i+1] == "'":
+                i += 2
+                continue
             in_quotes = not in_quotes
             i += 1
-        elif not in_quotes:
+        elif not in_quotes and ch == '(':
+            paren_depth += 1
+            i += 1
+        elif not in_quotes and ch == ')':
+            paren_depth = max(0, paren_depth - 1)
+            i += 1
+        elif not in_quotes and paren_depth == 0:
             remainder = where_clause[i:]
             match = re.match(r'^(ORDER\s+BY|GROUP\s+BY|LIMIT)\b', remainder, re.IGNORECASE)
             if match and (i == 0 or where_clause[i-1].isspace()):
@@ -136,7 +187,7 @@ def carrier_sql_query(query: str) -> str:
     clean = re.sub(r'/\*.*?\*/', '', query, flags=re.DOTALL)
     clean = re.sub(r'--.*$', '', clean, flags=re.MULTILINE).strip().rstrip(";").strip()
     upper_clean = clean.upper()
-    if not (upper_clean.startswith("SELECT") or upper_clean.startswith("WITH")):
+    if not upper_clean.startswith(("SELECT", "WITH")):
         return "Error: Only SELECT queries are permitted on the carriers database."
     
     # Enforce an upper bound of 25 rows via subquery wrapping
@@ -145,10 +196,10 @@ def carrier_sql_query(query: str) -> str:
 
     res = query_carriers_sql(wrapped_query)
     if res == "No matching records found in the SQL database.":
-        # Check if query had multiple AND clauses in WHERE (re.DOTALL matches across newlines)
-        where_match = re.search(r'\bWHERE\b\s+(.*)', clean, re.IGNORECASE | re.DOTALL)
-        if where_match:
-            where_clause = where_match.group(1)
+        # Check if query had multiple AND clauses in top-level WHERE
+        w_start, w_end = _find_top_level_where(clean)
+        if w_start >= 0:
+            where_clause = clean[w_end:].strip()
             where_conditions, trailing = _strip_trailing_sql_clauses(where_clause)
             and_parts = _split_sql_and_conditions(where_conditions)
             
@@ -165,9 +216,9 @@ def carrier_sql_query(query: str) -> str:
                 dropped_part = and_parts[drop_idx]
                 kept_parts = [p for i, p in enumerate(and_parts) if i != drop_idx]
                 relaxed_where = " AND ".join(kept_parts)
-                prefix = clean[:where_match.start()]
+                prefix = clean[:w_start].strip()
                 suffix = f" {trailing}" if trailing else ""
-                relaxed_sql = f"{prefix}WHERE {relaxed_where}{suffix}"
+                relaxed_sql = f"{prefix} WHERE {relaxed_where}{suffix}"
                 relaxed_wrapped = f"SELECT * FROM ({relaxed_sql}) AS _bounded_carriers LIMIT 5"
                 relaxed_res = query_carriers_sql(relaxed_wrapped)
                 if relaxed_res and not relaxed_res.startswith("No matching") and not relaxed_res.startswith("SQLite Error"):
@@ -335,31 +386,14 @@ def check_fmcsa_authority(dot_number: str) -> str:
         return "Error: Please provide a valid USDOT number containing digits."
 
     # 1. Query structured carrier record directly from SQLite (prevents text-dump regex injection)
-    local_row = None
-    if os.path.exists(config.DB_PATH):
-        conn = None
-        try:
-            import sqlite3
-            conn = sqlite3.connect(f"file:{config.DB_PATH}?mode=ro", uri=True, timeout=5.0)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute(
-                "SELECT carrier_name, mc_number, hq_state, safety_rating, years_operating FROM carriers WHERE dot_number = ? LIMIT 1",
-                (clean_dot,)
-            )
-            local_row = cursor.fetchone()
-        except Exception as e:
-            logger.debug(f"Local database check failed: {e}")
-        finally:
-            if conn:
-                conn.close()
+    local_row = fetch_carrier_by_dot(clean_dot)
 
     # 2. Attempt live query to public FMCSA QCMobile endpoint if key is provided
     fmcsa_key = getattr(config, "FMCSA_WEB_KEY", None) or os.getenv("FMCSA_WEB_KEY")
     if fmcsa_key:
         try:
-            import urllib.request
             import json
+            import urllib.request
             url = f"https://mobile.fmcsa.dot.gov/qc/services/carriers/{clean_dot}?webKey={fmcsa_key}"
             req = urllib.request.Request(url, headers={"User-Agent": "FreightIQ/1.0", "Accept": "application/json"})
             with urllib.request.urlopen(req, timeout=3.0) as resp:

@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+
 load_dotenv()
 
 import os
@@ -22,8 +23,9 @@ EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 CROSS_ENCODER_MODEL_NAME = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
 # LLM & Search Configuration (centralized env var reads)
+DEFAULT_AGENT_MODEL = "qwen/qwen3.8-27b"  # single source of truth for the default Groq model
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower()
-AGENT_MODEL = os.getenv("AGENT_MODEL", "qwen/qwen3.8-27b")
+AGENT_MODEL = os.getenv("AGENT_MODEL", DEFAULT_AGENT_MODEL)
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 FMCSA_WEB_KEY = os.getenv("FMCSA_WEB_KEY")

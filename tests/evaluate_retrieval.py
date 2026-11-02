@@ -1,13 +1,18 @@
 import os
 import sqlite3
 import sys
+from time import perf_counter
 
 # Ensure project root is in the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import config
-from rag.retriever import get_chroma_collection, retrieve_carriers_bm25, reciprocal_rank_fusion
-from rag.reranker import rerank_documents, get_embed_model
+from rag.reranker import get_embed_model, rerank_documents
+from rag.retriever import (
+    get_chroma_collection,
+    reciprocal_rank_fusion,
+    retrieve_carriers_bm25,
+)
 
 # Ground truth test cases: (category, query, SQL query used to resolve targets dynamically)
 EVAL_CASES = [
@@ -443,36 +448,50 @@ def main():
     results = {}
     category_results = {}
     for name in strategies:
-        results[name] = {"h@1": [], "h@3": [], "h@5": [], "mrr": []}
+        results[name] = {"h@1": [], "h@3": [], "h@5": [], "mrr": [], "latency_ms": []}
+
+    # Warm up each strategy once: model loading / cache cold-start otherwise
+    # skews the mean latency of the first measured query.
+    print("Warming up retrieval strategies for latency measurement...")
+    warmup_case = EVAL_CASES[0]
+    for name, search_fn in strategies.items():
+        try:
+            search_fn(warmup_case)
+        except Exception as warm_e:
+            print(f"  [WARN] Warmup failed for {name}: {warm_e}")
         
     for case in EVAL_CASES:
         cat = case.get("category", "General")
         if cat not in category_results:
-            category_results[cat] = {name: {"h@1": [], "h@3": [], "h@5": [], "mrr": []} for name in strategies}
+            category_results[cat] = {name: {"h@1": [], "h@3": [], "h@5": [], "mrr": [], "latency_ms": []} for name in strategies}
 
         print(f"\nEvaluating [{cat}] Query: '{case['query']}'")
         for name, search_fn in strategies.items():
+            _t0 = perf_counter()
             retrieved = search_fn(case)
+            _elapsed_ms = (perf_counter() - _t0) * 1000.0
             h1, h3, h5, mrr = calculate_metrics(retrieved, case.get("targets", []))
             
             results[name]["h@1"].append(h1)
             results[name]["h@3"].append(h3)
             results[name]["h@5"].append(h5)
             results[name]["mrr"].append(mrr)
+            results[name]["latency_ms"].append(_elapsed_ms)
 
             category_results[cat][name]["h@1"].append(h1)
             category_results[cat][name]["h@3"].append(h3)
             category_results[cat][name]["h@5"].append(h5)
             category_results[cat][name]["mrr"].append(mrr)
+            category_results[cat][name]["latency_ms"].append(_elapsed_ms)
             
             print(f"  - {name:<32} | Targets: {len(case.get('targets', [])):<3} | Retrieved: {len(retrieved):<2} | Hit@5: {h5:.1f} | MRR: {mrr:.3f}")
             
     # Print Per-Category Breakdown Tables
     category_summary = {}
     for cat, cat_metrics in category_results.items():
-        print(f"\n\n=== CATEGORY SUMMARY: {cat.upper()} ({len(cat_metrics[list(strategies.keys())[0]]['h@1'])} queries) ===")
-        print(f"| {'Strategy':<32} | {'Hit@1':<10} | {'Hit@3':<10} | {'Hit@5':<10} | {'MRR':<8} |")
-        print(f"| {'-'*32} | {'-'*10} | {'-'*10} | {'-'*10} | {'-'*8} |")
+        print(f"\n\n=== CATEGORY SUMMARY: {cat.upper()} ({len(cat_metrics[next(iter(strategies))]['h@1'])} queries) ===")
+        print(f"| {'Strategy':<32} | {'Hit@1':<10} | {'Hit@3':<10} | {'Hit@5':<10} | {'MRR':<8} | {'Latency (ms)':<12} |")
+        print(f"| {'-'*32} | {'-'*10} | {'-'*10} | {'-'*10} | {'-'*8} | {'-'*12} |")
         category_summary[cat] = {}
         for name, metrics in cat_metrics.items():
             if not metrics["h@1"]:
@@ -481,16 +500,18 @@ def main():
             avg_h3 = sum(metrics["h@3"]) / len(metrics["h@3"])
             avg_h5 = sum(metrics["h@5"]) / len(metrics["h@5"])
             avg_mrr = sum(metrics["mrr"]) / len(metrics["mrr"])
+            avg_lat = sum(metrics.get("latency_ms", [])) / max(len(metrics.get("latency_ms", [])), 1)
             category_summary[cat][name] = {
                 "hit@1": round(avg_h1, 3), "hit@3": round(avg_h3, 3),
-                "hit@5": round(avg_h5, 3), "mrr": round(avg_mrr, 3)
+                "hit@5": round(avg_h5, 3), "mrr": round(avg_mrr, 3),
+                "latency_ms": round(avg_lat, 2)
             }
-            print(f"| {name:<32} | {avg_h1:<10.3f} | {avg_h3:<10.3f} | {avg_h5:<10.3f} | {avg_mrr:<8.3f} |")
+            print(f"| {name:<32} | {avg_h1:<10.3f} | {avg_h3:<10.3f} | {avg_h5:<10.3f} | {avg_mrr:<8.3f} | {avg_lat:<12.2f} |")
 
     # Print Overall Summary Table
     print(f"\n\n=== OVERALL RETRIEVAL METRICS SUMMARY ({len(EVAL_CASES)} queries) ===")
-    print(f"| {'Strategy':<32} | {'Hit@1':<10} | {'Hit@3':<10} | {'Hit@5':<10} | {'MRR':<8} |")
-    print(f"| {'-'*32} | {'-'*10} | {'-'*10} | {'-'*10} | {'-'*8} |")
+    print(f"| {'Strategy':<32} | {'Hit@1':<10} | {'Hit@3':<10} | {'Hit@5':<10} | {'MRR':<8} | {'Latency (ms)':<12} |")
+    print(f"| {'-'*32} | {'-'*10} | {'-'*10} | {'-'*10} | {'-'*8} | {'-'*12} |")
     
     overall_summary = {}
     for name, metrics in results.items():
@@ -500,11 +521,13 @@ def main():
         avg_h3 = sum(metrics["h@3"]) / len(metrics["h@3"])
         avg_h5 = sum(metrics["h@5"]) / len(metrics["h@5"])
         avg_mrr = sum(metrics["mrr"]) / len(metrics["mrr"])
+        avg_lat = sum(metrics["latency_ms"]) / max(len(metrics["latency_ms"]), 1)
         overall_summary[name] = {
             "hit@1": round(avg_h1, 3), "hit@3": round(avg_h3, 3),
-            "hit@5": round(avg_h5, 3), "mrr": round(avg_mrr, 3)
+            "hit@5": round(avg_h5, 3), "mrr": round(avg_mrr, 3),
+            "latency_ms": round(avg_lat, 2)
         }
-        print(f"| {name:<32} | {avg_h1:<10.3f} | {avg_h3:<10.3f} | {avg_h5:<10.3f} | {avg_mrr:<8.3f} |")
+        print(f"| {name:<32} | {avg_h1:<10.3f} | {avg_h3:<10.3f} | {avg_h5:<10.3f} | {avg_mrr:<8.3f} | {avg_lat:<12.2f} |")
         
     print("\nNote: Hit@k (Success@k) measures whether >=1 valid carrier is discovered in top-k.")
     

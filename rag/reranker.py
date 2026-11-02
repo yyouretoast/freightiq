@@ -1,7 +1,9 @@
 import logging
 import threading
+
 import numpy as np
-from sentence_transformers import SentenceTransformer, CrossEncoder
+from sentence_transformers import CrossEncoder, SentenceTransformer
+
 import config
 
 logger = logging.getLogger(__name__)
@@ -77,7 +79,7 @@ def rerank_documents(query, documents, metadatas=None, top_k=5, doc_embeddings=N
         else:
             doc_vectors = np.array(doc_embeddings)
 
-        # Vectorized CPU cosine similarity via NumPy (<5 microseconds, zero GPU overhead)
+        # Vectorized CPU cosine similarity via NumPy (single matrix product, zero GPU overhead)
         q_norm = np.linalg.norm(query_vector)
         d_norms = np.linalg.norm(doc_vectors, axis=1)
         q_unit = query_vector / (q_norm if q_norm > 0 else 1.0)

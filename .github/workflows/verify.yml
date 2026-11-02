@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [ main ]
 
+# Workflow-level env so `if: env.GROQ_API_KEY != ''` gates actually evaluate.
+# (Step-level env is not visible to a step's `if:` condition — previously the
+# trajectory job's gate read an unset workflow-level variable and never ran.)
+env:
+  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+
 jobs:
   verify:
     runs-on: ubuntu-latest

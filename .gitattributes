@@ -1,3 +1,6 @@
-assets/demo.mp4 filter=lfs diff=lfs merge=lfs -text
-*.png filter=lfs diff=lfs merge=lfs -text
-*.gif filter=lfs diff=lfs merge=lfs -text
+# Normalize line endings: LF in the repo, working tree follows platform defaults
+* text=auto eol=lf
+
+# Binary assets
+*.png binary
+*.db binary

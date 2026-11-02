@@ -1,6 +1,7 @@
-import os
 import logging
-from typing import Tuple, Any, Optional
+import os
+from typing import Any
+
 import config
 from agent.tools import tools
 
@@ -9,8 +10,8 @@ logger = logging.getLogger(__name__)
 SUPPORTED_PROVIDERS = {
     "groq": {
         "name": "Groq",
-        "default_model": "qwen/qwen3.8-27b",
-        "models": ["qwen/qwen3.8-27b", "qwen/qwen3.6-27b"],
+        "default_model": config.DEFAULT_AGENT_MODEL,
+        "models": ["qwen/qwen3.8-27b", "openai/gpt-oss-120b"],
         "env_keys": ["GROQ_API_KEY"]
     },
     "openai": {
@@ -27,7 +28,7 @@ SUPPORTED_PROVIDERS = {
     }
 }
 
-def resolve_api_key(provider: str, user_key: Optional[str] = None) -> Optional[str]:
+def resolve_api_key(provider: str, user_key: str | None = None) -> str | None:
     """Resolve API key from user input, config, or environment variables."""
     if user_key and user_key.strip():
         return user_key.strip()
@@ -54,13 +55,13 @@ def bind_tools_safely(llm: Any) -> Any:
 
 def create_model_instance(
     provider: str = "groq",
-    model_name: Optional[str] = None,
-    api_key: Optional[str] = None,
-    base_url: Optional[str] = None,
+    model_name: str | None = None,
+    api_key: str | None = None,
+    base_url: str | None = None,
     temperature: float = 0.0,
-    max_tokens: Optional[int] = None,
+    max_tokens: int | None = None,
     streaming: bool = True
-) -> Tuple[Any, Any]:
+) -> tuple[Any, Any]:
     """
     Factory function returning (base_llm, tool_bound_llm) for the requested provider.
     """
@@ -73,7 +74,7 @@ def create_model_instance(
         key = resolve_api_key("groq", api_key)
         if not key:
             raise ValueError("GROQ_API_KEY is missing. Provide a valid Groq API key.")
-        model = model_name or getattr(config, "AGENT_MODEL", "qwen/qwen3.8-27b")
+        model = model_name or config.AGENT_MODEL
         # Groq on-demand tier enforces a strict 1,000 Output Tokens Per Minute (OTPM) ceiling.
         # Cap Groq to 950 tokens to prevent 429 rate limit rejections.
         groq_tokens = min(max_tokens, 950) if max_tokens else 950

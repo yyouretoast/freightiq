@@ -1,7 +1,8 @@
-import os
 import json
 import logging
+import os
 from datetime import datetime, timezone
+
 import config
 from utils.locks import feedback_lock
 
@@ -17,8 +18,8 @@ def format_carrier_document(c):
                     parsed = json.loads(val)
                     if isinstance(parsed, list):
                         return ", ".join(parsed)
-                except Exception:
-                    pass
+                except Exception as parse_e:
+                    logger.debug(f"Non-JSON list field left as raw string: {parse_e}")
             return val
         return ""
 
@@ -63,16 +64,16 @@ def load_feedback(filepath=None):
             if content.startswith("["):
                 try:
                     return json.loads(content)
-                except Exception:
-                    pass
+                except Exception as arr_e:
+                    logger.debug(f"Feedback file marked as JSON array but failed to parse; treating as JSONL: {arr_e}")
             records = []
             for line in content.splitlines():
                 line = line.strip()
                 if line and not line.startswith("[") and not line.startswith("]"):
                     try:
                         records.append(json.loads(line.rstrip(",")))
-                    except Exception:
-                        continue
+                    except Exception as line_e:
+                        logger.debug(f"Skipping malformed JSONL feedback line: {line_e}")
             return records
         except Exception as e:
             logger.error(f"Failed to read feedback from {feedback_file}: {e}")
@@ -102,10 +103,9 @@ def save_feedback(query, response, feedback_type, filepath=None):
                         existing = json.loads(content)
                         if isinstance(existing, list):
                             with open(feedback_file, "w", encoding="utf-8") as f:
-                                for item in existing:
-                                    f.write(json.dumps(item, ensure_ascii=False) + "\n")
-                    except Exception:
-                        pass
+                                f.writelines(json.dumps(item, ensure_ascii=False) + "\n" for item in existing)
+                    except Exception as migrate_e:
+                        logger.debug(f"JSON array→JSONL migration skipped: {migrate_e}")
             
             with open(feedback_file, "a", encoding="utf-8") as f:
                 f.write(record_line + "\n")

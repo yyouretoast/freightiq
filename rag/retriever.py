@@ -4,10 +4,12 @@ import os
 import re
 import sqlite3
 import threading
+
 import chromadb
-from rag.reranker import rerank_documents, get_embed_model
-from rag.utils import format_carrier_document
+
 import config
+from rag.reranker import get_embed_model, rerank_documents
+from rag.utils import format_carrier_document
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +38,31 @@ def get_chroma_collection():
                 _CHROMA_COLLECTION = client.get_collection(name=config.CHROMA_COLLECTION_NAME)
                 logger.info(f"ChromaDB collection loaded: {_CHROMA_COLLECTION.count()} documents")
     return _CHROMA_COLLECTION
+
+def fetch_carrier_by_dot(dot_number) -> dict | None:
+    """Read-only single-carrier lookup by DOT number. Returns a plain dict or None.
+
+    Shared accessor so tools that need one row (e.g. FMCSA verification) do not
+    open ad-hoc connections beside the retrieval layer's read-only pattern.
+    """
+    if not os.path.exists(config.DB_PATH):
+        return None
+    conn = None
+    try:
+        conn = sqlite3.connect(f"file:{config.DB_PATH}?mode=ro", uri=True, timeout=5.0)
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT carrier_name, mc_number, hq_state, safety_rating, years_operating "
+            "FROM carriers WHERE dot_number = ? LIMIT 1",
+            (str(dot_number),)
+        ).fetchone()
+        return dict(row) if row else None
+    except Exception as e:
+        logger.debug(f"Carrier lookup by DOT failed: {e}")
+        return None
+    finally:
+        if conn:
+            conn.close()
 
 def sanitize_fts5_query(raw_query: str) -> str | None:
     """
@@ -184,7 +211,7 @@ def retrieve_carriers_semantic(query, k=config.SEMANTIC_RETRIEVAL_K):
         return [r["document"] for r in ranked_results]
     except Exception as e:
         logger.error(f"Hybrid retrieval error: {e}")
-        return [f"Error in hybrid retrieval: {str(e)}"]
+        return [f"Error in hybrid retrieval: {e!s}"]
 
 def query_carriers_sql(sql_query):
     if not os.path.exists(config.DB_PATH):
@@ -226,7 +253,7 @@ def query_carriers_sql(sql_query):
         return "\n\n---\n\n".join(results)
     except Exception as e:
         logger.error(f"SQL query error: {e} | Query: {sql_query}")
-        return f"SQLite Error: {str(e)}\nEnsure you are querying columns from the 'carriers' table: id, carrier_name, dot_number, mc_number, hq_state, service_regions, equipment_types, cargo_specializations, safety_rating, years_operating, contact_email, notes."
+        return f"SQLite Error: {e!s}\nEnsure you are querying columns from the 'carriers' table: id, carrier_name, dot_number, mc_number, hq_state, service_regions, equipment_types, cargo_specializations, safety_rating, years_operating, contact_email, notes."
     finally:
         if conn:
             conn.close()

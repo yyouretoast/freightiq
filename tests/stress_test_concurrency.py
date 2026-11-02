@@ -1,15 +1,15 @@
-import os
-import sys
 import concurrent.futures
 import logging
+import os
+import sys
 
 # Ensure project root is in the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import config
-from rag.utils import save_feedback
 from rag.reranker import rerank_documents
 from rag.retriever import query_carriers_sql
+from rag.utils import save_feedback
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(threadName)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -21,6 +21,7 @@ def worker_task(worker_id):
     
     try:
         # 1. Stress concurrent feedback writes
+        # NOTE: Carrier strings below are SYNTHETIC test fixtures, not real carriers.
         query_text = f"Test Query from worker {worker_id}"
         response_text = f"Carrier Name: Apex Freight 80 #143 | DOT: 5942938 (logged by worker {worker_id})"
         feedback_type = "up" if worker_id % 2 == 0 else "down"
@@ -57,17 +58,17 @@ def worker_task(worker_id):
         # 4. Stress concurrent LLM singleton instantiation & failover lock
         if os.getenv("GROQ_API_KEY"):
             from agent.nodes import get_active_models, switch_to_sibling
-            base_llm, tool_llm = get_active_models()
+            base_llm, _tool_llm = get_active_models()
             assert base_llm is not None, "Active LLM should not be None"
             if worker_id % 5 == 0:
-                alt_base, alt_tool = switch_to_sibling()
+                alt_base, _alt_tool = switch_to_sibling()
                 assert alt_base is not None, "Sibling model should not be None"
             logger.info(f"Worker {worker_id}: Concurrent LLM singleton thread-safety check passed.")
 
         return True
         
-    except Exception as e:
-        logger.error(f"Worker {worker_id} failed with error: {e}", exc_info=True)
+    except Exception:
+        logger.exception(f"Worker {worker_id} failed during execution")
         return False
 
 def main():
@@ -97,8 +98,8 @@ def main():
     if os.path.exists(TEST_FEEDBACK_PATH):
         try:
             os.remove(TEST_FEEDBACK_PATH)
-        except Exception:
-            pass
+        except Exception as cleanup_e:
+            print(f"[WARN] Failed to remove test feedback file: {cleanup_e}")
 
     if success_count == num_workers:
         print("[SUCCESS] ALL workers completed operations with ZERO errors under load! Thread-safety verified.")
