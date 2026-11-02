@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import config
 
+
 def main():
     start_time = time.time()
     force = "--force" in sys.argv
