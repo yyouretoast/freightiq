@@ -25,7 +25,7 @@ FreightIQ uses a relational and vector dataset representing 500 commercial motor
 | `safety_rating` | `TEXT NOT NULL` | FMCSA SAFER safety audit rating (`satisfactory`, `conditional`, `unsatisfactory`) |
 | `years_operating` | `INTEGER NOT NULL` | Verified years of active interstate motor carrier operations (range: 2–35) |
 | `contact_email` | `TEXT NOT NULL` | Dispatch contact email address |
-| `notes` | `TEXT` | Rich narrative describing fleet capabilities, certifications (TWIC, GDP, Hazmat Class 3/8), equipment specifications, and telematics |
+| `notes` | `TEXT NOT NULL` | Rich narrative describing fleet capabilities, certifications (TWIC, GDP, Hazmat Class 3/8), equipment specifications, and telematics |
 
 ---
 

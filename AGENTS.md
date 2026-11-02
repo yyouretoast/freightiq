@@ -9,7 +9,7 @@ When inspecting, refactoring, or extending FreightIQ:
 2. **Preserve Fallbacks**:
    - `rag/reranker.py` must maintain the dense embedding cosine fallback if the CrossEncoder fails to load.
    - `agent/tools.py::web_search` must maintain the DuckDuckGo (`ddgs`) fallback if `TAVILY_API_KEY` is not provided.
-   - `agent/nodes.py` must maintain the `qwen/qwen3.6-27b` sibling model fallback if Groq encounters rate limits or errors with `qwen/qwen3.8-27b`.
+   - `agent/nodes.py` must maintain the sibling model fallback if Groq encounters rate limits or errors with `qwen/qwen3.8-27b` (failover target: `openai/gpt-oss-120b` — `qwen/qwen3.6-27b` does not exist on Groq).
 3. **Guardrails**:
    - Do not remove turn-scoped loop detection in `agent/nodes.py`.
    - Keep context truncation to the last 8 messages (aligned to `HumanMessage`) to stay within LLM token quotas.
@@ -21,7 +21,7 @@ Always run these commands before committing changes:
 # Integration verification test suite (all 5 tools & LangGraph loop)
 python -m tests.verify_system
 
-# Retrieval benchmark evaluation (Recall@1, Recall@3, Recall@5, MRR)
+# Retrieval benchmark evaluation (Hit@1, Hit@3, Hit@5, MRR)
 python -m tests.evaluate_retrieval
 
 # Trajectory & guardrail evaluation (20 scenarios, 100% target accuracy)

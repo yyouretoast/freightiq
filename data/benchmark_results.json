@@ -4,31 +4,36 @@
       "hit@1": 1.0,
       "hit@3": 1.0,
       "hit@5": 1.0,
-      "mrr": 1.0
+      "mrr": 1.0,
+      "latency_ms": 5.39
     },
     "ChromaDB Base Vector": {
       "hit@1": 0.317,
       "hit@3": 0.567,
       "hit@5": 0.683,
-      "mrr": 0.445
+      "mrr": 0.445,
+      "latency_ms": 36.67
     },
     "FTS5 Lexical Search (BM25)": {
       "hit@1": 0.467,
       "hit@3": 0.583,
       "hit@5": 0.667,
-      "mrr": 0.535
+      "mrr": 0.535,
+      "latency_ms": 5.78
     },
     "Reranked Search (Cosine)": {
       "hit@1": 0.317,
       "hit@3": 0.567,
       "hit@5": 0.7,
-      "mrr": 0.449
+      "mrr": 0.449,
+      "latency_ms": 657.13
     },
     "Reranked Hybrid (Cross-Encoder)": {
       "hit@1": 0.717,
       "hit@3": 0.833,
       "hit@5": 0.883,
-      "mrr": 0.781
+      "mrr": 0.781,
+      "latency_ms": 723.31
     }
   },
   "categories": {
@@ -37,31 +42,36 @@
         "hit@1": 1.0,
         "hit@3": 1.0,
         "hit@5": 1.0,
-        "mrr": 1.0
+        "mrr": 1.0,
+        "latency_ms": 6.49
       },
       "ChromaDB Base Vector": {
         "hit@1": 0.35,
         "hit@3": 0.65,
         "hit@5": 0.75,
-        "mrr": 0.508
+        "mrr": 0.508,
+        "latency_ms": 43.69
       },
       "FTS5 Lexical Search (BM25)": {
         "hit@1": 0.65,
         "hit@3": 0.85,
         "hit@5": 0.95,
-        "mrr": 0.756
+        "mrr": 0.756,
+        "latency_ms": 6.92
       },
       "Reranked Search (Cosine)": {
         "hit@1": 0.35,
         "hit@3": 0.65,
         "hit@5": 0.8,
-        "mrr": 0.518
+        "mrr": 0.518,
+        "latency_ms": 751.46
       },
       "Reranked Hybrid (Cross-Encoder)": {
         "hit@1": 0.9,
         "hit@3": 1.0,
         "hit@5": 1.0,
-        "mrr": 0.942
+        "mrr": 0.942,
+        "latency_ms": 815.34
       }
     },
     "Qualitative": {
@@ -69,31 +79,36 @@
         "hit@1": 1.0,
         "hit@3": 1.0,
         "hit@5": 1.0,
-        "mrr": 1.0
+        "mrr": 1.0,
+        "latency_ms": 5.38
       },
       "ChromaDB Base Vector": {
         "hit@1": 0.45,
         "hit@3": 0.65,
         "hit@5": 0.85,
-        "mrr": 0.568
+        "mrr": 0.568,
+        "latency_ms": 31.81
       },
       "FTS5 Lexical Search (BM25)": {
         "hit@1": 0.6,
         "hit@3": 0.6,
         "hit@5": 0.65,
-        "mrr": 0.61
+        "mrr": 0.61,
+        "latency_ms": 5.15
       },
       "Reranked Search (Cosine)": {
         "hit@1": 0.45,
         "hit@3": 0.65,
         "hit@5": 0.85,
-        "mrr": 0.568
+        "mrr": 0.568,
+        "latency_ms": 597.94
       },
       "Reranked Hybrid (Cross-Encoder)": {
         "hit@1": 0.65,
         "hit@3": 0.8,
         "hit@5": 0.85,
-        "mrr": 0.727
+        "mrr": 0.727,
+        "latency_ms": 666.67
       }
     },
     "Hybrid": {
@@ -101,31 +116,36 @@
         "hit@1": 1.0,
         "hit@3": 1.0,
         "hit@5": 1.0,
-        "mrr": 1.0
+        "mrr": 1.0,
+        "latency_ms": 4.31
       },
       "ChromaDB Base Vector": {
         "hit@1": 0.15,
         "hit@3": 0.4,
         "hit@5": 0.45,
-        "mrr": 0.26
+        "mrr": 0.26,
+        "latency_ms": 34.51
       },
       "FTS5 Lexical Search (BM25)": {
         "hit@1": 0.15,
         "hit@3": 0.3,
         "hit@5": 0.4,
-        "mrr": 0.239
+        "mrr": 0.239,
+        "latency_ms": 5.27
       },
       "Reranked Search (Cosine)": {
         "hit@1": 0.15,
         "hit@3": 0.4,
         "hit@5": 0.45,
-        "mrr": 0.26
+        "mrr": 0.26,
+        "latency_ms": 621.99
       },
       "Reranked Hybrid (Cross-Encoder)": {
         "hit@1": 0.6,
         "hit@3": 0.7,
         "hit@5": 0.8,
-        "mrr": 0.675
+        "mrr": 0.675,
+        "latency_ms": 687.92
       }
     }
   },

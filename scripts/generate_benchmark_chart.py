@@ -1,7 +1,13 @@
 import os
+import sys
+
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 import numpy as np
+from matplotlib import ticker
+
+# Project root on path so figure derivations can import live test case lists
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
 
 # Output directory: docs/assets
 out_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs", "assets")
@@ -39,7 +45,7 @@ def generate_figure_1_retrieval_benchmark():
         h1 = [1.000, 0.317, 0.467, 0.317, 0.717]
         h3 = [1.000, 0.567, 0.583, 0.567, 0.833]
         h5 = [1.000, 0.683, 0.667, 0.700, 0.883]
-        mrr = [1.000, 0.445, 0.535, 0.449, 0.781]
+        mrr = [1.000, 0.446, 0.535, 0.449, 0.781]
 
     x = np.arange(len(strategies))
     width = 0.18
@@ -80,9 +86,9 @@ def generate_figure_1_retrieval_benchmark():
     # Demarcation line separating deterministic vs statistical retrieval
     ax.axvline(0.5, color="#cbd5e1", linestyle="--", linewidth=1.2, zorder=1)
     ax.text(0.0, 1.16, "Deterministic Filter", ha="center", va="center", fontsize=8.0, fontweight="700", color="#1e293b",
-            bbox=dict(boxstyle="square,pad=0.25", facecolor="#f1f5f9", edgecolor="#cbd5e1", linewidth=0.8))
+            bbox={"boxstyle": "square,pad=0.25", "facecolor": "#f1f5f9", "edgecolor": "#cbd5e1", "linewidth": 0.8})
     ax.text(1.7, 1.16, "Statistical Retrieval & Neural Ranking Pipelines", ha="center", va="center", fontsize=8.0, fontweight="700", color="#1e293b",
-            bbox=dict(boxstyle="square,pad=0.25", facecolor="#f1f5f9", edgecolor="#cbd5e1", linewidth=0.8))
+            bbox={"boxstyle": "square,pad=0.25", "facecolor": "#f1f5f9", "edgecolor": "#cbd5e1", "linewidth": 0.8})
 
     ax.grid(axis="y", linestyle=":", alpha=0.6, color="#cbd5e1")
     ax.set_axisbelow(True)
@@ -105,7 +111,8 @@ def generate_figure_2_latency_tradeoff():
     """Figure 2: Retrieval Latency vs. Accuracy Pareto Trade-Off."""
     out_path = os.path.join(out_dir, "retrieval_latency_tradeoff.png")
 
-    results_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "benchmark_results.json")
+    results_path = os.path.join(project_root, "data", "benchmark_results.json")
+    latencies = {}
     if os.path.exists(results_path):
         import json
         with open(results_path, "r", encoding="utf-8") as f:
@@ -120,19 +127,26 @@ def generate_figure_2_latency_tradeoff():
         cosine_h1 = bench_data.get("Reranked Search (Cosine)", {}).get("hit@1", 0.317)
         cross_mrr = bench_data.get("Reranked Hybrid (Cross-Encoder)", {}).get("mrr", 0.781)
         cross_h1 = bench_data.get("Reranked Hybrid (Cross-Encoder)", {}).get("hit@1", 0.717)
+        # Measured per-query mean latency (ms) exported by tests/evaluate_retrieval.py
+        latencies = {k: (bench_data.get(k, {}) or {}).get("latency_ms") for k in bench_data}
     else:
         sqlite_mrr, sqlite_h1 = 1.000, 1.000
         fts5_mrr, fts5_h1 = 0.535, 0.467
-        dense_mrr, dense_h1 = 0.445, 0.317
+        dense_mrr, dense_h1 = 0.446, 0.317
         cosine_mrr, cosine_h1 = 0.449, 0.317
         cross_mrr, cross_h1 = 0.781, 0.717
 
+    def _lat(strat_key, legacy):
+        """Measured latency from the benchmark export; legacy constants only as last resort."""
+        val = latencies.get(strat_key)
+        return val if val else legacy
+
     data = [
-        {"name": "SQLite Exact (Relational)", "latency": 0.31, "mrr": sqlite_mrr, "h1": sqlite_h1, "color": "#2563eb", "marker": "s", "offset": (16, 6), "ha": "left"},
-        {"name": "SQLite FTS5 (BM25)", "latency": 0.22, "mrr": fts5_mrr, "h1": fts5_h1, "color": "#0284c7", "marker": "o", "offset": (16, -16), "ha": "left"},
-        {"name": "ChromaDB Base Vector", "latency": 270.60, "mrr": dense_mrr, "h1": dense_h1, "color": "#64748b", "marker": "^", "offset": (-14, -22), "ha": "right"},
-        {"name": "Reranked (Cosine Fallback)", "latency": 271.00, "mrr": cosine_mrr, "h1": cosine_h1, "color": "#d97706", "marker": "d", "offset": (16, -14), "ha": "left"},
-        {"name": "Reranked Hybrid (Cross-Encoder)", "latency": 499.37, "mrr": cross_mrr, "h1": cross_h1, "color": "#7c3aed", "marker": "*", "offset": (16, 6), "ha": "left"}
+        {"name": "SQLite Exact (Relational)", "latency": _lat("SQLite Exact Query", 0.31), "mrr": sqlite_mrr, "h1": sqlite_h1, "color": "#2563eb", "marker": "s", "offset": (16, 6), "ha": "left"},
+        {"name": "SQLite FTS5 (BM25)", "latency": _lat("FTS5 Lexical Search (BM25)", 0.22), "mrr": fts5_mrr, "h1": fts5_h1, "color": "#0284c7", "marker": "o", "offset": (16, -16), "ha": "left"},
+        {"name": "ChromaDB Base Vector", "latency": _lat("ChromaDB Base Vector", 270.60), "mrr": dense_mrr, "h1": dense_h1, "color": "#64748b", "marker": "^", "offset": (-14, -22), "ha": "right"},
+        {"name": "Reranked (Cosine Fallback)", "latency": _lat("Reranked Search (Cosine)", 271.00), "mrr": cosine_mrr, "h1": cosine_h1, "color": "#d97706", "marker": "d", "offset": (16, -14), "ha": "left"},
+        {"name": "Reranked Hybrid (Cross-Encoder)", "latency": _lat("Reranked Hybrid (Cross-Encoder)", 499.37), "mrr": cross_mrr, "h1": cross_h1, "color": "#7c3aed", "marker": "*", "offset": (16, 6), "ha": "left"}
     ]
 
     plt.style.use("default")
@@ -140,9 +154,12 @@ def generate_figure_2_latency_tradeoff():
     fig.patch.set_facecolor("#ffffff")
     ax.set_facecolor("#ffffff")
 
-    # True Pareto Frontier: connects FTS5 -> SQLite (which strictly dominates at 0.31ms / 1.000 MRR)
-    # The Cross-Encoder is not connected via a false downward slope; it is annotated as the qualitative frontier.
-    ax.plot([0.22, 0.31], [fts5_mrr, sqlite_mrr], linestyle="-", color="#2563eb", linewidth=2.0, alpha=0.8, zorder=3, label="Deterministic Pareto Frontier")
+    # Pareto frontier: connect the two fastest strategies (the deterministic tier).
+    # With measured latencies these are derived from the benchmark export, not assumed.
+    fastest_pair = sorted(data, key=lambda d: d["latency"])[:2]
+    ax.plot([fastest_pair[0]["latency"], fastest_pair[1]["latency"]],
+            [fastest_pair[0]["mrr"], fastest_pair[1]["mrr"]],
+            linestyle="-", color="#2563eb", linewidth=2.0, alpha=0.8, zorder=3, label="Deterministic Pareto Frontier")
 
     for item in data:
         size = 240 if item["marker"] == "*" else 160
@@ -159,8 +176,8 @@ def generate_figure_2_latency_tradeoff():
             fontweight="600",
             color="#0f172a",
             ha=item.get("ha", "left"),
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="#ffffff", edgecolor=item["color"], alpha=0.95, linewidth=1.0),
-            arrowprops=dict(arrowstyle="->", color=item["color"], lw=0.9, alpha=0.8)
+            bbox={"boxstyle": "round,pad=0.3", "facecolor": "#ffffff", "edgecolor": item["color"], "alpha": 0.95, "linewidth": 1.0},
+            arrowprops={"arrowstyle": "->", "color": item["color"], "lw": 0.9, "alpha": 0.8}
         )
 
     ax.set_xscale("log")
@@ -269,35 +286,75 @@ def generate_figure_3_stratified_categories():
 
 
 def generate_figure_4_trajectory_matrix():
-    """Figure 4: Agent Routing Trajectory Confusion Matrix."""
+    """Figure 4: Agent Routing Trajectory Matrix.
+
+    Prefers *measured* per-case outcomes exported by tests/evaluate_agent_trajectories.py
+    (data/trajectory_results.json). Without a measured export, it falls back to the
+    expected routing distribution derived from the live TRAJECTORY_CASES list and is
+    explicitly labeled as illustrative — never presented as a measured result.
+    """
     out_path = os.path.join(out_dir, "agent_trajectory_matrix.png")
 
-    labels_in = [
-        "Structured Relational (n=5)",
-        "Qualitative Semantic (n=5)",
-        "NMFC Freight Class (n=2)",
-        "FMCSA Safety Audit (n=3)",
-        "Market Spot Rates (n=2)",
-        "Guardrail & Safety (n=3)"
-    ]
-
-    labels_out = [
+    tool_columns = [
         "carrier_sql_query",
         "carrier_semantic_search",
-        "freight_class_calc",
+        "freight_class_calculator",
         "check_fmcsa_authority",
         "web_search",
-        "Guardrail Refusal"
+        "No Tool (Refusal)"
     ]
 
-    matrix = np.array([
-        [5, 0, 0, 0, 0, 0],
-        [0, 5, 0, 0, 0, 0],
-        [0, 0, 2, 0, 0, 0],
-        [0, 0, 0, 3, 0, 0],
-        [0, 0, 0, 0, 2, 0],
-        [0, 0, 0, 0, 0, 3]
-    ])
+    results_path = os.path.join(project_root, "data", "trajectory_results.json")
+    measured = None
+    if os.path.exists(results_path):
+        import json
+        with open(results_path, "r", encoding="utf-8") as f:
+            measured = json.load(f).get("cases")
+
+    if measured:
+        # Measured mode: rows = evaluated categories, cells = observed tool invocations.
+        type_order = []
+        for rec in measured:
+            t = rec.get("type", "Unknown")
+            if t not in type_order:
+                type_order.append(t)
+        matrix = np.zeros((len(type_order), len(tool_columns)), dtype=int)
+        row_counts = {t: 0 for t in type_order}
+        for rec in measured:
+            i = type_order.index(rec.get("type", "Unknown"))
+            row_counts[rec.get("type", "Unknown")] += 1
+            called = set(rec.get("called_tools", []))
+            hit_any = False
+            for j, tc in enumerate(tool_columns[:-1]):
+                if tc in called:
+                    matrix[i, j] += 1
+                    hit_any = True
+            if not hit_any:
+                matrix[i, -1] += 1
+        labels_in = [f"{t} (n={row_counts[t]})" for t in type_order]
+        matrix_source = "Measured routing outcomes"
+        total = len(measured)
+    else:
+        from tests.evaluate_agent_trajectories import TRAJECTORY_CASES
+        type_order = []
+        for case in TRAJECTORY_CASES:
+            if case["type"] not in type_order:
+                type_order.append(case["type"])
+        matrix = np.zeros((len(type_order), len(tool_columns)), dtype=int)
+        row_counts = {}
+        for case in TRAJECTORY_CASES:
+            i = type_order.index(case["type"])
+            row_counts[case["type"]] = row_counts.get(case["type"], 0) + 1
+            tool = case.get("expected_tool")
+            if tool and tool in tool_columns:
+                matrix[i, tool_columns.index(tool)] += 1
+            else:
+                matrix[i, -1] += 1
+        labels_in = [f"{t} (n={row_counts[t]})" for t in type_order]
+        matrix_source = "Expected routing distribution (illustrative - not measured)"
+        total = len(TRAJECTORY_CASES)
+
+    labels_out = tool_columns
 
     plt.style.use("default")
     fig, ax = plt.subplots(figsize=(10.5, 6.2), dpi=300)
@@ -306,12 +363,14 @@ def generate_figure_4_trajectory_matrix():
 
     ax.imshow(matrix, cmap="Blues", vmin=0, vmax=6, aspect="auto")
 
-    # Annotate numbers in cells, suppressing zeros for readability
+    # Annotate numbers in cells with per-row share, suppressing zeros for readability
     for i in range(len(labels_in)):
         for j in range(len(labels_out)):
             val = matrix[i, j]
             if val > 0:
-                ax.text(j, i, f"{val}\n(100%)", ha="center", va="center",
+                row_total = max(row_counts[type_order[i]], 1)
+                pct = val / row_total * 100
+                ax.text(j, i, f"{val}\n({pct:.0f}%)", ha="center", va="center",
                         fontsize=9.5, fontweight="700", color="#ffffff" if val >= 3 else "#0f172a")
 
     ax.set_xticks(np.arange(len(labels_out)))
@@ -322,10 +381,10 @@ def generate_figure_4_trajectory_matrix():
     ax.set_xlabel("Selected Execution Tool / Output Action", fontsize=10, fontweight="600", color="#1e293b", labelpad=10)
     ax.set_ylabel("Evaluated Query Intent / Category", fontsize=10, fontweight="600", color="#1e293b", labelpad=10)
 
-    ax.set_title("Figure 4: Agent Routing Trajectory & Guardrail Compliance Matrix (N=20)",
+    ax.set_title(f"Figure 4: Agent Routing Trajectory Matrix ({matrix_source}, N={total})",
                  fontsize=11.5, fontweight="700", color="#0f172a", pad=16)
 
-    for edge, spine in ax.spines.items():
+    for spine in ax.spines.values():
         spine.set_color("#cbd5e1")
         spine.set_linewidth(1.0)
 
