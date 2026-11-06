@@ -20,18 +20,22 @@ Freight carrier query routing engine built with LangGraph. Resolves discrete con
 > **Live Demo:** [huggingface.co/spaces/yyouretoast/freightiq](https://huggingface.co/spaces/yyouretoast/freightiq)  
 > **Repository:** [github.com/yyouretoast/freightiq](https://github.com/yyouretoast/freightiq)
 
-https://github.com/user-attachments/assets/87267c8e-72b0-4862-9c19-cc56a6c3b4f8
+<p align="center">
+  <video src="docs/assets/demo_github.mp4" controls muted loop preload="metadata" width="100%">
+  </video>
+</p>
 
 <p align="center">
   <em>Demo: Multi-tool routing across SQLite structured queries, ChromaDB semantic search, NMFC freight calculation, and FMCSA safety verification.</em>
   <br>
-  <sub><em>If video does not play inline, <a href="https://github.com/user-attachments/assets/87267c8e-72b0-4862-9c19-cc56a6c3b4f8">click here to watch the direct demo recording</a> or try the <a href="https://huggingface.co/spaces/yyouretoast/freightiq">live interactive demo</a>.</em></sub>
+  <sub><em>If the video does not play inline, <a href="docs/assets/demo_github.mp4">open the raw file</a> or try the <a href="https://huggingface.co/spaces/yyouretoast/freightiq">live interactive demo</a>.</em></sub>
 </p>
 
 ---
 
 ## Table of Contents
 
+- [Key Features](#key-features)
 - [Overview & Query Routing Rationale](#overview--query-routing-rationale)
 - [Architecture](#architecture)
 - [Tools](#tools)
@@ -43,7 +47,20 @@ https://github.com/user-attachments/assets/87267c8e-72b0-4862-9c19-cc56a6c3b4f8
 - [Setup & Execution](#setup--execution)
 - [Project Structure](#project-structure)
 - [Design Documents](#design-documents)
+- [Contributing](#contributing)
+- [Maintainers](#maintainers)
 - [License](#license)
+
+---
+
+## Key Features
+
+- **Dual-Modality Query Routing** — Deterministic constraints resolved by read-only SQLite in ~5 ms; qualitative capabilities via hybrid FTS5 BM25 + dense ChromaDB retrieval, RRF-fused and neural Cross-Encoder re-ranked (**Hit@1 0.717 → MRR 0.781** on the 60-query benchmark).
+- **Five Domain Tools** — `carrier_sql_query`, `carrier_semantic_search`, `check_fmcsa_authority` (live USDOT compliance gating), `freight_class_calculator` (NMFC density tiers & exception rules), and `web_search` (Tavily → DuckDuckGo fallback).
+- **Compliance-First Safety Gating** — Mandatory federal safety-rating enforcement (`FAIL — DO NOT DISPATCH` for unsatisfactory ratings); zero-row relaxation and fallback logic can never weaken safety or hazmat filters.
+- **Agent Resilience** — Sibling-model failover with automated cooldown, turn-scoped loop breaker, 8-message context window, and bounded tool output — engineered against Groq free-tier rate limits and model hallucinated SQL.
+- **Measured, Reproducible Validation** — Empirical retrieval benchmark (Hit@k / MRR), 20-case trajectory & guardrail audit, system integration suite, and SQLite-WAL concurrency stress test — all re-runnable in one command.
+- **Deploy Anywhere** — Streamlit frontend with token streaming; runs locally with Groq/OpenAI/Ollama or out-of-the-box on Hugging Face Spaces (auto-synced from `main`).
 
 ---
 
@@ -363,7 +380,9 @@ freightiq/
 │   ├── state.py                   # AgentState schema
 │   └── tools.py                   # 5 domain tools
 ├── docs/
-│   └── adr/                       # Architecture Decision Records (ADR-001 to 004)
+│   ├── adr/                       # Architecture Decision Records (ADR-001 to 004)
+│   ├── assets/                    # Benchmark figures & demo video (demo_github.mp4)
+│   └── AUDIT-2026-11-01.md        # Internal audit report
 ├── rag/                           # Data storage & retrieval
 │   ├── generate_carriers.py       # 500-profile dataset generator
 │   ├── setup_sqlite.py            # SQLite & FTS5 table initialization
@@ -398,6 +417,25 @@ freightiq/
 - [ADR-002: Neural Cross-Encoder Re-Ranking](docs/adr/ADR-002-neural-cross-encoder-reranking.md): Re-ranking candidate pool design and fallbacks.
 - [ADR-003: Hybrid FTS5 BM25 + Vector Fusion](docs/adr/ADR-003-hybrid-fts5-bm25-rrf-fusion.md): Lexical-dense fusion mechanics.
 - [ADR-004: Dual Web Search Fallbacks](docs/adr/ADR-004-dual-web-search-fallbacks.md): Multi-tier search engine integration.
+
+---
+
+## Contributing
+
+Contributions are welcome:
+
+1. Fork and branch from `main`.
+2. Follow the lint/style configuration in [pyproject.toml](pyproject.toml) (`ruff`).
+3. Run the [Verification Test Suite](#verification-test-suite) commands and include their output in the PR.
+4. Database population must remain idempotent via `scripts/seed_db.py` — no non-standard SQLite initialization (see [AGENTS.md](AGENTS.md)).
+
+For bug reports and questions, open a [GitHub issue](https://github.com/yyouretoast/freightiq/issues). Full contribution details live in [CONTRIBUTING.md](CONTRIBUTING.md); participants are expected to uphold the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+---
+
+## Maintainers
+
+- [@yyouretoast](https://github.com/yyouretoast) — FreightIQ Engineering Team
 
 ---
 
