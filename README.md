@@ -381,8 +381,7 @@ freightiq/
 │   └── tools.py                   # 5 domain tools
 ├── docs/
 │   ├── adr/                       # Architecture Decision Records (ADR-001 to 004)
-│   ├── assets/                    # Benchmark figures & demo video (demo_github.mp4)
-│   └── AUDIT-2026-11-01.md        # Internal audit report
+│   └── assets/                    # Benchmark figures & demo video (demo_github.mp4)
 ├── rag/                           # Data storage & retrieval
 │   ├── generate_carriers.py       # 500-profile dataset generator
 │   ├── setup_sqlite.py            # SQLite & FTS5 table initialization
