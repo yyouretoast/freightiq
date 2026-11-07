@@ -1,5 +1,9 @@
 name: Sync to Hugging Face Spaces
 
+# Hugging Face rejects binary files pushed via plain git/LFS (xet-only policy).
+# Sync therefore uses `huggingface_hub` (bundles hf_xet), which ingests through
+# the xet protocol and is the only upload path that works with free accounts.
+
 on:
   workflow_run:
     workflows: ["FreightIQ Verification CI"]
@@ -14,12 +18,47 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          lfs: true
 
-      - name: Push to Hugging Face
+      - name: Upload to Hugging Face (xet)
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git push https://yyouretoast:$HF_TOKEN@huggingface.co/spaces/yyouretoast/freightiq main:main --force
+          pip install --quiet "huggingface_hub[high-level]>=0.34,<2.0"
+          python - <<'PY'
+          import os, tempfile
+          from huggingface_hub import HfApi, CommitOperationDelete
+
+          REPO = "yyouretoast/freightiq"
+          token = os.environ["HF_TOKEN"]
+          api = HfApi(token=token)
+
+          # Upload the full tracked tree (add/update, xet-native).
+          api.upload_folder(
+              folder_path=".",
+              repo_id=REPO,
+              repo_type="space",
+              commit_message=f"Sync from GitHub main @ {os.environ.get('GITHUB_SHA','')[:12]}",
+          )
+
+          # Delete files that no longer exist locally. Explicit paths only —
+          # wildcard deletes abort the HF server connection. Never delete
+          # data/carriers.db: it lives only on the Space (not tracked in git).
+          local = set()
+          for root, _, files in os.walk("."):
+              if ".git" in root.split(os.sep):
+                  continue
+              for f in files:
+                  local.add(os.path.relpath(os.path.join(root, f), ".").replace(os.sep, "/"))
+
+          remote = set(api.list_repo_files(REPO, repo_type="space"))
+          orphans = sorted(remote - local - {"data/carriers.db"})
+          if orphans:
+              api.create_commit(
+                  repo_id=REPO,
+                  repo_type="space",
+                  operations=[CommitOperationDelete(path_in_repo=p) for p in orphans],
+                  commit_message="Sync: remove files deleted from GitHub",
+              )
+          print("sync complete:", len(remote), "files before,",
+                len(api.list_repo_files(REPO, repo_type="space")), "after")
+          PY
