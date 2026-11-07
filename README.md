@@ -3,8 +3,8 @@ title: FreightIQ
 emoji: 🚚
 colorFrom: blue
 colorTo: indigo
-sdk: streamlit
-app_file: app.py
+sdk: docker
+app_port: 7860
 pinned: false
 ---
 
@@ -400,6 +400,7 @@ freightiq/
 ├── utils/
 │   └── locks.py                   # Process-safe concurrency locks
 ├── app.py                         # Streamlit UI
+├── Dockerfile                     # Hugging Face Spaces container (docker SDK)
 ├── config.py                      # Global configuration
 ├── AGENTS.md                      # Operational guidelines for AI coding agents
 ├── DATA.md                        # Dataset schema & provenance
